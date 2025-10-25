@@ -3,8 +3,6 @@ import com.android.build.api.dsl.BuildType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.io.FileInputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Properties
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -31,11 +29,11 @@ android {
     namespace = "org.strigate.ferrot"
     compileSdk = 36
     defaultConfig {
-        val version = "0.1.0"
+        val version = "1.0.0"
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
+        versionCode = 2
         versionName = buildVersionName(version, versionCode)
         stringField("VERSION_TAG", "v$version")
         applyFirebaseProperties()
@@ -170,10 +168,9 @@ private fun String.escapeForBuildConfig(): String =
     "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 private fun buildVersionName(baseVersion: String, versionCode: Int?): String {
-    val timestamp = SimpleDateFormat("yyyyMMdd").format(Date())
     val buildType = if (isDebugBuildType()) "D" else "R"
     val versionCodePart = versionCode?.let { "-$it-" } ?: "-"
-    return "$baseVersion$versionCodePart$buildType-$timestamp"
+    return "$baseVersion$versionCodePart$buildType"
 }
 
 private fun isDebugBuildType(): Boolean {
