@@ -3,8 +3,6 @@ import com.android.build.api.dsl.BuildType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.io.FileInputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Properties
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -170,10 +168,9 @@ private fun String.escapeForBuildConfig(): String =
     "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 private fun buildVersionName(baseVersion: String, versionCode: Int?): String {
-    val timestamp = SimpleDateFormat("yyyyMMdd").format(Date())
     val buildType = if (isDebugBuildType()) "D" else "R"
     val versionCodePart = versionCode?.let { "-$it-" } ?: "-"
-    return "$baseVersion$versionCodePart$buildType-$timestamp"
+    return "$baseVersion$versionCodePart$buildType"
 }
 
 private fun isDebugBuildType(): Boolean {
