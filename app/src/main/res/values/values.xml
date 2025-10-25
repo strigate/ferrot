@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Ferrot</string>
+    <string name="copyright">© %1$d Michael Bentz / Strigate</string>
+
+    <string name="file_provider">fileprovider</string>
+
+    <string name="settings_description_website">ferrot.org</string>
+
+    <string name="url_website">https://ferrot.org/</string>
+    <string name="url_privacy">https://github.com/strigate/ferrot/blob/main/PRIVACY.md</string>
+    <string name="url_license">https://github.com/strigate/ferrot/blob/main/LICENSE</string>
+
+    <string name="github_latest_release">https://api.github.com/repos/strigate/ferrot/releases/latest</string>
+    <string name="github_release_apk_name">ferrot-release.apk</string>
+
+    <string name="content_description_strigate_logo">Strigate logo</string>
+</resources>
