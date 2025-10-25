@@ -37,11 +37,13 @@ object Constants {
 
         object Channels {
             private const val CHANNEL_ID = "$APP_ID.notification.channel.id"
-            const val CHANNEL_ID_ACTIVE_DOWNLOADS = "$CHANNEL_ID.ACTIVE_DOWNLOADS"
+            const val CHANNEL_ID_ACTIVE_TASKS = "$CHANNEL_ID.ACTIVE_TASKS"
+            const val CHANNEL_ID_UPDATES = "$CHANNEL_ID.UPDATES"
             const val CHANNEL_ID_DOWNLOADED = "$CHANNEL_ID.DOWNLOADED"
 
             val ALL_CHANNEL_IDS = listOf(
-                CHANNEL_ID_ACTIVE_DOWNLOADS,
+                CHANNEL_ID_ACTIVE_TASKS,
+                CHANNEL_ID_UPDATES,
                 CHANNEL_ID_DOWNLOADED,
             )
         }
