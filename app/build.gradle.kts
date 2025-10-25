@@ -106,7 +106,7 @@ android {
         outputs
             .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
             .all {
-                it.outputFileName = "ferrot_${if (isDebugBuildType()) "debug" else "release"}.apk"
+                it.outputFileName = "ferrot-${if (isDebugBuildType()) "debug" else "release"}.apk"
                 false
             }
     }
