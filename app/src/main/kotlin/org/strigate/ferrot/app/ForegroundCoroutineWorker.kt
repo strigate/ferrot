@@ -9,7 +9,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import org.strigate.ferrot.R
-import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIVE_DOWNLOADS
+import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIVE_TASKS
 import org.strigate.ferrot.presentation.MainActivity
 
 abstract class ForegroundCoroutineWorker(
@@ -32,11 +32,11 @@ abstract class ForegroundCoroutineWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID_ACTIVE_DOWNLOADS)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_ACTIVE_TASKS)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setSmallIcon(R.drawable.ic_logo)
-            .setChannelId(CHANNEL_ID_ACTIVE_DOWNLOADS)
+            .setChannelId(CHANNEL_ID_ACTIVE_TASKS)
             .setContentTitle(notificationText)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
