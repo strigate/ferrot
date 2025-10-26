@@ -1,13 +1,16 @@
 <resources>
     <string name="notification_channel_group_name_foreground">Foreground</string>
     <string name="notification_channel_group_name_general">General</string>
-    <string name="notification_channel_name_active_downloads">Active downloads</string>
+    <string name="notification_channel_name_active_tasks">Active tasks</string>
     <string name="notification_channel_name_downloaded">Downloaded</string>
-    <string name="notification_channel_description_active_downloads">Active downloads</string>
+    <string name="notification_channel_name_updates">Updates</string>
+    <string name="notification_channel_description_active_tasks">Active tasks</string>
     <string name="notification_channel_description_downloaded">Downloaded</string>
+    <string name="notification_channel_description_updates">Updates</string>
 
     <string name="notification_summary_title">You have new notifications</string>
     <string name="notification_download_title">Downloading</string>
+    <string name="notification_update_title">Update</string>
 
     <string name="worker_notification_text_updating_dependencies">Updating dependencies</string>
     <string name="worker_notification_text_downloading_update">Downloading update</string>

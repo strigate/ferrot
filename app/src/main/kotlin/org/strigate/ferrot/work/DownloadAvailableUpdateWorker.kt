@@ -22,6 +22,7 @@ import org.strigate.ferrot.app.Constants
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.DOWNLOAD_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
+import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import java.io.File
@@ -37,6 +38,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted workerParameters: WorkerParameters,
     private val updatePathProvider: UpdatePathProvider,
+    private val notificationService: NotificationService,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
 
@@ -66,9 +68,8 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
             val savedTag = savedAvailableUpdate?.tag
             if (savedTag != null && isNewerVersion(savedTag, latestTag)) {
                 Log.d(
-                    LOG_TAG, "Saved update (${
-                        savedTag
-                    }) is newer than latest ($latestTag); keeping saved update."
+                    LOG_TAG,
+                    "Saved update (${savedTag}) is newer than latest ($latestTag); keeping saved update.",
                 )
                 return Result.success()
             }
@@ -104,6 +105,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                         if (validateSha256(apkFile, expectedDigest)) {
                             Log.d(LOG_TAG, "Update already downloaded & verified: ${apkFile.name}")
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
+                            notifyAvailableUpdate(latestTag)
                             return Result.success()
                         }
                         Log.w(LOG_TAG, "Existing file sha256 mismatch. Re-downloading")
@@ -114,6 +116,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                     apkFile.length() > 0L -> {
                         Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
                         saveAvailableUpdate(latestTag, apkFile.absolutePath)
+                        notifyAvailableUpdate(latestTag)
                         return Result.success()
                     }
 
@@ -147,6 +150,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
                 Log.d(LOG_TAG, "Update downloaded successfully: ${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
+                notifyAvailableUpdate(latestTag)
                 Result.success()
             } catch (throwable: Throwable) {
                 Log.wtf(LOG_TAG, "Download failed", throwable)
@@ -159,6 +163,15 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
             clearAvailableUpdate()
             Result.failure()
         }
+    }
+
+    private fun notifyAvailableUpdate(versionTag: String) {
+        val contentTitle = appContext.getString(R.string.notification_update_title)
+        val contentText = appContext.getString(R.string.available_update_ready, versionTag)
+        notificationService.notifyAvailableUpdate(
+            contentTitle = contentTitle,
+            contentText = contentText,
+        )
     }
 
     private suspend fun fetchLatestRelease(): JSONObject = withContext(Dispatchers.IO) {
