@@ -5,6 +5,7 @@ import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,8 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -40,6 +39,7 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.TextSetting
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
 import java.util.Calendar
 
@@ -49,6 +49,7 @@ fun AboutScreen(
     modifier: Modifier = Modifier,
     viewModel: AboutViewModel = hiltViewModel(),
 ) {
+    val dimens = LocalDimens.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
@@ -89,11 +90,13 @@ fun AboutScreen(
         content = { contentPadding ->
             Surface(
                 modifier = modifier
+                    .fillMaxSize()
                     .padding(contentPadding),
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 12.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = dimens.spacingMediumAlt)
                         .verticalScroll(rememberScrollState()),
                 ) {
                     StaticSettingsSection(
@@ -106,7 +109,7 @@ fun AboutScreen(
                             context.copyToClipboard(BuildConfig.VERSION_NAME)
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(dimens.spacingSmall))
                     StaticSettingsSection {
                         val urlWebsite = stringResource(R.string.url_website)
                         val urlPrivacy = stringResource(R.string.url_privacy)
@@ -130,28 +133,27 @@ fun AboutScreen(
                             viewModel.onUrlClicked(urlLicense)
                         }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
                     Column(
                         modifier = Modifier
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
+                        Spacer(modifier = Modifier.height(dimens.spacingLarge))
                         Icon(
                             modifier = Modifier
-                                .height(80.dp),
+                                .height(dimens.iconXLarge),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                alpha = 0.9f,
+                                alpha = 0.8f,
                             ),
                             painter = painterResource(R.drawable.strigate_logo),
                             contentDescription = stringResource(R.string.content_description_strigate_logo),
                         )
                         Text(
-                            style = MaterialTheme.typography.bodySmall.copy(
+                            style = MaterialTheme.typography.labelSmall.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                     alpha = 0.75f,
                                 ),
-                                fontSize = 11.sp,
                             ),
                             textAlign = TextAlign.Center,
                             text = stringResource(
@@ -159,8 +161,8 @@ fun AboutScreen(
                                 Calendar.getInstance().get(Calendar.YEAR),
                             ),
                         )
+                        Spacer(modifier = Modifier.height(dimens.spacingLarge))
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         },
