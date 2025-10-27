@@ -10,13 +10,15 @@ data class Dimens(
     val zero: Dp = 0.dp,
 
     val spacingSmall: Dp = 8.dp,
+    val spacingMediumAlt: Dp = 12.dp,
     val spacingMedium: Dp = 16.dp,
     val spacingLarge: Dp = 24.dp,
 
     val iconSmall: Dp = 24.dp,
     val iconLarge: Dp = 32.dp,
-    val iconXLarge: Dp = 96.dp,
-    val iconXXLarge: Dp = 128.dp,
+    val iconXLarge: Dp = 72.dp,
+    val iconXXLarge: Dp = 96.dp,
+    val iconXXXLarge: Dp = 128.dp,
 
     val radiusSmall: Dp = 4.dp,
     val radiusMedium: Dp = 8.dp,

@@ -38,7 +38,7 @@ fun EmptyState(
         icon?.let {
             Icon(
                 modifier = Modifier
-                    .size(dimens.iconXLarge),
+                    .size(dimens.iconXXLarge),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 imageVector = it,
                 contentDescription = iconContentDescription,
