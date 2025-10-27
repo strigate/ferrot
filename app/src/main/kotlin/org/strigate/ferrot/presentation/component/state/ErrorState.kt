@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Icon
@@ -16,13 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import org.strigate.ferrot.presentation.theme.LocalDimens
 
 @Composable
 fun ErrorState(
     modifier: Modifier = Modifier,
     text: String? = null,
 ) {
+    val dimens = LocalDimens.current
     Box(
         modifier = modifier
             .fillMaxSize(),
@@ -34,19 +36,25 @@ fun ErrorState(
         ) {
             Icon(
                 modifier = Modifier
-                    .size(96.dp),
+                    .size(dimens.iconXLarge),
                 tint = MaterialTheme.colorScheme.error,
                 imageVector = Icons.Outlined.ErrorOutline,
                 contentDescription = null,
             )
             text?.let {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    text = it,
-                )
+                Spacer(modifier = Modifier.height(dimens.spacingMedium))
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = dimens.contentMaxWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        text = it,
+                    )
+                }
             }
         }
     }
