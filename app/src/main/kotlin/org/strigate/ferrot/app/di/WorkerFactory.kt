@@ -51,6 +51,7 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     updatePathProvider = updatePathProvider,
+                    notificationService = notificationService,
                     availableUpdateUseCase = availableUpdateUseCase,
                 )
             }

@@ -9,8 +9,9 @@ import org.strigate.ferrot.app.Constants.Notifications.ChannelGroups.ALL_CHANNEL
 import org.strigate.ferrot.app.Constants.Notifications.ChannelGroups.CHANNEL_GROUP_ID_FOREGROUND
 import org.strigate.ferrot.app.Constants.Notifications.ChannelGroups.CHANNEL_GROUP_ID_GENERAL
 import org.strigate.ferrot.app.Constants.Notifications.Channels.ALL_CHANNEL_IDS
-import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIVE_DOWNLOADS
+import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIVE_TASKS
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
+import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_UPDATES
 import org.strigate.ferrot.app.Constants.Notifications.Groups.GROUP_ID_DOWNLOADED
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannel
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannelGroup
@@ -45,12 +46,21 @@ class NotificationService @Inject constructor(
         )
         createNotificationChannel(
             context = appContext,
-            channelId = CHANNEL_ID_ACTIVE_DOWNLOADS,
-            channelName = appContext.getString(R.string.notification_channel_name_active_downloads),
-            channelDescription = appContext.getString(R.string.notification_channel_description_active_downloads),
+            channelId = CHANNEL_ID_ACTIVE_TASKS,
+            channelName = appContext.getString(R.string.notification_channel_name_active_tasks),
+            channelDescription = appContext.getString(R.string.notification_channel_description_active_tasks),
             channelImportance = NotificationManager.IMPORTANCE_LOW,
             color = R.color.coral,
             groupId = CHANNEL_GROUP_ID_FOREGROUND,
+        )
+        createNotificationChannel(
+            context = appContext,
+            channelId = CHANNEL_ID_UPDATES,
+            channelName = appContext.getString(R.string.notification_channel_name_updates),
+            channelDescription = appContext.getString(R.string.notification_channel_description_updates),
+            channelImportance = NotificationManager.IMPORTANCE_DEFAULT,
+            color = R.color.coral,
+            groupId = CHANNEL_GROUP_ID_GENERAL,
         )
         createNotificationChannel(
             context = appContext,
@@ -60,6 +70,25 @@ class NotificationService @Inject constructor(
             channelImportance = NotificationManager.IMPORTANCE_DEFAULT,
             color = R.color.coral,
             groupId = CHANNEL_GROUP_ID_GENERAL,
+        )
+    }
+
+    fun notifyAvailableUpdate(
+        contentTitle: String,
+        contentText: String,
+    ) {
+        notify(
+            context = appContext,
+            channelId = CHANNEL_ID_UPDATES,
+            groupId = null,
+            summaryTitleResource = R.string.notification_summary_title,
+            contentTitle = contentTitle,
+            contentText = contentText,
+            colorResource = R.color.coral,
+            iconResource = R.drawable.ic_logo,
+            largeIcon = null,
+            priority = NotificationCompat.PRIORITY_HIGH,
+            tag = "update_available"
         )
     }
 

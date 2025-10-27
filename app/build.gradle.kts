@@ -29,11 +29,11 @@ android {
     namespace = "org.strigate.ferrot"
     compileSdk = 36
     defaultConfig {
-        val version = "1.0.0"
+        val version = "1.0.1"
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = buildVersionName(version, versionCode)
         stringField("VERSION_TAG", "v$version")
         applyFirebaseProperties()
@@ -106,7 +106,7 @@ android {
         outputs
             .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
             .all {
-                it.outputFileName = "ferrot_${if (isDebugBuildType()) "debug" else "release"}.apk"
+                it.outputFileName = "ferrot-${if (isDebugBuildType()) "debug" else "release"}.apk"
                 false
             }
     }
