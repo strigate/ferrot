@@ -41,7 +41,6 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
     private val notificationService: NotificationService,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
-
     override suspend fun doWork(): Result {
         enableForeground(
             notificationText = appContext.getString(R.string.worker_notification_text_downloading_update),
@@ -67,10 +66,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
             val savedTag = savedAvailableUpdate?.tag
             if (savedTag != null && isNewerVersion(savedTag, latestTag)) {
-                Log.d(
-                    LOG_TAG,
-                    "Saved update (${savedTag}) is newer than latest ($latestTag); keeping saved update.",
-                )
+                Log.d(LOG_TAG, "Saved update (${savedTag}) is newer than latest ($latestTag)")
                 return Result.success()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
@@ -128,22 +124,21 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                 }
             }
 
-            val tempFile = File(apkFile.parentFile, apkFile.name + ".part")
-            Log.d(LOG_TAG, "Downloading update to ${tempFile.absolutePath}")
-
+            val partFile = File(apkFile.parentFile, apkFile.name + ".part")
+            Log.d(LOG_TAG, "Downloading update to ${partFile.absolutePath}")
             try {
-                downloadFile(downloadUrl, tempFile)
+                downloadFile(downloadUrl, partFile)
                 if (expectedDigest.startsWith("sha256:", true)) {
-                    if (!validateSha256(tempFile, expectedDigest)) {
-                        tempFile.delete()
+                    if (!validateSha256(partFile, expectedDigest)) {
+                        partFile.delete()
                         clearAvailableUpdate()
                         return Result.failure()
                     }
                 }
                 if (apkFile.exists()) apkFile.delete()
-                if (!tempFile.renameTo(apkFile)) {
-                    Log.w(LOG_TAG, "Failed to rename temp file to final output")
-                    tempFile.delete()
+                if (!partFile.renameTo(apkFile)) {
+                    Log.w(LOG_TAG, "Failed to rename part file to final output")
+                    partFile.delete()
                     clearAvailableUpdate()
                     return Result.failure()
                 }
@@ -152,9 +147,10 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
                 notifyAvailableUpdate(latestTag)
                 Result.success()
+
             } catch (throwable: Throwable) {
                 Log.wtf(LOG_TAG, "Download failed", throwable)
-                tempFile.delete()
+                partFile.delete()
                 clearAvailableUpdate()
                 Result.failure()
             }
