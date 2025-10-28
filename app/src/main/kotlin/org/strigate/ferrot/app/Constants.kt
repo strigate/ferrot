@@ -21,6 +21,10 @@ object Constants {
     object Settings {
         const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
         const val DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY = true
+        const val KEY_AUTOMATIC_UPDATES = "automatic_updates"
+        const val DEFAULT_VALUE_AUTOMATIC_UPDATES = true
+        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES = "automatic_dependency_updates"
+        const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES = true
     }
 
     object Notifications {

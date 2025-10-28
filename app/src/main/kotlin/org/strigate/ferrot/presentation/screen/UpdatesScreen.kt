@@ -3,6 +3,7 @@ package org.strigate.ferrot.presentation.screen
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -22,26 +23,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavController
 import org.strigate.ferrot.R
-import org.strigate.ferrot.presentation.Screen
-import org.strigate.ferrot.presentation.component.settings.ExpandableSettingsSection
+import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.SwitchSetting
-import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
+import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
-import org.strigate.ferrot.presentation.state.SettingsUiState
-import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
+import org.strigate.ferrot.presentation.state.UpdatesUiState
+import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.ferrot.presentation.viewmodel.UpdatesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    navController: NavController,
+fun UpdatesScreen(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel(),
+    viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
+    val dimens = LocalDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
 
@@ -54,9 +53,7 @@ fun SettingsScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            backDispatcher?.onBackPressed()
-                        },
+                        onClick = { backDispatcher?.onBackPressed() },
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -65,68 +62,74 @@ fun SettingsScreen(
                     }
                 },
                 title = {
-                    Text(
-                        text = stringResource(R.string.screen_title_settings),
-                    )
+                    Text(text = stringResource(R.string.screen_title_updates))
                 },
             )
         },
         content = { contentPadding ->
             Surface(
                 modifier = modifier
+                    .fillMaxSize()
                     .padding(contentPadding),
             ) {
                 when (val state = uiState) {
-                    is SettingsUiState.Loading -> LoadingState()
-                    is SettingsUiState.Error -> SettingsError()
-                    is SettingsUiState.Data -> {
+                    is UpdatesUiState.Loading -> LoadingState()
+                    is UpdatesUiState.Error -> UpdatesError()
+                    is UpdatesUiState.Data -> {
                         with(state.data) {
                             Column(
                                 modifier = Modifier
-                                    .padding(horizontal = 12.dp)
+                                    .fillMaxSize()
+                                    .padding(horizontal = dimens.spacingMediumAlt)
                                     .verticalScroll(rememberScrollState()),
                             ) {
-                                ExpandableSettingsSection(
-                                    text = stringResource(id = R.string.settings_section_general),
-                                    initialExpanded = true,
+                                StaticSettingsSection(
+                                    text = stringResource(R.string.settings_section_app),
                                 ) {
                                     SwitchSetting(
-                                        text = stringResource(id = R.string.settings_title_download_wifi_only),
-                                        description = stringResource(id = R.string.settings_description_download_wifi_only),
-                                        checked = downloadWifiOnly,
+                                        text = stringResource(R.string.settings_title_automatic_updates),
+                                        description = stringResource(R.string.settings_description_automatic_updates),
+                                        checked = automaticUpdates,
                                         onCheckedChange = { checked ->
-                                            viewModel.setDownloadWifiOnly(checked)
+                                            viewModel.setAutomaticUpdates(checked)
+                                        },
+                                    )
+                                    TextSetting(
+                                        text = stringResource(R.string.settings_title_check_now),
+                                        description = stringResource(R.string.settings_description_check_now),
+                                    ) {
+                                        viewModel.checkNow()
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                StaticSettingsSection(
+                                    text = stringResource(R.string.settings_section_dependencies),
+                                ) {
+                                    SwitchSetting(
+                                        text = stringResource(R.string.settings_title_automatic_dependency_updates),
+                                        description = stringResource(R.string.settings_description_automatic_dependency_updates),
+                                        checked = automaticDependencyUpdates,
+                                        onCheckedChange = { checked ->
+                                            viewModel.setAutomaticDependencyUpdates(checked)
                                         },
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                TextNavigateSetting(
-                                    text = stringResource(R.string.settings_navigate_title_updates),
-                                ) {
-                                    navController.navigate(Screen.Updates.route)
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                TextNavigateSetting(
-                                    text = stringResource(R.string.settings_navigate_title_about),
-                                ) {
-                                    navController.navigate(Screen.About.route)
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
                             }
                         }
                     }
                 }
             }
-        }
+        },
     )
 }
 
 @Composable
-private fun SettingsError(
+private fun UpdatesError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
         modifier = modifier,
-        text = stringResource(R.string.error_failed_to_load_settings),
+        text = stringResource(R.string.error_failed_to_load_update_settings),
     )
 }

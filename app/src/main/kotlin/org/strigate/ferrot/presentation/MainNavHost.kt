@@ -14,6 +14,7 @@ import org.strigate.ferrot.presentation.screen.AboutScreen
 import org.strigate.ferrot.presentation.screen.DownloadScreen
 import org.strigate.ferrot.presentation.screen.DownloadsScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
+import org.strigate.ferrot.presentation.screen.UpdatesScreen
 
 @Composable
 fun MainNavHost(
@@ -49,6 +50,9 @@ fun MainNavHost(
                 navController = navController,
             )
         }
+        composable(Screen.Updates.route) {
+            UpdatesScreen()
+        }
         composable(Screen.About.route) {
             AboutScreen()
         }
@@ -63,5 +67,6 @@ sealed class Screen(val route: String) {
     }
 
     data object Settings : Screen("settings")
+    data object Updates : Screen("updates")
     data object About : Screen("about")
 }

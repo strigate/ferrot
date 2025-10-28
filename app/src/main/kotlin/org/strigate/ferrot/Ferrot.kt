@@ -9,10 +9,13 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
@@ -27,6 +30,9 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
 
     @Inject
     lateinit var notificationService: NotificationService
+
+    @Inject
+    lateinit var settingsUseCase: SettingsUseCase
 
     override val workManagerConfiguration: Configuration
         get() {
@@ -53,8 +59,25 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         )
     }
 
-    private fun enqueueWork() {
-        DownloadAvailableUpdateWorker.enqueuePeriodicKeep(this)
-        UpdateDependenciesWorker.enqueuePeriodicKeep(this)
+    private fun enqueueWork() = runBlocking {
+        val appContext = this@Ferrot
+
+        val automaticUpdatesSetting = settingsUseCase
+            .getAutomaticUpdatesSettingAsFlowUseCase()
+            .first()
+        val automaticDependencyUpdatesSetting = settingsUseCase
+            .getAutomaticDependencyUpdatesSettingAsFlowUseCase()
+            .first()
+
+        if (automaticUpdatesSetting) {
+            DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
+        } else {
+            DownloadAvailableUpdateWorker.cancelPeriodic(appContext)
+        }
+        if (automaticDependencyUpdatesSetting) {
+            UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
+        } else {
+            UpdateDependenciesWorker.cancelPeriodic(appContext)
+        }
     }
 }

@@ -373,5 +373,9 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                 oneTimeWorkRequest,
             )
         }
+
+        fun cancelPeriodic(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE)
+        }
     }
 }
