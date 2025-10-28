@@ -20,13 +20,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
+import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Action.ACTION_START_DOWNLOAD_FROM_SHARE
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
+import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL_UID
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.theme.FerrotTheme
 import org.strigate.ferrot.util.isAtLeastTiramisu
 
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     private val notificationsPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { _ -> }
 
     override fun onNewIntent(intent: Intent) {
@@ -81,6 +84,16 @@ class MainActivity : ComponentActivity() {
                     viewModel.navigateToDownload(downloadId)
                     return
                 }
+            }
+
+            ACTION_INSTALL_AVAILABLE_UPDATE -> {
+                val apkFilePath = intent.getStringExtra(EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH)
+                InstallHelper.requestInstallApkIfExists(this, apkFilePath)
+                viewModel.navigateTo(
+                    route = Screen.Downloads.route,
+                    popUpToDownloads = true,
+                )
+                return
             }
         }
     }
@@ -149,7 +162,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         val granted = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.POST_NOTIFICATIONS
+            this, Manifest.permission.POST_NOTIFICATIONS,
         ) == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             notificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

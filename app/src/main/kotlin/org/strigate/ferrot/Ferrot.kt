@@ -54,7 +54,7 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
     }
 
     private fun enqueueWork() {
-        DownloadAvailableUpdateWorker.enqueuePeriodic(this)
-        UpdateDependenciesWorker.enqueuePeriodic(this)
+        DownloadAvailableUpdateWorker.enqueuePeriodicKeep(this)
+        UpdateDependenciesWorker.enqueuePeriodicKeep(this)
     }
 }

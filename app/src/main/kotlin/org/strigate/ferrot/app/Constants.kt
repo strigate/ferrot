@@ -58,16 +58,22 @@ object Constants {
         object Name {
             private const val NAME = "$APP_ID.work"
             private const val KEY = "$APP_ID.key"
-
             private const val ONETIME = "$NAME.onetime"
-            const val DOWNLOAD = "$ONETIME.DOWNLOAD"
-
             private const val PERIODIC = "$NAME.periodic"
-            const val DOWNLOAD_AVAILABLE_UPDATE = "$PERIODIC.DOWNLOAD_AVAILABLE_UPDATE"
-            const val UPDATE_DEPENDENCIES = "$PERIODIC.UPDATE_DEPENDENCIES"
+
+            const val ONETIME_DOWNLOAD = "$ONETIME.DOWNLOAD"
+            const val ONETIME_DOWNLOAD_AVAILABLE_UPDATE = "$ONETIME.DOWNLOAD_AVAILABLE_UPDATE"
+
+            const val PERIODIC_DOWNLOAD_AVAILABLE_UPDATE = "$PERIODIC.DOWNLOAD_AVAILABLE_UPDATE"
+            const val PERIODIC_UPDATE_DEPENDENCIES = "$PERIODIC.UPDATE_DEPENDENCIES"
 
             const val KEY_ID = "$KEY.ID"
             const val KEY_WIFI_ONLY = "$KEY.wifi_only"
+        }
+
+        object Tag {
+            private const val TAG = "$APP_ID.tag"
+            const val DOWNLOAD_AVAILABLE_UPDATE = "$TAG.DOWNLOAD_AVAILABLE_UPDATE"
         }
     }
 
@@ -78,15 +84,22 @@ object Constants {
 
     object Extras {
         private const val EXTRA = "$APP_ID.intent.extra"
+
         const val EXTRA_ACTION = "$EXTRA.ACTION"
+        const val EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH = "$EXTRA.AVAILABLE_UPDATE_APK_FILE_PATH"
+        const val EXTRA_AVAILABLE_UPDATE_VERSION_TAG = "$EXTRA.AVAILABLE_UPDATE_VERSION_TAG"
+
         const val EXTRA_SHARED_URL_UID = "$EXTRA.SHARED_URL_UID"
         const val EXTRA_SHARED_URL = "$EXTRA.SHARED_URL"
-        const val EXTRA_DOWNLOAD_ID = "$EXTRA.download.DOWNLOAD_ID"
+
+        const val EXTRA_DOWNLOAD_ID = "$EXTRA.DOWNLOAD_ID"
     }
 
     object Action {
         private const val ACTION = "$APP_ID.intent.action"
+
+        const val ACTION_INSTALL_AVAILABLE_UPDATE = "$ACTION.INSTALL_AVAILABLE_UPDATE"
         const val ACTION_START_DOWNLOAD_FROM_SHARE = "$ACTION.START_DOWNLOAD_FROM_SHARE"
-        const val ACTION_NAVIGATE_DOWNLOAD = "$ACTION.navigate.DOWNLOAD"
+        const val ACTION_NAVIGATE_DOWNLOAD = "$ACTION.NAVIGATE_DOWNLOAD"
     }
 }
