@@ -76,6 +76,8 @@ class NotificationService @Inject constructor(
     fun notifyAvailableUpdate(
         contentTitle: String,
         contentText: String,
+        extras: Map<String, String> = emptyMap(),
+        tag: String? = "update_available",
     ) {
         notify(
             context = appContext,
@@ -88,7 +90,8 @@ class NotificationService @Inject constructor(
             iconResource = R.drawable.ic_logo,
             largeIcon = null,
             priority = NotificationCompat.PRIORITY_HIGH,
-            tag = "update_available"
+            tag = tag,
+            extras = extras,
         )
     }
 

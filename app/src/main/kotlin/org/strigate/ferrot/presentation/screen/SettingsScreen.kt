@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -28,12 +29,15 @@ import androidx.navigation.NavController
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.settings.ExpandableSettingsSection
+import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.SwitchSetting
 import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
+import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
+import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +46,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
 
@@ -98,6 +103,15 @@ fun SettingsScreen(
                                             viewModel.setDownloadWifiOnly(checked)
                                         },
                                     )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                StaticSettingsSection {
+                                    TextSetting(
+                                        text = stringResource(R.string.settings_title_app_update),
+                                        description = stringResource(R.string.settings_description_app_update),
+                                    ) {
+                                        DownloadAvailableUpdateWorker.enqueueOneTimeReplace(context)
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 TextNavigateSetting(

@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
@@ -68,6 +69,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.strigate.ferrot.R
+import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.DownloadPrimaryActionButton
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
@@ -173,6 +175,7 @@ fun DownloadsScreen(
                                     .fillMaxSize(),
                             ) {
                                 availableUpdate?.let {
+                                    val context = LocalContext.current
                                     AvailableUpdateBanner(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -181,7 +184,10 @@ fun DownloadsScreen(
                                         tag = it.tag,
                                         localFilePath = it.localFilePath,
                                         onClick = { filePath ->
-                                            viewModel.requestInstallAvailableUpdate(filePath)
+                                            InstallHelper.requestInstallApkIfExists(
+                                                context,
+                                                filePath
+                                            )
                                         },
                                     )
                                 }

@@ -31,6 +31,8 @@ object InstallHelper {
             true
         } catch (_: ActivityNotFoundException) {
             false
+        } catch (_: SecurityException) {
+            false
         }
     }
 }

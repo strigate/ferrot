@@ -1,10 +1,8 @@
 package org.strigate.ferrot.presentation.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +21,6 @@ import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombi
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataUseCase
-import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
@@ -33,7 +30,6 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
-    @param:ApplicationContext private val appContext: Context,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
@@ -99,12 +95,6 @@ class DownloadsViewModel @Inject constructor(
     fun deleteDownload(downloadId: Long) {
         viewModelScope.launch {
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
-        }
-    }
-
-    fun requestInstallAvailableUpdate(filePath: String) {
-        viewModelScope.launch {
-            InstallHelper.requestInstallApkIfExists(appContext, filePath)
         }
     }
 }
