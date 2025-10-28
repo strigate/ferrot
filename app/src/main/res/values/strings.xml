@@ -18,6 +18,7 @@
 
     <string name="screen_title_download">Download</string>
     <string name="screen_title_settings">Settings</string>
+    <string name="screen_title_updates">Updates</string>
     <string name="screen_title_about">About</string>
 
     <string name="downloads_intro_title">Share to %1$s</string>
@@ -54,24 +55,32 @@
     <string name="snackbar_delete_deleted">Deleted</string>
     <string name="snackbar_delete_undo">Undo</string>
 
+    <string name="toast_checking_for_updates">Checking for updates</string>
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_file_exists">File already exists in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
 
     <string name="settings_section_general">General</string>
     <string name="settings_section_app_info">App info</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_dependencies">Dependencies</string>
 
+    <string name="settings_navigate_title_updates">Updates</string>
     <string name="settings_navigate_title_about">About</string>
 
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
-    <string name="settings_title_app_update">App update</string>
+    <string name="settings_title_automatic_updates">Automatic updates</string>
+    <string name="settings_title_check_now">Check now</string>
+    <string name="settings_title_automatic_dependency_updates">Automatic dependency updates</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_website">Website</string>
     <string name="settings_title_privacy">Privacy</string>
     <string name="settings_title_license">License</string>
 
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
-    <string name="settings_description_app_update">Download and install</string>
+    <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
+    <string name="settings_description_check_now">Check for updates now</string>
+    <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
     <string name="settings_description_license">GNU General Public License v3.0</string>
 
@@ -87,4 +96,5 @@
     <string name="error_failed_to_load_downloads">Failed to load downloads</string>
     <string name="error_failed_to_load_download">Failed to load download</string>
     <string name="error_failed_to_load_settings">Failed to load settings</string>
+    <string name="error_failed_to_load_update_settings">Failed to load update settings</string>
 </resources>

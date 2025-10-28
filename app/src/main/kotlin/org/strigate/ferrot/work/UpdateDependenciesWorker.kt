@@ -66,5 +66,9 @@ class UpdateDependenciesWorker @AssistedInject constructor(
                 periodicWorkRequest,
             )
         }
+
+        fun cancelPeriodic(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_UPDATE_DEPENDENCIES)
+        }
     }
 }
