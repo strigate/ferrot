@@ -2,9 +2,11 @@ package org.strigate.ferrot.presentation.component.state
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -15,8 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import org.strigate.ferrot.presentation.theme.LocalDimens
 
 @Composable
 fun EmptyState(
@@ -26,39 +27,42 @@ fun EmptyState(
     icon: ImageVector? = null,
     iconContentDescription: String? = null,
 ) {
+    val dimens = LocalDimens.current
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 48.dp),
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         icon?.let {
             Icon(
                 modifier = Modifier
-                    .size(128.dp),
+                    .size(dimens.iconXXLarge),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                contentDescription = iconContentDescription,
                 imageVector = it,
+                contentDescription = iconContentDescription,
             )
         }
-        Text(
+        Spacer(modifier = Modifier.height(dimens.spacingMedium))
+        Column(
             modifier = Modifier
-                .padding(top = 16.dp),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            text = title,
-        )
-        Text(
-            modifier = Modifier
-                .padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 20.sp,
-            text = body,
-        )
+                .widthIn(max = dimens.contentMaxWidth),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                text = title,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            Text(
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                text = body,
+            )
+        }
     }
 }

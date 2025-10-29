@@ -30,7 +30,7 @@ fun SwitchSetting(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 2.dp),
+            .padding(top = 8.dp, bottom = 4.dp),
     ) {
         Row(
             modifier = Modifier

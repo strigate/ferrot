@@ -14,7 +14,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Work.Name.UPDATE_DEPENDENCIES
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import java.util.concurrent.TimeUnit
 
@@ -42,34 +42,33 @@ class UpdateDependenciesWorker @AssistedInject constructor(
     }
 
     companion object {
-        fun enqueuePeriodic(
+        fun enqueuePeriodicKeep(
             context: Context,
             repeatIntervalDays: Long = 7,
             flexHours: Long = 12,
-            requireUnmetered: Boolean = false,
         ) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(
-                    if (requireUnmetered) {
-                        NetworkType.UNMETERED
-                    } else {
-                        NetworkType.CONNECTED
-                    },
-                )
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<UpdateDependenciesWorker>(
-                repeatIntervalDays, TimeUnit.DAYS,
-                flexHours, TimeUnit.HOURS,
+                repeatInterval = repeatIntervalDays,
+                repeatIntervalTimeUnit = TimeUnit.DAYS,
+                flexTimeInterval = flexHours,
+                flexTimeIntervalUnit = TimeUnit.HOURS,
             )
                 .setConstraints(constraints)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                UPDATE_DEPENDENCIES,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                PERIODIC_UPDATE_DEPENDENCIES,
+                ExistingPeriodicWorkPolicy.KEEP,
                 periodicWorkRequest,
             )
+        }
+
+        fun cancelPeriodic(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_UPDATE_DEPENDENCIES)
         }
     }
 }

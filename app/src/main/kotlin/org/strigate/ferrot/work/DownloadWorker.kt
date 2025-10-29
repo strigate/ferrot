@@ -26,9 +26,9 @@ import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Work.Name.DOWNLOAD
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
+import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.DownloadPathProvider
@@ -422,10 +422,9 @@ class DownloadWorker @AssistedInject constructor(
         }
 
         fun cancelUnique(context: Context, id: Long) {
-            WorkManager.getInstance(context)
-                .cancelUniqueWork(uniqueWorkName(id))
+            WorkManager.getInstance(context).cancelUniqueWork(uniqueWorkName(id))
         }
 
-        private fun uniqueWorkName(downloadId: Long): String = "$DOWNLOAD-$downloadId"
+        private fun uniqueWorkName(downloadId: Long): String = "$ONETIME_DOWNLOAD-$downloadId"
     }
 }

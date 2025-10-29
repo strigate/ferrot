@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -19,8 +21,13 @@ import org.json.JSONObject
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants
+import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
+import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
+import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH
+import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_VERSION_TAG
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Work.Name.DOWNLOAD_AVAILABLE_UPDATE
+import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD_AVAILABLE_UPDATE
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.UpdatePathProvider
@@ -30,6 +37,9 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.time.Duration.between
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -42,9 +52,6 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        enableForeground(
-            notificationText = appContext.getString(R.string.worker_notification_text_downloading_update),
-        )
         return try {
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
@@ -101,7 +108,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                         if (validateSha256(apkFile, expectedDigest)) {
                             Log.d(LOG_TAG, "Update already downloaded & verified: ${apkFile.name}")
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
-                            notifyAvailableUpdate(latestTag)
+                            notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                             return Result.success()
                         }
                         Log.w(LOG_TAG, "Existing file sha256 mismatch. Re-downloading")
@@ -112,7 +119,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                     apkFile.length() > 0L -> {
                         Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
                         saveAvailableUpdate(latestTag, apkFile.absolutePath)
-                        notifyAvailableUpdate(latestTag)
+                        notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                         return Result.success()
                     }
 
@@ -126,6 +133,11 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
             val partFile = File(apkFile.parentFile, apkFile.name + ".part")
             Log.d(LOG_TAG, "Downloading update to ${partFile.absolutePath}")
+
+            enableForeground(
+                notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+            )
+
             try {
                 downloadFile(downloadUrl, partFile)
                 if (expectedDigest.startsWith("sha256:", true)) {
@@ -145,7 +157,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
                 Log.d(LOG_TAG, "Update downloaded successfully: ${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
-                notifyAvailableUpdate(latestTag)
+                notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                 Result.success()
 
             } catch (throwable: Throwable) {
@@ -161,12 +173,17 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
         }
     }
 
-    private fun notifyAvailableUpdate(versionTag: String) {
-        val contentTitle = appContext.getString(R.string.notification_update_title)
+    private fun notifyAvailableUpdate(versionTag: String, apkFilePath: String) {
+        val contentTitle = appContext.getString(R.string.notification_app_update_title)
         val contentText = appContext.getString(R.string.available_update_ready, versionTag)
         notificationService.notifyAvailableUpdate(
             contentTitle = contentTitle,
             contentText = contentText,
+            extras = mapOf(
+                EXTRA_ACTION to ACTION_INSTALL_AVAILABLE_UPDATE,
+                EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH to apkFilePath,
+                EXTRA_AVAILABLE_UPDATE_VERSION_TAG to versionTag,
+            ),
         )
     }
 
@@ -293,34 +310,72 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
     }
 
     companion object {
-        fun enqueuePeriodic(
+        fun enqueuePeriodicKeep(
             context: Context,
-            repeatIntervalDays: Long = 1,
+            targetHour: Int = 3,
             flexHours: Long = 3,
-            requireUnmetered: Boolean = true,
         ) {
+            val defaultZoneId = ZoneId.systemDefault()
+            val now = ZonedDateTime.now(defaultZoneId)
+            val targetDateTime = now
+                .withHour(targetHour)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
+
+            val firstRun = if (now.isBefore(targetDateTime)) {
+                targetDateTime
+            } else {
+                targetDateTime.plusDays(1)
+            }
+            val initialDelayMillis = between(now, firstRun).toMillis()
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(
-                    if (requireUnmetered) {
-                        NetworkType.UNMETERED
-                    } else {
-                        NetworkType.CONNECTED
-                    },
-                )
+                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .setRequiresCharging(false)
+                .setRequiresBatteryNotLow(false)
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<DownloadAvailableUpdateWorker>(
-                repeatIntervalDays, TimeUnit.DAYS,
-                flexHours, TimeUnit.HOURS,
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = TimeUnit.DAYS,
+                flexTimeInterval = flexHours,
+                flexTimeIntervalUnit = TimeUnit.HOURS,
             )
+                .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
                 .setConstraints(constraints)
+                .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                DOWNLOAD_AVAILABLE_UPDATE,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                PERIODIC_DOWNLOAD_AVAILABLE_UPDATE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 periodicWorkRequest,
             )
+        }
+
+        fun enqueueOneTimeReplace(
+            context: Context,
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresCharging(false)
+                .setRequiresBatteryNotLow(false)
+                .build()
+
+            val oneTimeWorkRequest = OneTimeWorkRequestBuilder<DownloadAvailableUpdateWorker>()
+                .setConstraints(constraints)
+                .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                ONETIME_DOWNLOAD_AVAILABLE_UPDATE,
+                ExistingWorkPolicy.REPLACE,
+                oneTimeWorkRequest,
+            )
+        }
+
+        fun cancelPeriodic(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE)
         }
     }
 }

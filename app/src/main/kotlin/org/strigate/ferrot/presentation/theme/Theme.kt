@@ -74,11 +74,11 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun FerrotTheme(
-//    dimens: Dimens = Dimens(),
+    dimens: Dimens = Dimens(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-//        LocalDimens provides dimens,
+        LocalDimens provides dimens,
     ) {
         MaterialTheme(
             colorScheme = if (isSystemInDarkTheme()) {
