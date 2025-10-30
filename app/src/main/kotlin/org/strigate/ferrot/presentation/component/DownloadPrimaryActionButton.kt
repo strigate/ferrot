@@ -11,24 +11,27 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
+import org.strigate.ferrot.presentation.theme.LocalDimens
 
 @Composable
 fun DownloadPrimaryActionButton(
     status: DownloadStatusUiData,
+    modifier: Modifier = Modifier,
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    val actionConfig: ActionConfig = when (status) {
+    val dimens = LocalDimens.current
+    val actionConfig = when (status) {
         DownloadStatusUiData.QUEUED,
         DownloadStatusUiData.WAITING_FOR_NETWORK,
         DownloadStatusUiData.WAITING_FOR_WIFI,
         DownloadStatusUiData.METADATA,
         DownloadStatusUiData.DOWNLOADING -> ActionConfig(
             icon = Icons.Filled.Stop,
-            contentDescription = "Stop download",
+            contentDescription = stringResource(R.string.content_description_stop_download),
             usePrimaryTint = true,
             onClick = onPauseResume,
         )
@@ -37,14 +40,14 @@ fun DownloadPrimaryActionButton(
         DownloadStatusUiData.STOPPED,
         DownloadStatusUiData.FAILED -> ActionConfig(
             icon = Icons.Filled.Refresh,
-            contentDescription = "Resume download",
+            contentDescription = stringResource(R.string.content_description_resume_download),
             usePrimaryTint = true,
             onClick = onPauseResume,
         )
 
         DownloadStatusUiData.COMPLETED -> ActionConfig(
             icon = Icons.Filled.DownloadDone,
-            contentDescription = "Open",
+            contentDescription = stringResource(R.string.content_description_open_download),
             usePrimaryTint = false,
             onClick = onOpen,
         )
@@ -52,7 +55,7 @@ fun DownloadPrimaryActionButton(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = 1.dp,
+        tonalElevation = dimens.tonalElevationLow,
     ) {
         with(actionConfig) {
             IconButton(
