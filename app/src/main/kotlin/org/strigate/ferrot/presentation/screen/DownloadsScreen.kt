@@ -59,7 +59,6 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -79,6 +78,7 @@ import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
@@ -90,6 +90,7 @@ fun DownloadsScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
+    val dimens = LocalDimens.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -105,7 +106,7 @@ fun DownloadsScreen(
                 navigationIcon = {
                     IconButton(
                         modifier = Modifier
-                            .padding(4.dp),
+                            .padding(dimens.spacingXSmall),
                         onClick = {},
                     ) {
                         Icon(
@@ -179,8 +180,8 @@ fun DownloadsScreen(
                                     AvailableUpdateBanner(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 12.dp)
-                                            .padding(bottom = 8.dp),
+                                            .padding(horizontal = dimens.spacingMediumAlt)
+                                            .padding(bottom = dimens.spacingSmall),
                                         tag = it.tag,
                                         localFilePath = it.localFilePath,
                                         onClick = { filePath ->
@@ -247,21 +248,25 @@ private fun AvailableUpdateBanner(
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val dimens = LocalDimens.current
     if (!localFilePath.isNullOrBlank()) {
         Surface(
             modifier = modifier
                 .clickable {
                     onClick(localFilePath)
                 },
-            tonalElevation = 3.dp,
-            shadowElevation = 1.dp,
+            tonalElevation = dimens.tonalElevationHigh,
+            shadowElevation = dimens.shadowElevationLow,
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(
+                        horizontal = dimens.spacingMedium,
+                        vertical = dimens.spacingMediumAlt,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -269,7 +274,7 @@ private fun AvailableUpdateBanner(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(dimens.spacingMediumAlt))
                 Text(
                     text = stringResource(R.string.available_update_ready, tag ?: ""),
                     style = MaterialTheme.typography.bodyMedium,
@@ -291,6 +296,8 @@ private fun DownloadsList(
     onDelete: (Long) -> Unit,
     snackbarHostState: SnackbarHostState,
 ) {
+    val dimens = LocalDimens.current
+
     val listState = rememberLazyListState()
     var activeSwipeId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
@@ -395,7 +402,7 @@ private fun DownloadsList(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = dimens.spacingMediumAlt),
             state = listState,
         ) {
             items(
@@ -462,7 +469,7 @@ private fun DownloadsList(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                            .padding(bottom = dimens.spacingSmall)
                             .onGloballyPositioned { layoutCoordinates ->
                                 rowWidthPx = layoutCoordinates.size.width.toFloat()
                             },
@@ -484,7 +491,7 @@ private fun DownloadsList(
                                         Row(
                                             modifier = Modifier
                                                 .align(Alignment.CenterEnd)
-                                                .padding(horizontal = 16.dp),
+                                                .padding(horizontal = dimens.spacingMedium),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Icon(
@@ -527,16 +534,17 @@ private fun DownloadItem(
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
 ) {
+    val dimens = LocalDimens.current
     Surface(
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = 4.dp,
-        shadowElevation = 1.dp,
+        tonalElevation = dimens.tonalElevationHigh,
+        shadowElevation = dimens.shadowElevationLow,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(12.dp),
+                .padding(dimens.spacingMediumAlt),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
@@ -547,7 +555,7 @@ private fun DownloadItem(
             )
             Column(
                 modifier = Modifier
-                    .padding(start = 12.dp)
+                    .padding(start = dimens.spacingMediumAlt)
                     .weight(1f),
             ) {
                 Text(
@@ -557,7 +565,7 @@ private fun DownloadItem(
                     maxLines = 1,
                     text = item.title,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                 DownloadProgressSection(
                     status = item.status,
                     progressFraction = item.progressFraction,

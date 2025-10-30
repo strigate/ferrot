@@ -22,7 +22,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
@@ -33,6 +32,7 @@ import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.state.SettingsUiState
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +42,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val dimens = LocalDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
 
@@ -83,7 +84,7 @@ fun SettingsScreen(
                         with(state.data) {
                             Column(
                                 modifier = Modifier
-                                    .padding(horizontal = 12.dp)
+                                    .padding(horizontal = dimens.spacingMediumAlt)
                                     .verticalScroll(rememberScrollState()),
                             ) {
                                 ExpandableSettingsSection(
@@ -99,25 +100,25 @@ fun SettingsScreen(
                                         },
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
                                     text = stringResource(R.string.settings_navigate_title_updates),
                                 ) {
                                     navController.navigate(Screen.Updates.route)
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
                                     text = stringResource(R.string.settings_navigate_title_about),
                                 ) {
                                     navController.navigate(Screen.About.route)
                                 }
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(dimens.spacingMedium))
                             }
                         }
                     }
                 }
             }
-        }
+        },
     )
 }
 
