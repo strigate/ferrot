@@ -1,7 +1,9 @@
 package org.strigate.ferrot.presentation.component
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -11,9 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 
 @Composable
@@ -25,6 +27,7 @@ fun DownloadProgressSection(
     modifier: Modifier = Modifier,
     forcePrimaryBar: Boolean = false,
 ) {
+    val dimens = LocalDimens.current
     val running = when (status) {
         DownloadStatusUiData.QUEUED,
         DownloadStatusUiData.METADATA,
@@ -38,27 +41,30 @@ fun DownloadProgressSection(
         DownloadStatusUiData.STOPPED -> 0f
         else -> null
     }
-    DownloadProgressBar(
+    Column(
         modifier = modifier,
-        progress = progress,
-        running = running,
-        forcePrimary = forcePrimaryBar,
-    )
-    Box(
-        modifier = Modifier
-            .padding(top = 4.dp)
-            .height(20.dp),
     ) {
-        StatusSizeEtaRow(
-            status = status,
-            progressFraction = when (status) {
-                DownloadStatusUiData.COMPLETED -> 1f
-                DownloadStatusUiData.STOPPED -> 0f
-                else -> progressFraction
-            },
-            bytesDownloaded = bytesDownloaded,
-            etaSeconds = etaSeconds,
+        DownloadProgressBar(
+            progress = progress,
+            running = running,
+            forcePrimary = forcePrimaryBar,
         )
+        Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+        Box(
+            modifier = Modifier
+                .height(dimens.spacingLarge),
+        ) {
+            StatusSizeEtaRow(
+                status = status,
+                progressFraction = when (status) {
+                    DownloadStatusUiData.COMPLETED -> 1f
+                    DownloadStatusUiData.STOPPED -> 0f
+                    else -> progressFraction
+                },
+                bytesDownloaded = bytesDownloaded,
+                etaSeconds = etaSeconds,
+            )
+        }
     }
 }
 
@@ -109,10 +115,11 @@ private fun InfoLine(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
 ) {
+    val dimens = LocalDimens.current
     Row(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp),
+            .padding(top = dimens.spacingSmall)
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (!leftText.isNullOrBlank()) {
