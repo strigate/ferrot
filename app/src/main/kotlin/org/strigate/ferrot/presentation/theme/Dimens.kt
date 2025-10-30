@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 data class Dimens(
     val zero: Dp = 0.dp,
 
+    val spacingXXSmall: Dp = 2.dp,
+    val spacingXSmall: Dp = 4.dp,
     val spacingSmall: Dp = 8.dp,
     val spacingMediumAlt: Dp = 12.dp,
     val spacingMedium: Dp = 16.dp,
@@ -24,9 +26,17 @@ data class Dimens(
     val radiusMedium: Dp = 8.dp,
     val radiusLarge: Dp = 16.dp,
 
-    val stroke: Dp = 1.dp,
+    val tonalElevationLow: Dp = 1.dp,
+    val tonalElevationHigh: Dp = 4.dp,
+
+    val shadowElevationLow: Dp = 1.dp,
 
     val contentMaxWidth: Dp = 320.dp,
+
+    val thumbnailHeight: Dp = 240.dp,
+    val overlayButtonSize: Dp = 56.dp,
+    val overlayIconSize: Dp = 48.dp,
+    val actionIconSize: Dp = 38.dp
 )
 
 val LocalDimens = staticCompositionLocalOf<Dimens> {
