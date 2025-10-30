@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -548,30 +549,33 @@ private fun DownloadItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
         ) {
-            DownloadPrimaryActionButton(
-                status = item.status,
-                onPauseResume = onPauseResume,
-                onOpen = onOpen,
-            )
-            Column(
-                modifier = Modifier
-                    .padding(start = dimens.spacingMediumAlt)
-                    .weight(1f),
-            ) {
-                Text(
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    text = item.title,
+            with(item) {
+                DownloadPrimaryActionButton(
+                    onPauseResume = onPauseResume,
+                    onOpen = onOpen,
+                    status = status,
                 )
-                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
-                DownloadProgressSection(
-                    status = item.status,
-                    progressFraction = item.progressFraction,
-                    etaSeconds = item.etaSeconds,
-                    bytesDownloaded = item.bytesDownloaded,
-                )
+                Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
+                Column(
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .weight(1f),
+                ) {
+                    Text(
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        text = title,
+                    )
+                    Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+                    DownloadProgressSection(
+                        status = status,
+                        progressFraction = progressFraction,
+                        etaSeconds = etaSeconds,
+                        bytesDownloaded = bytesDownloaded,
+                    )
+                }
             }
         }
     }
