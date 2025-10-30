@@ -84,17 +84,20 @@
     <string name="settings_description_privacy">View Privacy Policy</string>
     <string name="settings_description_license">GNU General Public License v3.0</string>
 
-    <string name="content_description_back">Back</string>
-    <string name="content_description_thumbnail">Preview</string>
-    <string name="content_description_retry">Retry</string>
-    <string name="content_description_play">Play</string>
-    <string name="content_description_download">Save to device</string>
-    <string name="content_description_delete">Delete download</string>
-    <string name="content_description_share">Share download</string>
-    <string name="content_description_copy_to_clipboard">Copy to clipboard</string>
-
     <string name="error_failed_to_load_downloads">Failed to load downloads</string>
     <string name="error_failed_to_load_download">Failed to load download</string>
     <string name="error_failed_to_load_settings">Failed to load settings</string>
     <string name="error_failed_to_load_update_settings">Failed to load update settings</string>
+
+    <string name="content_description_back">Back</string>
+    <string name="content_description_thumbnail">Preview</string>
+    <string name="content_description_retry">Retry</string>
+    <string name="content_description_play">Play</string>
+    <string name="content_description_stop_download">Stop download</string>
+    <string name="content_description_resume_download">Resume download</string>
+    <string name="content_description_open_download">Open download</string>
+    <string name="content_description_save_to_device">Save to device</string>
+    <string name="content_description_delete_download">Delete download</string>
+    <string name="content_description_share_download">Share download</string>
+    <string name="content_description_copy_to_clipboard">Copy to clipboard</string>
 </resources>

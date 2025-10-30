@@ -122,7 +122,7 @@ fun DownloadScreen(
                                 }
                             },
                             enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_download),
+                            contentDescription = stringResource(R.string.content_description_save_to_device),
                             imageVector = Icons.Filled.Save,
                         )
                         ActionIconButton(
@@ -132,7 +132,7 @@ fun DownloadScreen(
                                 }
                             },
                             enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_share),
+                            contentDescription = stringResource(R.string.content_description_share_download),
                             imageVector = Icons.Filled.Share,
                         )
                         ActionIconButton(
@@ -140,7 +140,7 @@ fun DownloadScreen(
                                 showConfirmDeleteDialog = true
                             },
                             enabled = true,
-                            contentDescription = stringResource(R.string.content_description_delete),
+                            contentDescription = stringResource(R.string.content_description_delete_download),
                             imageVector = Icons.Filled.Delete,
                         )
                     }
