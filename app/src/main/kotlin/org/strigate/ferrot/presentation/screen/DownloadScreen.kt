@@ -408,7 +408,6 @@ private fun MetaItem(
                 modifier = Modifier
                     .padding(dimens.zero)
                     .align(Alignment.CenterVertically),
-                iconSize = dimens.actionIconSize,
                 enabled = true,
                 imageVector = Icons.Filled.ContentCopy,
                 onClick = {
