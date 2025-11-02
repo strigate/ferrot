@@ -29,11 +29,11 @@ android {
     namespace = "org.strigate.ferrot"
     compileSdk = 36
     defaultConfig {
-        val version = "1.1.0"
+        val version = "1.1.1"
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 4
+        versionCode = 5
         versionName = buildVersionName(version, versionCode)
         stringField("VERSION_TAG", "v$version")
         applyFirebaseProperties()
