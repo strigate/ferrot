@@ -41,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,12 +82,31 @@ fun DownloadScreen(
 ) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showConfirmDeleteDialog by remember { mutableStateOf(false) }
+    val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
 
+    if (showConfirmDeleteDialog.value) {
+        ConfirmDialog(
+            onPositiveClick = {
+                viewModel.deleteDownload()
+                backDispatcher?.onBackPressed()
+                showConfirmDeleteDialog.value = false
+            },
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
+            title = stringResource(R.string.confirm_dialog_delete_download_title),
+            message = stringResource(R.string.confirm_dialog_delete_download_description),
+            positiveButtonText = stringResource(R.string.yes),
+            negativeButtonText = stringResource(R.string.no),
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -137,7 +155,7 @@ fun DownloadScreen(
                         )
                         ActionIconButton(
                             onClick = {
-                                showConfirmDeleteDialog = true
+                                showConfirmDeleteDialog.value = true
                             },
                             enabled = true,
                             contentDescription = stringResource(R.string.content_description_delete_download),
@@ -148,28 +166,10 @@ fun DownloadScreen(
             )
         },
         content = { contentPadding ->
-            if (showConfirmDeleteDialog && uiState is DownloadUiState.Data) {
-                ConfirmDialog(
-                    title = stringResource(R.string.confirm_dialog_delete_download_title),
-                    message = stringResource(R.string.confirm_dialog_delete_download_description),
-                    positiveButtonText = stringResource(R.string.yes),
-                    onPositiveClick = {
-                        showConfirmDeleteDialog = false
-                        viewModel.deleteDownload()
-                        backDispatcher?.onBackPressed()
-                    },
-                    negativeButtonText = stringResource(R.string.no),
-                    onNegativeClick = {
-                        showConfirmDeleteDialog = false
-                    },
-                    onDismissRequest = {
-                        showConfirmDeleteDialog = false
-                    },
-                )
-            }
             Surface(
                 modifier = modifier
-                    .padding(contentPadding),
+                    .padding(contentPadding)
+                    .fillMaxSize(),
             ) {
                 when (val state = uiState) {
                     is DownloadUiState.Loading -> LoadingState()
@@ -203,7 +203,7 @@ private fun DownloadContent(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimens.spacingMedium),
+                .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
             Text(
