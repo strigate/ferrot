@@ -15,21 +15,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import org.strigate.ferrot.presentation.theme.LocalDimens
 
 @Composable
 fun ActionIconButton(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit,
     imageVector: ImageVector,
     contentDescription: String,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 40.dp,
-    enabled: Boolean = true,
 ) {
+    val dimens = LocalDimens.current
     Box(
         modifier = modifier
-            .size(iconSize)
+            .size(dimens.actionIconSize)
             .clip(CircleShape)
             .clickable(
                 enabled = enabled,
@@ -37,7 +36,7 @@ fun ActionIconButton(
                 indication = LocalIndication.current,
                 onClick = onClick,
             )
-            .padding(8.dp),
+            .padding(dimens.spacingSmall),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

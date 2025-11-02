@@ -62,6 +62,8 @@ class DownloadWorker @AssistedInject constructor(
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
 
+    private var videoTitle: String? = null
+    private var lastForegroundProgress: Int = -1
     private val qualityProfile: QualityProfile = QualityProfile.MAX
 
     override suspend fun doWork(): Result {
@@ -69,18 +71,24 @@ class DownloadWorker @AssistedInject constructor(
         _downloadId = downloadId
 
         if (runAttemptCount > 20 || downloadId <= 0L) return Result.failure()
-        enableForeground(
-            notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
-        )
+
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
             ?: return handleDownloadFailedResult()
 
+        val notificationExtras = mapOf(
+            EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
+            EXTRA_DOWNLOAD_ID to download.id.toString(),
+        )
+        enableForeground(
+            notificationId = downloadId,
+            notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
+            indeterminate = true,
+            contentText = download.url,
+            extras = notificationExtras,
+        )
+
         var wasDownloadDeleted = false
         return coroutineScope mainScope@{
-            val notificationExtras = mapOf(
-                EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
-                EXTRA_DOWNLOAD_ID to download.id.toString(),
-            )
             try {
                 val canStart = when (download.status) {
                     DownloadStatus.QUEUED,
@@ -110,6 +118,13 @@ class DownloadWorker @AssistedInject constructor(
                     youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
                 }
 
+                videoTitle = videoInfo.title?.takeIf { it.isNotBlank() } ?: download.url
+                updateForeground(
+                    notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
+                    indeterminate = true,
+                    contentText = videoTitle,
+                    extras = notificationExtras,
+                )
                 withContext(Dispatchers.IO) {
                     val thumbnailFilePath = youtubeDlAndroidUseCase.downloadThumbnailUseCase(
                         url = download.url,
@@ -196,6 +211,70 @@ class DownloadWorker @AssistedInject constructor(
                                     etaSeconds = downloadTick.etaSeconds,
                                     bytesDownloaded = downloadTick.bytesDownloaded,
                                 )
+
+                                val percentInt = downloadTick.percent.toInt().coerceIn(0, 100)
+                                if (lastForegroundProgress == -1 && percentInt > 0) {
+                                    val eta = downloadTick.etaSeconds
+                                        ?.takeIf { it > 0 }
+                                        ?.let { total ->
+                                            val minutes = total / 60
+                                            val seconds = total % 60
+                                            buildString {
+                                                if (minutes > 0) append("${minutes}m")
+                                                append("${seconds}s")
+                                            }
+                                        } ?: ""
+
+                                    val parts = mutableListOf<String>()
+                                    parts += "$percentInt%"
+                                    if (eta.isNotEmpty()) {
+                                        parts += eta
+                                    }
+                                    parts += (videoTitle ?: download.url)
+                                    val contentLine = parts.joinToString(" - ")
+
+                                    updateForeground(
+                                        notificationText = appContext.getString(
+                                            R.string.worker_notification_text_download_in_progress,
+                                        ),
+                                        progress = percentInt,
+                                        indeterminate = false,
+                                        contentText = contentLine,
+                                        extras = notificationExtras,
+                                    )
+                                    lastForegroundProgress = percentInt
+                                } else if (percentInt != lastForegroundProgress) {
+                                    lastForegroundProgress = percentInt
+
+                                    val eta = downloadTick.etaSeconds
+                                        ?.takeIf { it > 0 }
+                                        ?.let { total ->
+                                            val minutes = total / 60
+                                            val seconds = total % 60
+                                            buildString {
+                                                if (minutes > 0) append("${minutes}m")
+                                                append("${seconds}s")
+                                            }
+                                        } ?: ""
+
+                                    val parts = mutableListOf<String>()
+                                    parts += "$percentInt%"
+                                    if (eta.isNotEmpty()) {
+                                        parts += eta
+                                    }
+                                    parts += (videoTitle ?: download.url)
+                                    val contentLine = parts.joinToString(" - ")
+
+                                    updateForeground(
+                                        notificationText = appContext.getString(
+                                            R.string.worker_notification_text_download_in_progress,
+                                        ),
+                                        progress = percentInt,
+                                        indeterminate = false,
+                                        contentText = contentLine,
+                                        extras = notificationExtras,
+                                    )
+                                }
                             }
                         }
                     } finally {
@@ -211,7 +290,6 @@ class DownloadWorker @AssistedInject constructor(
                 if (!outputFile.exists() || outputFile.length() <= 0L) {
                     return@mainScope handleDownloadFailedResult()
                 }
-
                 withContext(Dispatchers.IO) {
                     val bytesDownloaded = directoryBytesSum(uidDir)
                     downloadProgressUseCase.updateDownloadProgressUseCase(
@@ -219,6 +297,19 @@ class DownloadWorker @AssistedInject constructor(
                         progressPercent = 100f,
                         bytesDownloaded = bytesDownloaded,
                         etaSeconds = null,
+                    )
+                }
+                run {
+                    val parts = mutableListOf<String>()
+                    parts += "100%"
+                    parts += (videoTitle ?: download.url)
+                    val finalLine = parts.joinToString(" - ")
+                    updateForeground(
+                        notificationText = appContext.getString(R.string.download_complete),
+                        progress = 100,
+                        indeterminate = false,
+                        contentText = finalLine,
+                        extras = notificationExtras,
                     )
                 }
 
@@ -234,7 +325,7 @@ class DownloadWorker @AssistedInject constructor(
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_COMPLETED)
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
-                val contentText = videoInfo.title?.takeIf { it.isNotBlank() } ?: download.url
+                val contentText = videoTitle ?: download.url
 
                 Log.d(LOG_TAG, downloadComplete)
                 appContext.toast("$downloadComplete: $contentText", true)

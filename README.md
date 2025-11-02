@@ -5,8 +5,7 @@ Ferrot is a clean and minimal video downloader for Android.
 When viewing a video or post in your browser or another app, tap **Share** and choose **Ferrot**. Ferrot will download the media straight to your device.
 
 ## Installation
-Download the latest APK from the  
-[**Latest Release**](https://github.com/strigate/ferrot/releases/latest/download/ferrot-release.apk).
+Download the latest APK from the [**Latest Release**](https://github.com/strigate/ferrot/releases/latest/download/ferrot-release.apk).
 
 Previous versions available on the [Releases page](https://github.com/strigate/ferrot/releases).
 

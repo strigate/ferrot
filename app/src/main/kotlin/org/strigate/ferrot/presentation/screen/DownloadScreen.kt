@@ -41,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +54,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -72,6 +70,7 @@ import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
 import java.io.File
 
@@ -83,12 +82,31 @@ fun DownloadScreen(
 ) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showConfirmDeleteDialog by remember { mutableStateOf(false) }
+    val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
 
+    if (showConfirmDeleteDialog.value) {
+        ConfirmDialog(
+            onPositiveClick = {
+                viewModel.deleteDownload()
+                backDispatcher?.onBackPressed()
+                showConfirmDeleteDialog.value = false
+            },
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
+            title = stringResource(R.string.confirm_dialog_delete_download_title),
+            message = stringResource(R.string.confirm_dialog_delete_download_description),
+            positiveButtonText = stringResource(R.string.yes),
+            negativeButtonText = stringResource(R.string.no),
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -122,7 +140,7 @@ fun DownloadScreen(
                                 }
                             },
                             enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_download),
+                            contentDescription = stringResource(R.string.content_description_save_to_device),
                             imageVector = Icons.Filled.Save,
                         )
                         ActionIconButton(
@@ -132,15 +150,15 @@ fun DownloadScreen(
                                 }
                             },
                             enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_share),
+                            contentDescription = stringResource(R.string.content_description_share_download),
                             imageVector = Icons.Filled.Share,
                         )
                         ActionIconButton(
                             onClick = {
-                                showConfirmDeleteDialog = true
+                                showConfirmDeleteDialog.value = true
                             },
                             enabled = true,
-                            contentDescription = stringResource(R.string.content_description_delete),
+                            contentDescription = stringResource(R.string.content_description_delete_download),
                             imageVector = Icons.Filled.Delete,
                         )
                     }
@@ -148,28 +166,10 @@ fun DownloadScreen(
             )
         },
         content = { contentPadding ->
-            if (showConfirmDeleteDialog && uiState is DownloadUiState.Data) {
-                ConfirmDialog(
-                    title = stringResource(R.string.confirm_dialog_delete_download_title),
-                    message = stringResource(R.string.confirm_dialog_delete_download_description),
-                    positiveButtonText = stringResource(R.string.yes),
-                    onPositiveClick = {
-                        showConfirmDeleteDialog = false
-                        viewModel.deleteDownload()
-                        backDispatcher?.onBackPressed()
-                    },
-                    negativeButtonText = stringResource(R.string.no),
-                    onNegativeClick = {
-                        showConfirmDeleteDialog = false
-                    },
-                    onDismissRequest = {
-                        showConfirmDeleteDialog = false
-                    },
-                )
-            }
             Surface(
                 modifier = modifier
-                    .padding(contentPadding),
+                    .padding(contentPadding)
+                    .fillMaxSize(),
             ) {
                 when (val state = uiState) {
                     is DownloadUiState.Loading -> LoadingState()
@@ -197,12 +197,13 @@ private fun DownloadContent(
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
 ) {
+    val dimens = LocalDimens.current
     with(data) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
             Text(
@@ -211,7 +212,7 @@ private fun DownloadContent(
                 maxLines = 2,
                 text = title,
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             DownloadProgressSection(
                 status = status,
                 progressFraction = progressFraction,
@@ -219,7 +220,7 @@ private fun DownloadContent(
                 bytesDownloaded = bytesDownloaded,
                 forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingMedium))
             ThumbnailCard(
                 thumbnailFilePath = thumbnailFilePath,
                 showPlay = status == DownloadStatusUiData.COMPLETED && !filePath.isNullOrBlank(),
@@ -227,9 +228,9 @@ private fun DownloadContent(
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingMedium))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Column {
                 MetaItem(
                     label = stringResource(R.string.download_url),
@@ -256,6 +257,7 @@ private fun ThumbnailCard(
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
 ) {
+    val dimens = LocalDimens.current
     val thumbnailFile = thumbnailFilePath
         ?.let { File(it) }
         ?.takeIf { it.exists() && it.length() > 0 }
@@ -271,9 +273,9 @@ private fun ThumbnailCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(240.dp),
+            .height(dimens.thumbnailHeight),
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = 1.dp,
+        tonalElevation = dimens.tonalElevationLow,
     ) {
         val modifier = Modifier.fillMaxSize()
         val clickableModifier = if (onClick != null) {
@@ -314,7 +316,7 @@ private fun ThumbnailCard(
                     ) {
                         Icon(
                             modifier = Modifier
-                                .size(48.dp),
+                                .size(dimens.overlayIconSize),
                             imageVector = Icons.Filled.Image,
                             contentDescription = thumbnailContentDescription,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -336,7 +338,7 @@ private fun ThumbnailCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(56.dp)
+                        .size(dimens.overlayButtonSize)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.35f)),
                     contentAlignment = Alignment.Center,
@@ -360,6 +362,7 @@ private fun MetaItem(
     isCopyable: Boolean = false,
     isUrl: Boolean = false,
 ) {
+    val dimens = LocalDimens.current
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     Row(
@@ -370,15 +373,15 @@ private fun MetaItem(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 4.dp),
+                .padding(end = dimens.spacingXSmall),
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
             Text(
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelLarge,
                 text = label,
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
             if (isUrl) {
                 Text(
                     modifier = Modifier.clickable(
@@ -398,14 +401,13 @@ private fun MetaItem(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
         }
         if (isCopyable) {
             ActionIconButton(
                 modifier = Modifier
-                    .padding(0.dp)
+                    .padding(dimens.zero)
                     .align(Alignment.CenterVertically),
-                iconSize = 38.dp,
                 enabled = true,
                 imageVector = Icons.Filled.ContentCopy,
                 onClick = {
