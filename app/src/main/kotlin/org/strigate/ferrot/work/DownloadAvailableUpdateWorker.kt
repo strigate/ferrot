@@ -3,6 +3,7 @@ package org.strigate.ferrot.work
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -34,6 +35,7 @@ import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -73,7 +75,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
             val savedTag = savedAvailableUpdate?.tag
             if (savedTag != null && isNewerVersion(savedTag, latestTag)) {
-                Log.d(LOG_TAG, "Saved update (${savedTag}) is newer than latest ($latestTag)")
+                Log.d(LOG_TAG, "Saved update ($savedTag) is newer than latest ($latestTag)")
                 return Result.success()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
@@ -144,7 +146,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                     if (!validateSha256(partFile, expectedDigest)) {
                         partFile.delete()
                         clearAvailableUpdate()
-                        return Result.failure()
+                        return Result.retry()
                     }
                 }
                 if (apkFile.exists()) apkFile.delete()
@@ -152,24 +154,23 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                     Log.w(LOG_TAG, "Failed to rename part file to final output")
                     partFile.delete()
                     clearAvailableUpdate()
-                    return Result.failure()
+                    return Result.retry()
                 }
 
                 Log.d(LOG_TAG, "Update downloaded successfully: ${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
                 notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                 Result.success()
-
             } catch (throwable: Throwable) {
                 Log.wtf(LOG_TAG, "Download failed", throwable)
                 partFile.delete()
                 clearAvailableUpdate()
-                Result.failure()
+                Result.retry()
             }
         } catch (throwable: Throwable) {
             Log.wtf(LOG_TAG, "Update check failed", throwable)
             clearAvailableUpdate()
-            Result.failure()
+            Result.retry()
         }
     }
 
@@ -189,36 +190,68 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
 
     private suspend fun fetchLatestRelease(): JSONObject = withContext(Dispatchers.IO) {
         val url = URL(appContext.getString(R.string.github_latest_release))
-        val httpURLConnection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/vnd.github+json")
-            setRequestProperty("User-Agent", "${Constants.NAME}/${BuildConfig.VERSION_TAG}")
-            connectTimeout = 15000
-            readTimeout = 30000
-        }
-        httpURLConnection.inputStream.bufferedReader().use { bufferedReader ->
-            JSONObject(bufferedReader.readText())
+        var httpUrlConnection: HttpURLConnection? = null
+        try {
+            httpUrlConnection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("User-Agent", "${Constants.NAME}/${BuildConfig.VERSION_TAG}")
+                connectTimeout = 15000
+                readTimeout = 30000
+                instanceFollowRedirects = true
+            }
+            val responseCode = httpUrlConnection.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                val errorMessage = runCatching {
+                    httpUrlConnection.errorStream?.readBytes()?.decodeToString()?.take(300)
+                }.getOrNull()
+
+                val message = "Fetch latest failed with response code"
+                Log.w(LOG_TAG, "$message: $responseCode: $errorMessage")
+                throw IOException("$message: $responseCode")
+            }
+            httpUrlConnection.inputStream.bufferedReader().use { bufferedReader ->
+                JSONObject(bufferedReader.readText())
+            }
+        } finally {
+            httpUrlConnection?.disconnect()
         }
     }
 
     private suspend fun downloadFile(url: String, outFile: File) = withContext(Dispatchers.IO) {
-        val httpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            setRequestProperty("Accept", "*/*")
-            setRequestProperty("User-Agent", "${Constants.NAME}/${BuildConfig.VERSION_TAG}")
-            connectTimeout = 20000
-            readTimeout = 60000
-        }
-        httpURLConnection.inputStream.use { inputStream ->
-            FileOutputStream(outFile).use { fileOutputStream ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val read = inputStream.read(buffer)
-                    if (read == -1) break
-                    fileOutputStream.write(buffer, 0, read)
-                }
-                fileOutputStream.flush()
+        var httpUrlConnection: HttpURLConnection? = null
+        try {
+            httpUrlConnection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Accept", "*/*")
+                setRequestProperty("User-Agent", "${Constants.NAME}/${BuildConfig.VERSION_TAG}")
+                connectTimeout = 20000
+                readTimeout = 60000
+                instanceFollowRedirects = true
             }
+            val responseCode = httpUrlConnection.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                val errorMessage = runCatching {
+                    httpUrlConnection.errorStream?.readBytes()?.decodeToString()?.take(300)
+                }.getOrNull()
+
+                val message = "Download failed with response code"
+                Log.w(LOG_TAG, "$message: $responseCode: $errorMessage")
+                throw IOException("$message: $responseCode")
+            }
+            httpUrlConnection.inputStream.use { inputStream ->
+                FileOutputStream(outFile).use { fileOutputStream ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = inputStream.read(buffer)
+                        if (read == -1) break
+                        fileOutputStream.write(buffer, 0, read)
+                    }
+                    fileOutputStream.flush()
+                }
+            }
+        } finally {
+            httpUrlConnection?.disconnect()
         }
     }
 
@@ -313,7 +346,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
         fun enqueuePeriodicKeep(
             context: Context,
             targetHour: Int = 3,
-            flexHours: Long = 3,
+            flexHours: Long = 1,
         ) {
             val defaultZoneId = ZoneId.systemDefault()
             val now = ZonedDateTime.now(defaultZoneId)
@@ -330,9 +363,10 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
             }
             val initialDelayMillis = between(now, firstRun).toMillis()
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED)
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresCharging(false)
                 .setRequiresBatteryNotLow(false)
+                .setRequiresStorageNotLow(true)
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<DownloadAvailableUpdateWorker>(
@@ -344,6 +378,7 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                 .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
                 .setConstraints(constraints)
                 .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -360,11 +395,13 @@ class DownloadAvailableUpdateWorker @AssistedInject constructor(
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresCharging(false)
                 .setRequiresBatteryNotLow(false)
+                .setRequiresStorageNotLow(true)
                 .build()
 
             val oneTimeWorkRequest = OneTimeWorkRequestBuilder<DownloadAvailableUpdateWorker>()
                 .setConstraints(constraints)
                 .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
