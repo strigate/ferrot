@@ -33,6 +33,7 @@ import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -49,12 +50,16 @@ import java.util.concurrent.TimeUnit
 class DownloadAvailableUpdateWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted workerParameters: WorkerParameters,
+    private val stateUseCase: StateUseCase,
     private val updatePathProvider: UpdatePathProvider,
     private val notificationService: NotificationService,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
         return try {
+            runCatching {
+                stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
+            }
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
             }.getOrNull()

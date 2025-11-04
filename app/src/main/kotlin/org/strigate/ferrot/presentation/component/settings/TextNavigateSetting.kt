@@ -72,8 +72,8 @@ fun TextNavigateSetting(
                 }
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    contentDescription = null,
                 )
             }
         }

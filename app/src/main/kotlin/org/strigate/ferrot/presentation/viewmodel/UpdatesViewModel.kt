@@ -15,6 +15,7 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
@@ -27,6 +28,7 @@ class UpdatesViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
+    private val stateUseCase: StateUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<UpdatesUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -38,11 +40,15 @@ class UpdatesViewModel @Inject constructor(
         return combine(
             settingsUseCase.getAutomaticUpdatesSettingAsFlowUseCase(),
             settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase(),
-        ) { automaticUpdates, automaticDependencyUpdates ->
+            stateUseCase.getLastAvailableUpdateCheckMillisUseCase(),
+            stateUseCase.getLastDependencyUpdateCheckMillisUseCase(),
+        ) { automaticUpdates, automaticDependencyUpdates, lastAppCheckMillis, lastDepsCheckMillis ->
             UpdatesUiState.Data(
                 UpdatesUiData(
                     automaticUpdates = automaticUpdates,
                     automaticDependencyUpdates = automaticDependencyUpdates,
+                    lastAvailableUpdateCheckMillis = lastAppCheckMillis,
+                    lastDependencyUpdateCheckMillis = lastDepsCheckMillis,
                 ),
             )
         }
@@ -61,9 +67,9 @@ class UpdatesViewModel @Inject constructor(
         }
     }
 
-    fun checkNow() {
+    fun checkForAvailableUpdate() {
         viewModelScope.launch {
-            appContext.toast(appContext.getString(R.string.toast_checking_for_updates))
+            appContext.toast(appContext.getString(R.string.toast_checking_for_available_update))
             DownloadAvailableUpdateWorker.enqueueOneTimeReplace(appContext)
         }
     }

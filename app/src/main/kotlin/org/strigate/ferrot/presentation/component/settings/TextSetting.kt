@@ -27,10 +27,10 @@ fun TextSetting(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 12.dp)
             .clickable(
-                indication = null,
                 interactionSource = remember { MutableInteractionSource() },
+                indication = null,
             ) {
                 onClick?.invoke()
             },
@@ -60,8 +60,6 @@ fun TextSetting(
                     )
                 } else {
                     Text(
-                        modifier = Modifier
-                            .padding(vertical = 2.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         text = text,
