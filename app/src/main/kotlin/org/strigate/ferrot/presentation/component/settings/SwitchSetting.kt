@@ -30,14 +30,14 @@ fun SwitchSetting(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
-                    indication = null,
                     interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
                 ) {
                     onCheckedChange(!checked)
                 },
@@ -64,12 +64,14 @@ fun SwitchSetting(
                 }
             }
             Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
+                modifier = Modifier
+                    .height(24.dp),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 ),
+                onCheckedChange = onCheckedChange,
+                checked = checked,
             )
         }
     }

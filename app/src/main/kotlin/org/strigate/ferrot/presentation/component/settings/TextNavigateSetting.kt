@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -38,8 +39,8 @@ fun TextNavigateSetting(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
                 ) {
                     onClick()
                 }
@@ -71,6 +72,8 @@ fun TextNavigateSetting(
                     }
                 }
                 Icon(
+                    modifier = Modifier
+                        .size(20.dp),
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     contentDescription = null,

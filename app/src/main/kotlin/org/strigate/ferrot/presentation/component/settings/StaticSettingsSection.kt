@@ -39,7 +39,7 @@ fun StaticSettingsSection(
                     color = MaterialTheme.colorScheme.onSurface,
                     text = it,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
