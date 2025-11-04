@@ -16,18 +16,23 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class UpdateDependenciesWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted workerParameters: WorkerParameters,
+    private val stateUseCase: StateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        enableForeground(
-            notificationText = appContext.getString(R.string.worker_notification_text_updating_dependencies),
-        )
         return try {
+            enableForeground(
+                notificationText = appContext.getString(R.string.worker_notification_text_updating_dependencies),
+            )
+            runCatching {
+                stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
+            }
             Log.d(LOG_TAG, "Updating YoutubeDL")
             val status = YoutubeDL.getInstance().updateYoutubeDL(
                 updateChannel = YoutubeDL.UpdateChannel.STABLE,
@@ -45,7 +50,7 @@ class UpdateDependenciesWorker @AssistedInject constructor(
         fun enqueuePeriodicKeep(
             context: Context,
             repeatIntervalDays: Long = 7,
-            flexHours: Long = 12,
+            flexHours: Long = 3,
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

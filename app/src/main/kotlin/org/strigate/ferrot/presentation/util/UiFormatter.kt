@@ -1,5 +1,10 @@
 package org.strigate.ferrot.presentation.util
 
+import android.content.Context
+import android.text.format.DateFormat
+import android.text.format.DateUtils
+import org.strigate.ferrot.R
+import java.util.Date
 import java.util.Locale
 
 object UiFormatter {
@@ -29,5 +34,22 @@ object UiFormatter {
             minutes > 0 -> String.format(Locale.getDefault(), "%dm %ds", minutes, seconds)
             else -> String.format(Locale.getDefault(), "%ds", seconds)
         }
+    }
+
+    fun formatLastCheckedTime(context: Context, millis: Long): String {
+        if (millis <= 0L) {
+            return context.getString(R.string.never)
+        }
+        val relativeTime = DateUtils.getRelativeTimeSpanString(
+            millis,
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE,
+        ).toString()
+
+        val dateFormat = DateFormat.getMediumDateFormat(context)
+        val timeFormat = DateFormat.getTimeFormat(context)
+        val exact = "${dateFormat.format(Date(millis))}, ${timeFormat.format(Date(millis))}"
+        return "$relativeTime ($exact)"
     }
 }
