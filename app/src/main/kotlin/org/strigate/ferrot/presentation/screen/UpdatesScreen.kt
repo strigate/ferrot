@@ -92,7 +92,7 @@ fun UpdatesScreen(
                                     SwitchSetting(
                                         text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
-                                        checked = automaticUpdates,
+                                        checked = settings.automaticUpdates,
                                         onCheckedChange = { checked ->
                                             viewModel.setAutomaticUpdates(checked)
                                         },
@@ -107,7 +107,7 @@ fun UpdatesScreen(
                                         text = stringResource(R.string.settings_title_last_checked_for_updates),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
-                                            lastAvailableUpdateCheckMillis,
+                                            info.lastAvailableUpdateCheckMillis,
                                         ),
                                     )
                                 }
@@ -118,7 +118,7 @@ fun UpdatesScreen(
                                     SwitchSetting(
                                         text = stringResource(R.string.settings_title_automatic_dependency_updates),
                                         description = stringResource(R.string.settings_description_automatic_dependency_updates),
-                                        checked = automaticDependencyUpdates,
+                                        checked = settings.automaticDependencyUpdates,
                                         onCheckedChange = { checked ->
                                             viewModel.setAutomaticDependencyUpdates(checked)
                                         },
@@ -127,7 +127,7 @@ fun UpdatesScreen(
                                         text = stringResource(R.string.settings_title_last_checked_for_dependency_updates),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
-                                            lastDependencyUpdateCheckMillis,
+                                            info.lastDependencyUpdateCheckMillis,
                                         ),
                                     )
                                 }

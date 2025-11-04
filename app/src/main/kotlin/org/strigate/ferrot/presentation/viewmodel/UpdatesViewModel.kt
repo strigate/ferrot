@@ -17,6 +17,8 @@ import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.presentation.model.UpdatesInfo
+import org.strigate.ferrot.presentation.model.UpdatesSettings
 import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
@@ -42,13 +44,17 @@ class UpdatesViewModel @Inject constructor(
             settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase(),
             stateUseCase.getLastAvailableUpdateCheckMillisUseCase(),
             stateUseCase.getLastDependencyUpdateCheckMillisUseCase(),
-        ) { automaticUpdates, automaticDependencyUpdates, lastAppCheckMillis, lastDepsCheckMillis ->
+        ) { automaticUpdates, automaticDependencyUpdates, lastAvailableUpdateCheckMillis, lastDependencyUpdateCheckMillis ->
             UpdatesUiState.Data(
                 UpdatesUiData(
-                    automaticUpdates = automaticUpdates,
-                    automaticDependencyUpdates = automaticDependencyUpdates,
-                    lastAvailableUpdateCheckMillis = lastAppCheckMillis,
-                    lastDependencyUpdateCheckMillis = lastDepsCheckMillis,
+                    settings = UpdatesSettings(
+                        automaticUpdates = automaticUpdates,
+                        automaticDependencyUpdates = automaticDependencyUpdates,
+                    ),
+                    info = UpdatesInfo(
+                        lastAvailableUpdateCheckMillis = lastAvailableUpdateCheckMillis,
+                        lastDependencyUpdateCheckMillis = lastDependencyUpdateCheckMillis,
+                    ),
                 ),
             )
         }
