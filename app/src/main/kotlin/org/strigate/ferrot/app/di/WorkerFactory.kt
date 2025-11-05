@@ -13,6 +13,7 @@ import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
@@ -28,6 +29,7 @@ import javax.inject.Singleton
 class WorkerFactory @Inject constructor(
     private val hiltWorkerFactory: HiltWorkerFactory,
     private val analyticsLogger: AnalyticsLogger,
+    private val stateUseCase: StateUseCase,
     private val notificationService: NotificationService,
     private val updatePathProvider: UpdatePathProvider,
     private val downloadPathProvider: DownloadPathProvider,
@@ -50,6 +52,7 @@ class WorkerFactory @Inject constructor(
                 DownloadAvailableUpdateWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    stateUseCase = stateUseCase,
                     updatePathProvider = updatePathProvider,
                     notificationService = notificationService,
                     availableUpdateUseCase = availableUpdateUseCase,
@@ -60,6 +63,7 @@ class WorkerFactory @Inject constructor(
                 UpdateDependenciesWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    stateUseCase = stateUseCase,
                 )
             }
 

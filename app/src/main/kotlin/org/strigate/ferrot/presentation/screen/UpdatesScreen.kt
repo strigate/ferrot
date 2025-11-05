@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import org.strigate.ferrot.R
@@ -32,6 +33,7 @@ import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.state.UpdatesUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.UpdatesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +45,7 @@ fun UpdatesScreen(
     val dimens = LocalDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -89,7 +92,7 @@ fun UpdatesScreen(
                                     SwitchSetting(
                                         text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
-                                        checked = automaticUpdates,
+                                        checked = settings.automaticUpdates,
                                         onCheckedChange = { checked ->
                                             viewModel.setAutomaticUpdates(checked)
                                         },
@@ -98,8 +101,15 @@ fun UpdatesScreen(
                                         text = stringResource(R.string.settings_title_check_now),
                                         description = stringResource(R.string.settings_description_check_now),
                                     ) {
-                                        viewModel.checkNow()
+                                        viewModel.checkForAvailableUpdate()
                                     }
+                                    TextSetting(
+                                        text = stringResource(R.string.settings_title_last_checked_for_updates),
+                                        description = UiFormatter.formatLastCheckedTime(
+                                            context,
+                                            info.lastAvailableUpdateCheckMillis,
+                                        ),
+                                    )
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 StaticSettingsSection(
@@ -108,10 +118,17 @@ fun UpdatesScreen(
                                     SwitchSetting(
                                         text = stringResource(R.string.settings_title_automatic_dependency_updates),
                                         description = stringResource(R.string.settings_description_automatic_dependency_updates),
-                                        checked = automaticDependencyUpdates,
+                                        checked = settings.automaticDependencyUpdates,
                                         onCheckedChange = { checked ->
                                             viewModel.setAutomaticDependencyUpdates(checked)
                                         },
+                                    )
+                                    TextSetting(
+                                        text = stringResource(R.string.settings_title_last_checked_for_dependency_updates),
+                                        description = UiFormatter.formatLastCheckedTime(
+                                            context,
+                                            info.lastDependencyUpdateCheckMillis,
+                                        ),
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
