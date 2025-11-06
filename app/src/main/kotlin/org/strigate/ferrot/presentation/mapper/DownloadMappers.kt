@@ -13,11 +13,9 @@ fun Download.toUiData(
     val title = metadata?.title ?: filePathNonNull
         .substringBeforeLast('.', missingDelimiterValue = filePathNonNull)
         .ifBlank { url }
-
     val fileName = filePathNonNull
         .substringAfterLast("/", missingDelimiterValue = "")
         .takeIf { it.isNotBlank() }
-
     val fraction = progress?.progressPercent
         ?.let { it.coerceIn(0f, 100f) / 100f }
         ?.takeIf { it.isFinite() }
