@@ -32,6 +32,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.DownloadPathProvider
+import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.QualityProfile
@@ -113,6 +114,10 @@ class DownloadWorker @AssistedInject constructor(
                 )
 
                 val uidDir = downloadPathProvider.uidDir(download.uid)
+                if (!uidDir.exists() && !uidDir.mkdirs()) {
+                    return@mainScope Result.failure()
+                }
+
                 downloadUseCase.updateDownloadStatusByIdUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
@@ -155,21 +160,10 @@ class DownloadWorker @AssistedInject constructor(
                         id = downloadId,
                     )
                 }
-
-                val template = "${uidDir.absolutePath}/%(id)s.%(ext)s"
-                val outputPath = withContext(Dispatchers.IO) {
-                    youtubeDlAndroidUseCase.resolveOutputPathUseCase(
-                        url = download.url,
-                        template = template,
-                        qualityProfile = qualityProfile,
-                    )
-                }
-
                 if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
                     wasDownloadDeleted = true
                     throw CancellationException()
                 }
-                downloadUseCase.updateDownloadFilePathUseCase(downloadId, outputPath)
                 downloadUseCase.updateDownloadStatusByIdUseCase(
                     status = DownloadStatus.DOWNLOADING,
                     id = downloadId,
@@ -182,15 +176,17 @@ class DownloadWorker @AssistedInject constructor(
                     maxBytes
                 }
                 withContext(Dispatchers.IO) {
-                    val flow = youtubeDlAndroidUseCase.downloadWithProgressUseCase(
+                    val template = "${uidDir.absolutePath}/%(id)s.%(ext)s"
+                    val downloadTickFlow = youtubeDlAndroidUseCase.downloadWithProgressUseCase(
                         url = download.url,
                         template = template,
                         profile = qualityProfile,
                         processId = processId,
                         bytesProvider = bytesProvider,
+                        downloadMediaType = DownloadMediaType.VIDEO,
                     )
                     try {
-                        flow.collect { downloadTick ->
+                        downloadTickFlow.collect { downloadTick ->
                             if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
                                 wasDownloadDeleted = true
                                 destroyYoutubeDlProcess(processId)
@@ -286,10 +282,17 @@ class DownloadWorker @AssistedInject constructor(
                     wasDownloadDeleted = true
                     throw CancellationException()
                 }
-                val outputFile = File(outputPath)
-                if (!outputFile.exists() || outputFile.length() <= 0L) {
+
+                val outputFile = locateOutputFileByInfoId(uidDir, videoInfo.id)
+                if (outputFile == null) {
+                    Log.d(LOG_TAG, "Output file could not be located after download")
                     return@mainScope handleDownloadFailedResult()
                 }
+                downloadUseCase.updateDownloadFilePathUseCase(
+                    id = downloadId,
+                    fileName = outputFile.absolutePath,
+                )
+
                 withContext(Dispatchers.IO) {
                     val bytesDownloaded = directoryBytesSum(uidDir)
                     downloadProgressUseCase.updateDownloadProgressUseCase(
@@ -480,6 +483,20 @@ class DownloadWorker @AssistedInject constructor(
         runCatching {
             YoutubeDL.getInstance().destroyProcessById(processId)
         }
+    }
+
+    private fun locateOutputFileByInfoId(dir: File, infoId: String?): File? {
+        if (infoId.isNullOrBlank() || !dir.exists()) {
+            return null
+        }
+        val preferredExtensions = listOf("mp4", "mkv", "webm", "mp3", "m4a", "opus")
+        preferredExtensions.map { File(dir, "$infoId.$it") }
+            .firstOrNull { it.exists() && it.length() > 0L }
+            ?.let { return it }
+        val file = dir.listFiles()
+            ?.filter { it.isFile && it.name.startsWith("$infoId.") && it.length() > 0L }
+            ?.maxByOrNull { it.lastModified() }
+        return file
     }
 
     companion object {

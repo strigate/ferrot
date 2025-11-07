@@ -2,16 +2,19 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDL
+import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
 
 class DownloadWithProgressUseCase @Inject constructor(
-    private val buildDownloadRequestUseCase: BuildDownloadRequestUseCase,
+    private val buildVideoDownloadRequestUseCase: BuildVideoDownloadRequestUseCase,
+    private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
 ) {
     operator fun invoke(
         url: String,
@@ -19,17 +22,31 @@ class DownloadWithProgressUseCase @Inject constructor(
         profile: QualityProfile,
         processId: String,
         bytesProvider: () -> Long,
+        downloadMediaType: DownloadMediaType = DownloadMediaType.VIDEO,
     ) = callbackFlow {
         val progressMappingPolicy = ProgressMappingPolicy()
         val job = launch {
-            val youtubeDLRequest = buildDownloadRequestUseCase(
-                url = url,
-                template = template,
-                qualityProfile = profile,
-                noProgress = false,
-            )
-            val youtubeDLResponse = YoutubeDL.getInstance().execute(
-                request = youtubeDLRequest,
+            val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
+                DownloadMediaType.VIDEO -> {
+                    buildVideoDownloadRequestUseCase(
+                        url = url,
+                        template = template,
+                        qualityProfile = profile,
+                        noProgress = false,
+                    )
+                }
+
+                DownloadMediaType.AUDIO -> {
+                    buildAudioDownloadRequestUseCase(
+                        url = url,
+                        template = template,
+                        noProgress = false,
+                    )
+                }
+            }
+
+            val youtubeDlResponse = YoutubeDL.getInstance().execute(
+                request = youtubeDlRequest,
                 processId = processId,
                 redirectErrorStream = false,
             ) { rawPercent, rawEta, _ ->
@@ -42,8 +59,8 @@ class DownloadWithProgressUseCase @Inject constructor(
                     ),
                 )
             }
-            if (youtubeDLResponse.exitCode != 0) {
-                throw IllegalStateException("Exit code ${youtubeDLResponse.exitCode}")
+            if (youtubeDlResponse.exitCode != 0) {
+                throw IllegalStateException("Exit code ${youtubeDlResponse.exitCode}")
             }
             close()
         }
