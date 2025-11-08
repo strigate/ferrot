@@ -86,21 +86,21 @@ class DownloadViewModel @Inject constructor(
     fun shareDownload() {
         viewModelScope.launch {
             val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-            ShareHelper.shareFileIfExists(appContext, download.filePath)
+            ShareHelper.shareFileIfExists(appContext, download.videoFilePath)
         }
     }
 
     fun saveDownload() {
         viewModelScope.launch {
             val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-            SaveHelper.saveToDownloads(appContext, download.filePath)
+            SaveHelper.saveToDownloads(appContext, download.videoFilePath)
         }
     }
 
     fun playDownload() {
         viewModelScope.launch {
             val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-            PlayHelper.playFileIfExists(appContext, download.filePath)
+            PlayHelper.playFileIfExists(appContext, download.videoFilePath)
         }
     }
 

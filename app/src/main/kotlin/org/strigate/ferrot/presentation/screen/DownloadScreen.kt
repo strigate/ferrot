@@ -223,7 +223,7 @@ private fun DownloadContent(
             Spacer(modifier = Modifier.height(dimens.spacingMedium))
             ThumbnailCard(
                 thumbnailFilePath = thumbnailFilePath,
-                showPlay = status == DownloadStatusUiData.COMPLETED && !filePath.isNullOrBlank(),
+                showPlay = status == DownloadStatusUiData.COMPLETED && !videoFilePath.isNullOrBlank(),
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
@@ -238,7 +238,7 @@ private fun DownloadContent(
                     isUrl = true,
                     value = url,
                 )
-                fileName?.let {
+                videoFileName?.let {
                     MetaItem(stringResource(R.string.download_filename), it)
                 }
                 errorMessage?.let {

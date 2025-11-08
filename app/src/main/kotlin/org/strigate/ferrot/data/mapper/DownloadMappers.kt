@@ -8,7 +8,7 @@ internal fun DownloadEntity.toDomain() = Download(
     uid = uid,
     url = url,
     status = status.toDomain(),
-    filePath = filePath,
+    videoFilePath = videoFilePath,
     errorMessage = errorMessage,
 )
 
@@ -17,6 +17,6 @@ internal fun Download.toEntity() = DownloadEntity(
     uid = uid,
     url = url,
     status = status.toEntity(),
-    filePath = filePath,
+    videoFilePath = videoFilePath,
     errorMessage = errorMessage,
 )

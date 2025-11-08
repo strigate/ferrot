@@ -23,7 +23,7 @@ class DeleteDownloadFilesUseCase @Inject constructor(
         }.getOrDefault(false)
 
         val fileDeleted = runCatching {
-            download.filePath?.let { File(it) }
+            download.videoFilePath?.let { File(it) }
                 ?.takeIf { it.exists() }
                 ?.delete()
                 ?: true
