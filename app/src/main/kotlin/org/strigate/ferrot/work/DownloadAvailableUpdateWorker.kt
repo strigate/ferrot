@@ -2,7 +2,6 @@ package org.strigate.ferrot.work
 
 import android.content.Context
 import android.util.Log
-import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -12,8 +11,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -46,10 +43,9 @@ import java.time.ZonedDateTime
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@HiltWorker
-class DownloadAvailableUpdateWorker @AssistedInject constructor(
-    @Assisted private val appContext: Context,
-    @Assisted workerParameters: WorkerParameters,
+class DownloadAvailableUpdateWorker(
+    private val appContext: Context,
+    workerParameters: WorkerParameters,
     private val stateUseCase: StateUseCase,
     private val updatePathProvider: UpdatePathProvider,
     private val notificationService: NotificationService,
