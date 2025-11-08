@@ -232,21 +232,15 @@ class DownloadWorker(
                     throw CancellationException()
                 }
                 val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfo.id)
-                if (videoOutputFile == null) {
-                    Log.w(LOG_TAG, "$tag Video output file could not be located")
+                if (videoOutputFile == null || !videoOutputFile.exists()) {
+                    Log.w(LOG_TAG, "$tag Video output file could not be located or does not exist")
                     return@mainScope handleDownloadFailedResult()
                 }
-
-                if (videoOutputFile.exists()) {
-                    Log.d(LOG_TAG, "$tag Video output file exists, saving path")
-                    downloadUseCase.updateDownloadFilePathUseCase(
-                        fileName = videoOutputFile.absolutePath,
-                        id = downloadId,
-                    )
-                } else {
-                    Log.w(LOG_TAG, "$tag Video output file does not exist")
-                    return@mainScope handleDownloadFailedResult()
-                }
+                Log.d(LOG_TAG, "$tag Video output file exists, saving path")
+                downloadUseCase.updateDownloadVideoFilePathUseCase(
+                    fileName = videoOutputFile.absolutePath,
+                    id = downloadId,
+                )
 
                 withContext(Dispatchers.IO) {
                     val bytesDownloaded = directoryBytesSum(uidDir)
@@ -280,10 +274,14 @@ class DownloadWorker(
                 Log.d(LOG_TAG, "$tag Downloaded audio")
 
                 val audioOutputFile = locateOutputFileByInfoId(uidDir, videoInfo.id, audio = true)
-                if (audioOutputFile == null) {
-                    Log.w(LOG_TAG, "$tag Audio output file could not be located")
+                if (audioOutputFile == null || !audioOutputFile.exists()) {
+                    Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
                 } else {
-                    Log.d(LOG_TAG, "$tag Audio output file located, saving path")
+                    Log.d(LOG_TAG, "$tag Audio output file exists, saving path")
+                    downloadUseCase.updateDownloadAudioFilePathUseCase(
+                        fileName = audioOutputFile.absolutePath,
+                        id = downloadId,
+                    )
                 }
 
                 val finalPercent = 100

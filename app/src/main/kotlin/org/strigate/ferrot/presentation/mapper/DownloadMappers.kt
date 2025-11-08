@@ -9,11 +9,11 @@ fun Download.toUiData(
     metadata: DownloadMetadata?,
     progress: DownloadProgress?,
 ): DownloadUiData {
-    val filePathNonNull = filePath.orEmpty()
-    val title = metadata?.title ?: filePathNonNull
-        .substringBeforeLast('.', missingDelimiterValue = filePathNonNull)
+    val videoFilePathNonNull = videoFilePath.orEmpty()
+    val title = metadata?.title ?: videoFilePathNonNull
+        .substringBeforeLast('.', missingDelimiterValue = videoFilePathNonNull)
         .ifBlank { url }
-    val fileName = filePathNonNull
+    val videoFileName = videoFilePathNonNull
         .substringAfterLast("/", missingDelimiterValue = "")
         .takeIf { it.isNotBlank() }
     val fraction = progress?.progressPercent
@@ -23,8 +23,8 @@ fun Download.toUiData(
     return DownloadUiData(
         title = title,
         url = url,
-        filePath = filePath,
-        fileName = fileName,
+        videoFilePath = videoFilePath,
+        videoFileName = videoFileName,
         status = status.toUiData(),
         errorMessage = errorMessage,
         progressFraction = fraction,

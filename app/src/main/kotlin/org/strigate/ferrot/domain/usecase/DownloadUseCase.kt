@@ -6,11 +6,12 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.SaveDownloadUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadAudioFilePathUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadCompletedAtUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
-import org.strigate.ferrot.domain.usecase.download.UpdateDownloadFilePathUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStartedAtUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadVideoFilePathUseCase
 import javax.inject.Inject
 
 class DownloadUseCase @Inject constructor(
@@ -20,7 +21,8 @@ class DownloadUseCase @Inject constructor(
     val getDownloadByIdAsFlowUseCase: GetDownloadByIdAsFlowUseCase,
     val updateDownloadCompletedAtUseCase: UpdateDownloadCompletedAtUseCase,
     val updateDownloadErrorMessageUseCase: UpdateDownloadErrorMessageUseCase,
-    val updateDownloadFilePathUseCase: UpdateDownloadFilePathUseCase,
+    val updateDownloadVideoFilePathUseCase: UpdateDownloadVideoFilePathUseCase,
+    val updateDownloadAudioFilePathUseCase: UpdateDownloadAudioFilePathUseCase,
     val updateDownloadStartedAtUseCase: UpdateDownloadStartedAtUseCase,
     val updateDownloadStatusByIdUseCase: UpdateDownloadStatusByIdUseCase,
     val deleteDownloadByIdUseCase: DeleteDownloadByIdUseCase,
