@@ -14,5 +14,5 @@ class SettingsUseCase @Inject constructor(
     val getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase,
     val saveAutomaticUpdatesSettingUseCase: SaveAutomaticUpdatesSettingUseCase,
     val getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase,
-    val saveAutomaticDependencyUpdatesSettingAsFlowUseCase: SaveAutomaticDependencyUpdatesSettingUseCase,
+    val saveAutomaticDependencyUpdatesSettingUseCase: SaveAutomaticDependencyUpdatesSettingUseCase,
 )

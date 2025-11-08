@@ -17,6 +17,9 @@ class BuildAudioDownloadRequestUseCase @Inject constructor() {
             addOption("--extract-audio")
             addOption("--audio-format", "mp3")
             addOption("--audio-quality", "0")
+            addOption("--keep-video")
+            addOption("--no-overwrites")
+            addOption("--no-post-overwrites")
             if (noProgress) {
                 addOption("--no-progress")
                 if (printFilename) {
