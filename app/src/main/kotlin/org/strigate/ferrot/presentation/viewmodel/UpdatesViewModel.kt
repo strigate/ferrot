@@ -82,12 +82,19 @@ class UpdatesViewModel @Inject constructor(
 
     fun setAutomaticDependencyUpdates(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveAutomaticDependencyUpdatesSettingAsFlowUseCase(enabled)
+            settingsUseCase.saveAutomaticDependencyUpdatesSettingUseCase(enabled)
             if (enabled) {
                 UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
             } else {
                 UpdateDependenciesWorker.cancelPeriodic(appContext)
             }
+        }
+    }
+
+    fun checkForDependencyUpdates() {
+        viewModelScope.launch {
+            appContext.toast(appContext.getString(R.string.toast_checking_for_dependency_updates))
+            UpdateDependenciesWorker.enqueueOneTimeReplace(appContext)
         }
     }
 

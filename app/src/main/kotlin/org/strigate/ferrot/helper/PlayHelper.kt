@@ -5,16 +5,23 @@ import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.FileProvider
 import org.strigate.ferrot.R
+import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.extensions.guessMimeType
 import java.io.File
 
 object PlayHelper {
     fun playFileIfExists(context: Context, filePath: String?) {
-        if (filePath.isNullOrBlank()) return
+        if (filePath.isNullOrBlank()) {
+            return
+        }
         val file = File(filePath)
-        if (!file.exists() || file.length() <= 0L) return
+        if (!file.exists() || file.length() <= 0L) {
+            Log.w(LOG_TAG, "File does not exist: ${file.absolutePath}")
+            return
+        }
         val authority = "${context.packageName}.${context.getString(R.string.file_provider)}"
         val uri = FileProvider.getUriForFile(context, authority, file)
         val intent = Intent(Intent.ACTION_VIEW).apply {

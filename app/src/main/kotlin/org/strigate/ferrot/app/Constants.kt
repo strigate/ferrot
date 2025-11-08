@@ -70,6 +70,7 @@ object Constants {
 
             const val PERIODIC_DOWNLOAD_AVAILABLE_UPDATE = "$PERIODIC.DOWNLOAD_AVAILABLE_UPDATE"
             const val PERIODIC_UPDATE_DEPENDENCIES = "$PERIODIC.UPDATE_DEPENDENCIES"
+            const val ONETIME_UPDATE_DEPENDENCIES = "$ONETIME.UPDATE_DEPENDENCIES"
 
             const val KEY_ID = "$KEY.ID"
             const val KEY_WIFI_ONLY = "$KEY.wifi_only"

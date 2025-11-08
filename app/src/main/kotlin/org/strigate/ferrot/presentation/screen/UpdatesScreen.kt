@@ -43,9 +43,9 @@ fun UpdatesScreen(
     viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
+    val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -123,6 +123,12 @@ fun UpdatesScreen(
                                             viewModel.setAutomaticDependencyUpdates(checked)
                                         },
                                     )
+                                    TextSetting(
+                                        text = stringResource(R.string.settings_title_check_dependencies_now),
+                                        description = stringResource(R.string.settings_description_check_dependencies_now),
+                                    ) {
+                                        viewModel.checkForDependencyUpdates()
+                                    }
                                     TextSetting(
                                         text = stringResource(R.string.settings_title_last_checked_for_dependency_updates),
                                         description = UiFormatter.formatLastCheckedTime(

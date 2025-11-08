@@ -57,6 +57,7 @@
     <string name="snackbar_delete_undo">Undo</string>
 
     <string name="toast_checking_for_available_update">Checking for available update</string>
+    <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_file_exists">File already exists in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
@@ -74,6 +75,7 @@
     <string name="settings_title_check_now">Check now</string>
     <string name="settings_title_last_checked_for_updates">Last checked for updates</string>
     <string name="settings_title_automatic_dependency_updates">Automatic dependency updates</string>
+    <string name="settings_title_check_dependencies_now">Check now</string>
     <string name="settings_title_last_checked_for_dependency_updates">Last checked for dependency updates</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_website">Website</string>
@@ -84,6 +86,7 @@
     <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
     <string name="settings_description_check_now">Check for updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
+    <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
     <string name="settings_description_license">GNU General Public License v3.0</string>
 

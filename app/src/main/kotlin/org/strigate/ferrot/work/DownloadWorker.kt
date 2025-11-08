@@ -200,7 +200,8 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val template = "${uidDir.absolutePath}/%(id)s.%(ext)s"
+                val videoTemplate = "${uidDir.absolutePath}/%(id)s.%(ext)s"
+                val audioTemplate = "${uidDir.absolutePath}/%(id)s.audio.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,
@@ -214,7 +215,7 @@ class DownloadWorker(
                     collectPhase(
                         processId = videoProcessId,
                         url = download.url,
-                        template = template,
+                        template = videoTemplate,
                         qualityProfile = qualityProfile,
                         bytesProviderRaw = bytesProviderRaw,
                         phaseContext = phaseContext.copy(phase = DownloadMediaType.VIDEO),
@@ -236,11 +237,16 @@ class DownloadWorker(
                     return@mainScope handleDownloadFailedResult()
                 }
 
-                Log.d(LOG_TAG, "$tag Video output file located, saving path")
-                downloadUseCase.updateDownloadFilePathUseCase(
-                    id = downloadId,
-                    fileName = videoOutputFile.absolutePath,
-                )
+                if (videoOutputFile.exists()) {
+                    Log.d(LOG_TAG, "$tag Video output file exists, saving path")
+                    downloadUseCase.updateDownloadFilePathUseCase(
+                        fileName = videoOutputFile.absolutePath,
+                        id = downloadId,
+                    )
+                } else {
+                    Log.w(LOG_TAG, "$tag Video output file does not exist")
+                    return@mainScope handleDownloadFailedResult()
+                }
 
                 withContext(Dispatchers.IO) {
                     val bytesDownloaded = directoryBytesSum(uidDir)
@@ -262,7 +268,7 @@ class DownloadWorker(
                     collectPhase(
                         processId = audioProcessId,
                         url = download.url,
-                        template = template,
+                        template = audioTemplate,
                         qualityProfile = qualityProfile,
                         bytesProviderRaw = bytesProviderRaw,
                         phaseContext = phaseContext.copy(phase = DownloadMediaType.AUDIO),
