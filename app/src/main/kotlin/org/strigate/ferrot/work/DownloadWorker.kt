@@ -3,7 +3,6 @@ package org.strigate.ferrot.work
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
@@ -14,8 +13,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.yausername.youtubedl_android.YoutubeDL
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
@@ -49,10 +46,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 
-@HiltWorker
-class DownloadWorker @AssistedInject constructor(
-    @Assisted private val appContext: Context,
-    @Assisted workerParameters: WorkerParameters,
+class DownloadWorker(
+    private val appContext: Context,
+    workerParameters: WorkerParameters,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadPathProvider: DownloadPathProvider,
     private val notificationService: NotificationService,

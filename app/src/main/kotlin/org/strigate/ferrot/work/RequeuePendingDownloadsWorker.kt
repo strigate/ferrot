@@ -2,20 +2,17 @@ package org.strigate.ferrot.work
 
 import android.content.Context
 import android.util.Log
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 
-@HiltWorker
-class RequeuePendingDownloadsWorker @AssistedInject constructor(
+class RequeuePendingDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
