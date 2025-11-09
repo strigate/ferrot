@@ -200,8 +200,8 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val videoTemplate = "${uidDir.absolutePath}/%(id)s.%(ext)s"
-                val audioTemplate = "${uidDir.absolutePath}/%(id)s.audio.%(ext)s"
+                val videoTemplate = "${uidDir.absolutePath}/%(id)s.V.%(ext)s"
+                val audioTemplate = "${uidDir.absolutePath}/%(id)s.A.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,

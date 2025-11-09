@@ -5,6 +5,7 @@ data class Download(
     val uid: String,
     val url: String,
     val videoFilePath: String? = null,
+    val audioFilePath: String? = null,
     val status: DownloadStatus,
     val errorMessage: String? = null,
 )
