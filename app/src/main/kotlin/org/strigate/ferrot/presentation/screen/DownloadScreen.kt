@@ -239,6 +239,17 @@ private fun DownloadContent(
                 horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val selectedExtension = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> video?.extension
+                    DownloadMediaType.AUDIO -> audio?.extension
+                }?.takeIf {
+                    it.isNotBlank()
+                }
+                selectedExtension?.let { extension ->
+                    ExtensionPill(
+                        text = extension.uppercase(),
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 ActionIconButton(
                     enabled = canActOnSelected,
@@ -418,6 +429,32 @@ private fun ThumbnailCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ExtensionPill(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    val dimens = LocalDimens.current
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shadowElevation = dimens.shadowElevationLow,
+        tonalElevation = dimens.tonalElevationHigh,
+    ) {
+        Text(
+            modifier = Modifier
+                .padding(
+                    horizontal = dimens.spacingSmall,
+                    vertical = dimens.spacingXXSmall,
+                ),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            style = MaterialTheme.typography.titleMedium,
+            text = text,
+        )
     }
 }
 

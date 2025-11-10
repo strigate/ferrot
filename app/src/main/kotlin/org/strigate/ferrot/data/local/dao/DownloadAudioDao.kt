@@ -9,7 +9,6 @@ import org.strigate.ferrot.data.local.entity.DownloadAudioEntity
 
 @Dao
 interface DownloadAudioDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplace(entity: DownloadAudioEntity): Long
 
