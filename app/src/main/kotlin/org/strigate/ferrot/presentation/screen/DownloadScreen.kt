@@ -33,6 +33,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -61,6 +64,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import org.strigate.ferrot.R
+import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.ActionIconButton
 import org.strigate.ferrot.presentation.component.ConfirmDialog
@@ -82,6 +86,7 @@ fun DownloadScreen(
 ) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedMedia by viewModel.selectedMediaFlow.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -90,23 +95,20 @@ fun DownloadScreen(
 
     if (showConfirmDeleteDialog.value) {
         ConfirmDialog(
+            title = stringResource(R.string.confirm_dialog_delete_download_title),
+            message = stringResource(R.string.confirm_dialog_delete_download_description),
+            positiveButtonText = stringResource(R.string.yes),
             onPositiveClick = {
                 viewModel.deleteDownload()
                 backDispatcher?.onBackPressed()
                 showConfirmDeleteDialog.value = false
             },
-            onNegativeClick = {
-                showConfirmDeleteDialog.value = false
-            },
-            onDismissRequest = {
-                showConfirmDeleteDialog.value = false
-            },
-            title = stringResource(R.string.confirm_dialog_delete_download_title),
-            message = stringResource(R.string.confirm_dialog_delete_download_description),
-            positiveButtonText = stringResource(R.string.yes),
             negativeButtonText = stringResource(R.string.no),
+            onNegativeClick = { showConfirmDeleteDialog.value = false },
+            onDismissRequest = { showConfirmDeleteDialog.value = false },
         )
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -117,8 +119,8 @@ fun DownloadScreen(
                         },
                     ) {
                         Icon(
-                            contentDescription = stringResource(R.string.content_description_back),
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.content_description_back),
                         )
                     }
                 },
@@ -128,40 +130,14 @@ fun DownloadScreen(
                     )
                 },
                 actions = {
-                    val canSaveOrShare = (uiState as? DownloadUiState.Data)
-                        ?.data
-                        ?.status == DownloadStatusUiData.COMPLETED
-
-                    Row {
-                        ActionIconButton(
-                            onClick = {
-                                if (canSaveOrShare) {
-                                    viewModel.saveDownload()
-                                }
-                            },
-                            enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_save_to_device),
-                            imageVector = Icons.Filled.Save,
-                        )
-                        ActionIconButton(
-                            onClick = {
-                                if (canSaveOrShare) {
-                                    viewModel.shareDownload()
-                                }
-                            },
-                            enabled = canSaveOrShare,
-                            contentDescription = stringResource(R.string.content_description_share_download),
-                            imageVector = Icons.Filled.Share,
-                        )
-                        ActionIconButton(
-                            onClick = {
-                                showConfirmDeleteDialog.value = true
-                            },
-                            enabled = true,
-                            contentDescription = stringResource(R.string.content_description_delete_download),
-                            imageVector = Icons.Filled.Delete,
-                        )
-                    }
+                    ActionIconButton(
+                        enabled = true,
+                        onClick = {
+                            showConfirmDeleteDialog.value = true
+                        },
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.content_description_delete_download),
+                    )
                 },
             )
         },
@@ -177,12 +153,13 @@ fun DownloadScreen(
                     is DownloadUiState.Data -> {
                         DownloadContent(
                             data = state.data,
-                            onPlayClick = {
-                                viewModel.playDownload()
-                            },
-                            onRetryClick = {
-                                viewModel.retryDownload()
-                            },
+                            selectedMedia = selectedMedia,
+                            onMediaChange = { viewModel.setSelectedMedia(it) },
+                            onEnsureValidSelection = { viewModel.setSelectedMedia(it) },
+                            onPlayClick = { viewModel.playDownload() },
+                            onSaveClick = { viewModel.saveDownload() },
+                            onShareClick = { viewModel.shareDownload() },
+                            onRetryClick = { viewModel.retryDownload() },
                         )
                     }
                 }
@@ -194,11 +171,21 @@ fun DownloadScreen(
 @Composable
 private fun DownloadContent(
     data: DownloadUiData,
+    selectedMedia: DownloadMediaType,
+    onMediaChange: (DownloadMediaType) -> Unit,
+    onEnsureValidSelection: (DownloadMediaType) -> Unit,
     onPlayClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     with(data) {
+        LaunchedEffect(audioFilePath, selectedMedia) {
+            if (selectedMedia == DownloadMediaType.AUDIO && audioFilePath.isNullOrBlank()) {
+                onEnsureValidSelection(DownloadMediaType.VIDEO)
+            }
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -220,15 +207,61 @@ private fun DownloadContent(
                 bytesDownloaded = bytesDownloaded,
                 forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
             )
-            Spacer(modifier = Modifier.height(dimens.spacingMedium))
+            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+            MediaSwitcherSegmented(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                selected = selectedMedia,
+                enableVideo = !videoFilePath.isNullOrBlank(),
+                enableAudio = !audioFilePath.isNullOrBlank(),
+                onSelect = onMediaChange,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+
+            val selectedPath = when (selectedMedia) {
+                DownloadMediaType.VIDEO -> videoFilePath
+                DownloadMediaType.AUDIO -> audioFilePath
+            }
+            val canActOnSelected =
+                status == DownloadStatusUiData.COMPLETED && !selectedPath.isNullOrBlank()
+
             ThumbnailCard(
                 thumbnailFilePath = thumbnailFilePath,
-                showPlay = status == DownloadStatusUiData.COMPLETED && !videoFilePath.isNullOrBlank(),
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
+                showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
             )
-            Spacer(modifier = Modifier.height(dimens.spacingMedium))
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                ActionIconButton(
+                    enabled = canActOnSelected,
+                    onClick = {
+                        if (canActOnSelected) {
+                            onSaveClick()
+                        }
+                    },
+                    imageVector = Icons.Filled.Save,
+                    contentDescription = stringResource(R.string.content_description_save_to_device),
+                )
+                ActionIconButton(
+                    enabled = canActOnSelected,
+                    onClick = {
+                        if (canActOnSelected) {
+                            onShareClick()
+                        }
+                    },
+                    imageVector = Icons.Filled.Share,
+                    contentDescription = stringResource(R.string.content_description_share_download),
+                )
+            }
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Column {
@@ -238,7 +271,11 @@ private fun DownloadContent(
                     isUrl = true,
                     value = url,
                 )
-                videoFileName?.let {
+                val selectedName = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> videoFileName
+                    DownloadMediaType.AUDIO -> audioFileName
+                }
+                selectedName?.let {
                     MetaItem(stringResource(R.string.download_filename), it)
                 }
                 errorMessage?.let {
@@ -250,10 +287,46 @@ private fun DownloadContent(
 }
 
 @Composable
+private fun MediaSwitcherSegmented(
+    selected: DownloadMediaType,
+    modifier: Modifier = Modifier,
+    enableVideo: Boolean,
+    enableAudio: Boolean,
+    onSelect: (DownloadMediaType) -> Unit,
+) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = modifier,
+    ) {
+        SegmentedButton(
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            selected = selected == DownloadMediaType.VIDEO,
+            onClick = {
+                onSelect(DownloadMediaType.VIDEO)
+            },
+            enabled = enableVideo,
+            label = {
+                Text(text = stringResource(R.string.video))
+            },
+        )
+        SegmentedButton(
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            selected = selected == DownloadMediaType.AUDIO,
+            onClick = {
+                onSelect(DownloadMediaType.AUDIO)
+            },
+            enabled = enableAudio,
+            label = {
+                Text(text = stringResource(R.string.audio))
+            },
+        )
+    }
+}
+
+@Composable
 private fun ThumbnailCard(
     thumbnailFilePath: String?,
-    showPlay: Boolean,
     showRetry: Boolean,
+    showPlay: Boolean,
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
 ) {
@@ -307,29 +380,23 @@ private fun ThumbnailCard(
                     contentDescription = thumbnailContentDescription,
                     model = request,
                 )
-            } else {
-                if (!showRetry) {
-                    Box(
+            } else if (!showRetry) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
                         modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            modifier = Modifier
-                                .size(dimens.overlayIconSize),
-                            imageVector = Icons.Filled.Image,
-                            contentDescription = thumbnailContentDescription,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                            .size(dimens.overlayIconSize),
+                        imageVector = Icons.Filled.Image,
+                        contentDescription = thumbnailContentDescription,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             if (showOverlay) {
-                val overlayIcon = if (showRetry) {
-                    Icons.Filled.Refresh
-                } else {
-                    Icons.Filled.PlayArrow
-                }
+                val overlayIcon = if (showRetry) Icons.Filled.Refresh else Icons.Filled.PlayArrow
                 val overlayContentDescription = if (showRetry) {
                     stringResource(R.string.content_description_retry)
                 } else {
@@ -384,12 +451,13 @@ private fun MetaItem(
             Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
             if (isUrl) {
                 Text(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                    ) {
-                        uriHandler.openUri(value)
-                    },
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = LocalIndication.current,
+                        ) {
+                            uriHandler.openUri(value)
+                        },
                     style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.Underline,
                     ),

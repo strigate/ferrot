@@ -5,6 +5,8 @@ data class DownloadUiData(
     val url: String,
     val videoFilePath: String?,
     val videoFileName: String?,
+    val audioFilePath: String?,
+    val audioFileName: String?,
     val status: DownloadStatusUiData,
     val errorMessage: String?,
     val progressFraction: Float?,
