@@ -6,14 +6,18 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.strigate.ferrot.app.Constants.Database.DATABASE_NAME
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
+import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
 import org.strigate.ferrot.data.local.dao.DownloadProgressDao
+import org.strigate.ferrot.data.local.dao.DownloadVideoDao
 import org.strigate.ferrot.data.local.dao.DownloadWithMetadataViewDao
 import org.strigate.ferrot.data.local.entity.AvailableUpdateEntity
+import org.strigate.ferrot.data.local.entity.DownloadAudioEntity
 import org.strigate.ferrot.data.local.entity.DownloadEntity
 import org.strigate.ferrot.data.local.entity.DownloadMetadataEntity
 import org.strigate.ferrot.data.local.entity.DownloadProgressEntity
+import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
 import org.strigate.ferrot.data.local.migration.MIGRATION_1_2
 import org.strigate.ferrot.data.local.typeconverter.DownloadStatusTypeConverter
 import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
@@ -22,6 +26,8 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
     entities = [
         AvailableUpdateEntity::class,
         DownloadEntity::class,
+        DownloadVideoEntity::class,
+        DownloadAudioEntity::class,
         DownloadProgressEntity::class,
         DownloadMetadataEntity::class,
     ],
@@ -37,6 +43,8 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 abstract class Database : RoomDatabase() {
     abstract fun availableUpdateDao(): AvailableUpdateDao
     abstract fun downloadDao(): DownloadDao
+    abstract fun downloadVideoDao(): DownloadVideoDao
+    abstract fun downloadAudioDao(): DownloadAudioDao
     abstract fun downloadProgressDao(): DownloadProgressDao
     abstract fun downloadMetadataDao(): DownloadMetadataDao
     abstract fun downloadWithMetadataViewDao(): DownloadWithMetadataViewDao

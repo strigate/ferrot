@@ -18,6 +18,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.StateUseCase
+import org.strigate.ferrot.extensions.toast
 import java.time.Duration.between
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -42,6 +43,18 @@ class UpdateDependenciesWorker(
                 appContext = appContext,
             )
             Log.d(LOG_TAG, "YoutubeDL update completed: status=$updateStatus")
+
+            when (updateStatus) {
+                YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE -> {
+                    appContext.toast(appContext.getString(R.string.toast_already_up_to_date))
+                }
+
+                YoutubeDL.UpdateStatus.DONE -> {
+                    appContext.toast(appContext.getString(R.string.toast_done))
+                }
+
+                else -> appContext.toast("$updateStatus")
+            }
             Result.success()
         } catch (throwable: Throwable) {
             Log.wtf(LOG_TAG, "An error occurred while updating dependencies", throwable)

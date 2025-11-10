@@ -3,11 +3,9 @@ package org.strigate.ferrot.presentation.model
 data class DownloadUiData(
     val title: String,
     val url: String,
-    val videoFilePath: String?,
-    val videoFileName: String?,
-    val audioFilePath: String?,
-    val audioFileName: String?,
     val status: DownloadStatusUiData,
+    val video: DownloadVideoUiData?,
+    val audio: DownloadAudioUiData?,
     val errorMessage: String?,
     val progressFraction: Float?,
     val bytesDownloaded: Long,

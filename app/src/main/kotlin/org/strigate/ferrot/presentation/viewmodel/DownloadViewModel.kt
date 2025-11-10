@@ -17,9 +17,11 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.model.DownloadMediaType
+import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -37,6 +39,8 @@ class DownloadViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
+    private val downloadVideoUseCase: DownloadVideoUseCase,
+    private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
@@ -62,14 +66,18 @@ class DownloadViewModel @Inject constructor(
 
     private fun getUiState(id: Long = downloadId) = combine(
         downloadUseCase.getDownloadByIdAsFlowUseCase(id),
+        downloadVideoUseCase.getDownloadVideoAsFlowUseCase(id),
+        downloadAudioUseCase.getDownloadAudioAsFlowUseCase(id),
         downloadMetadataUseCase.getDownloadMetadataByIdAsFlowUseCase(id),
         downloadProgressUseCase.getDownloadProgressByDownloadIdAsFlowUseCase(id),
-    ) { download, metadata, progress ->
+    ) { download, video, audio, metadata, progress ->
         if (download == null) {
             DownloadUiState.Error
         } else {
             DownloadUiState.Data(
                 data = download.toUiData(
+                    video = video,
+                    audio = audio,
                     metadata = metadata,
                     progress = progress,
                 ),
@@ -91,34 +99,31 @@ class DownloadViewModel @Inject constructor(
     }
 
     fun shareDownload() = viewModelScope.launch {
-        val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-        val path = when (selectedMedia.value) {
-            DownloadMediaType.VIDEO -> download.videoFilePath
-            DownloadMediaType.AUDIO -> download.audioFilePath
-        }
+        val path = currentSelectedFilePath() ?: return@launch
         ShareHelper.shareFileIfExists(appContext, path)
     }
 
     fun saveDownload() = viewModelScope.launch {
-        val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-        val path = when (selectedMedia.value) {
-            DownloadMediaType.VIDEO -> download.videoFilePath
-            DownloadMediaType.AUDIO -> download.audioFilePath
-        }
+        val path = currentSelectedFilePath() ?: return@launch
         SaveHelper.saveToDownloads(appContext, path)
     }
 
     fun playDownload() = viewModelScope.launch {
-        val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
-        val path = when (selectedMedia.value) {
-            DownloadMediaType.VIDEO -> download.videoFilePath
-            DownloadMediaType.AUDIO -> download.audioFilePath
-        }
+        val path = currentSelectedFilePath() ?: return@launch
         PlayHelper.playFileIfExists(appContext, path)
     }
 
     fun retryDownload() = viewModelScope.launch {
         startDownloadUseCase(downloadId)
+    }
+
+    private fun currentSelectedFilePath(): String? {
+        val state = uiState.value
+        if (state !is DownloadUiState.Data) return null
+        return when (selectedMedia.value) {
+            DownloadMediaType.VIDEO -> state.data.video?.filePath
+            DownloadMediaType.AUDIO -> state.data.audio?.filePath
+        }
     }
 
     companion object {

@@ -63,6 +63,8 @@
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_file_exists">File already exists in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
+    <string name="toast_done">Done</string>
+    <string name="toast_already_up_to_date">Already up to date</string>
 
     <string name="settings_section_general">General</string>
     <string name="settings_section_app_info">App info</string>
