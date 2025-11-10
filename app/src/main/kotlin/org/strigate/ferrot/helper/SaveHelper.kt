@@ -35,7 +35,11 @@ object SaveHelper {
             displayName = displayName,
         )
         if (existsInDownloads) {
-            val message = context.getString(R.string.toast_file_exists, relativePathWithSlash)
+            val message = context.getString(
+                R.string.toast_already_saved,
+                displayName,
+                relativePathWithSlash,
+            )
             context.toast(message)
             return false
         }
