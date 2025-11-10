@@ -181,8 +181,8 @@ private fun DownloadContent(
 ) {
     val dimens = LocalDimens.current
     with(data) {
-        LaunchedEffect(audioFilePath, selectedMedia) {
-            if (selectedMedia == DownloadMediaType.AUDIO && audioFilePath.isNullOrBlank()) {
+        LaunchedEffect(audio?.filePath, selectedMedia) {
+            if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
                 onEnsureValidSelection(DownloadMediaType.VIDEO)
             }
         }
@@ -212,15 +212,15 @@ private fun DownloadContent(
                 modifier = Modifier
                     .fillMaxWidth(),
                 selected = selectedMedia,
-                enableVideo = !videoFilePath.isNullOrBlank(),
-                enableAudio = !audioFilePath.isNullOrBlank(),
+                enableVideo = video != null,
+                enableAudio = audio != null,
                 onSelect = onMediaChange,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
 
             val selectedPath = when (selectedMedia) {
-                DownloadMediaType.VIDEO -> videoFilePath
-                DownloadMediaType.AUDIO -> audioFilePath
+                DownloadMediaType.VIDEO -> video?.filePath
+                DownloadMediaType.AUDIO -> audio?.filePath
             }
             val canActOnSelected =
                 status == DownloadStatusUiData.COMPLETED && !selectedPath.isNullOrBlank()
@@ -272,8 +272,8 @@ private fun DownloadContent(
                     value = url,
                 )
                 val selectedName = when (selectedMedia) {
-                    DownloadMediaType.VIDEO -> videoFileName
-                    DownloadMediaType.AUDIO -> audioFileName
+                    DownloadMediaType.VIDEO -> video?.fileName
+                    DownloadMediaType.AUDIO -> audio?.fileName
                 }
                 selectedName?.let {
                     MetaItem(stringResource(R.string.download_filename), it)

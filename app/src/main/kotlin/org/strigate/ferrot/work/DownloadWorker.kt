@@ -34,9 +34,11 @@ import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.extensions.parseErrorMessage
@@ -54,6 +56,8 @@ class DownloadWorker(
     private val notificationService: NotificationService,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
+    private val downloadVideoUseCase: DownloadVideoUseCase,
+    private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
@@ -237,9 +241,9 @@ class DownloadWorker(
                     return@mainScope handleDownloadFailedResult()
                 }
                 Log.d(LOG_TAG, "$tag Video output file exists, saving path")
-                downloadUseCase.updateDownloadVideoFilePathUseCase(
-                    fileName = videoOutputFile.absolutePath,
-                    id = downloadId,
+                downloadVideoUseCase.updateDownloadVideoFilePathUseCase(
+                    filePath = videoOutputFile.absolutePath,
+                    downloadId = downloadId,
                 )
 
                 withContext(Dispatchers.IO) {
@@ -278,9 +282,9 @@ class DownloadWorker(
                     Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
                 } else {
                     Log.d(LOG_TAG, "$tag Audio output file exists, saving path")
-                    downloadUseCase.updateDownloadAudioFilePathUseCase(
-                        fileName = audioOutputFile.absolutePath,
-                        id = downloadId,
+                    downloadAudioUseCase.updateDownloadAudioFilePathUseCase(
+                        filePath = audioOutputFile.absolutePath,
+                        downloadId = downloadId,
                     )
                 }
 
