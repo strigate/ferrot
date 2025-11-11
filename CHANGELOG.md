@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.0 - 2025-11-11
+### Added
+- Split video and audio files into their own database tables
+- Weighted progress display for combined video/audio downloads
+- Media switcher on the Download screen to toggle between video and audio actions
+- File extension pill directly on each download
+- One-time “Check now” button for dependency updates
+- New toast messages for dependency checks (“Done” / “Already up to date”)
+- Mock data seeding for debug builds
+
+### Changed
+- Refactor of Download Worker with clearer phase handling and more accurate progress
+- Simplified database and repository layers around media handling
+- Refined update worker scheduling and dependency update flow
+- Smarter handling of duplicate file saves with clearer messages
+- Polished download and update screen visuals
+
+### Fixed
+- Duplicate file save toast now shows the file name and path instead of “file exists” message
+- Safer directory creation and file path management during downloads
+- More consistent behavior between audio and video downloads during play, save, and share actions
+
 ## 1.1.2 - 2025-11-05
 ### Added
 - “Last checked” timestamps for app and dependency updates
