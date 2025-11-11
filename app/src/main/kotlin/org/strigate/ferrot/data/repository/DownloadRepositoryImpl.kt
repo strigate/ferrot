@@ -35,10 +35,6 @@ class DownloadRepositoryImpl @Inject constructor(
             .map { it?.toDomain() }
     }
 
-    override suspend fun updateFilePathById(id: Long, filePath: String?): Int {
-        return downloadDao.updateFilePathById(id, filePath)
-    }
-
     override suspend fun updateStatusById(id: Long, status: DownloadStatus): Int {
         return downloadDao.updateStatusById(id, status.toEntity())
     }

@@ -10,9 +10,11 @@ import dagger.hilt.components.SingletonComponent
 import org.strigate.ferrot.app.Database
 import org.strigate.ferrot.app.di.BootstrapCallbacks
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
+import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
 import org.strigate.ferrot.data.local.dao.DownloadProgressDao
+import org.strigate.ferrot.data.local.dao.DownloadVideoDao
 import org.strigate.ferrot.data.local.dao.DownloadWithMetadataViewDao
 import javax.inject.Singleton
 
@@ -38,6 +40,18 @@ object DatabaseModule {
     @Singleton
     fun provideDownloadDao(database: Database): DownloadDao {
         return database.downloadDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDownloadVideoDao(database: Database): DownloadVideoDao {
+        return database.downloadVideoDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAudioDownloadDao(database: Database): DownloadAudioDao {
+        return database.downloadAudioDao()
     }
 
     @Provides

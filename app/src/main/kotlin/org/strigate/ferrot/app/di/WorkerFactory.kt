@@ -10,9 +10,11 @@ import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
+import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
@@ -36,6 +38,8 @@ class WorkerFactory @Inject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
+    private val downloadVideoUseCase: DownloadVideoUseCase,
+    private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
@@ -76,6 +80,8 @@ class WorkerFactory @Inject constructor(
                     notificationService = notificationService,
                     youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
                     downloadUseCase = downloadUseCase,
+                    downloadVideoUseCase = downloadVideoUseCase,
+                    downloadAudioUseCase = downloadAudioUseCase,
                     downloadMetadataUseCase = downloadMetadataUseCase,
                     downloadProgressUseCase = downloadProgressUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,

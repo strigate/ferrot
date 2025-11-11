@@ -6,8 +6,10 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import org.strigate.ferrot.R
+import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.extensions.guessMimeType
 import java.io.File
 
@@ -18,6 +20,7 @@ object ShareHelper {
         }
         val file = File(filePath)
         if (!file.exists() || file.length() <= 0L) {
+            Log.w(LOG_TAG, "File does not exist: ${file.absolutePath}")
             return false
         }
         val authority = "${context.packageName}.${context.getString(R.string.file_provider)}"

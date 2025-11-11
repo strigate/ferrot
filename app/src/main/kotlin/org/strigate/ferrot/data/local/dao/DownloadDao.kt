@@ -22,9 +22,6 @@ interface DownloadDao {
     @Query("SELECT * FROM download WHERE id = :id")
     fun getByIdAsFlow(id: Long): Flow<DownloadEntity?>
 
-    @Query("UPDATE download SET filePath = :fileName WHERE id = :id")
-    suspend fun updateFilePathById(id: Long, fileName: String?): Int
-
     @Query("UPDATE download SET status = :status WHERE id = :id")
     suspend fun updateStatusById(id: Long, status: DownloadStatus): Int
 

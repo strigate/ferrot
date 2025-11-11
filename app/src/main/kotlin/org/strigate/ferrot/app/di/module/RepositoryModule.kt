@@ -5,16 +5,20 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import org.strigate.ferrot.data.repository.AvailableUpdateRepositoryImpl
+import org.strigate.ferrot.data.repository.DownloadAudioRepositoryImpl
 import org.strigate.ferrot.data.repository.DownloadMetadataRepositoryImpl
 import org.strigate.ferrot.data.repository.DownloadProgressRepositoryImpl
 import org.strigate.ferrot.data.repository.DownloadRepositoryImpl
+import org.strigate.ferrot.data.repository.DownloadVideoRepositoryImpl
 import org.strigate.ferrot.data.repository.DownloadWithMetadataRepositoryImpl
 import org.strigate.ferrot.data.repository.SettingsRepositoryImpl
 import org.strigate.ferrot.data.repository.StateRepositoryImpl
 import org.strigate.ferrot.domain.repository.AvailableUpdateRepository
+import org.strigate.ferrot.domain.repository.DownloadAudioRepository
 import org.strigate.ferrot.domain.repository.DownloadMetadataRepository
 import org.strigate.ferrot.domain.repository.DownloadProgressRepository
 import org.strigate.ferrot.domain.repository.DownloadRepository
+import org.strigate.ferrot.domain.repository.DownloadVideoRepository
 import org.strigate.ferrot.domain.repository.DownloadWithMetadataRepository
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import org.strigate.ferrot.domain.repository.StateRepository
@@ -46,6 +50,18 @@ abstract class RepositoryModule {
     abstract fun bindDownloadRepository(
         implementation: DownloadRepositoryImpl,
     ): DownloadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDownloadVideoRepository(
+        implementation: DownloadVideoRepositoryImpl,
+    ): DownloadVideoRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDownloadAudioRepository(
+        implementation: DownloadAudioRepositoryImpl,
+    ): DownloadAudioRepository
 
     @Binds
     @Singleton

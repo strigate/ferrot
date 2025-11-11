@@ -17,15 +17,16 @@ object SaveHelper {
         if (filePath.isNullOrBlank()) {
             return false
         }
-        val sourceFile = File(filePath)
-        if (!sourceFile.exists() || sourceFile.length() <= 0L) {
+        val file = File(filePath)
+        if (!file.exists() || file.length() <= 0L) {
+            Log.w(LOG_TAG, "File does not exist: ${file.absolutePath}")
             return false
         }
         val relativePath = Environment.DIRECTORY_DOWNLOADS + "/${Constants.NAME}"
         val relativePathWithSlash = ensureTrailingSlash(relativePath)
         val relativePathWithNoSlash = relativePathWithSlash.removeSuffix("/")
         val outputMimeType = filePath.guessMimeType()
-        val displayName = sourceFile.name
+        val displayName = file.name
 
         val existsInDownloads = existsInDownloads(
             context = context,
@@ -34,7 +35,11 @@ object SaveHelper {
             displayName = displayName,
         )
         if (existsInDownloads) {
-            val message = context.getString(R.string.toast_file_exists, relativePathWithSlash)
+            val message = context.getString(
+                R.string.toast_already_saved,
+                displayName,
+                relativePathWithSlash,
+            )
             context.toast(message)
             return false
         }
@@ -52,7 +57,7 @@ object SaveHelper {
 
         return try {
             contentResolver.openOutputStream(uri)?.use { out ->
-                sourceFile.inputStream().use { it.copyTo(out) }
+                file.inputStream().use { it.copyTo(out) }
             } ?: error("openOutputStream null")
 
             ContentValues().apply {

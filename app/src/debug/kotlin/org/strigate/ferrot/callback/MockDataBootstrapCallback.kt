@@ -17,6 +17,7 @@ class MockDataBootstrapCallback(
             return
         }
         val now = System.currentTimeMillis()
+
         fun copyRawToFilesDir(resId: Int, relativePath: String): String {
             val outputFile = File(appContext.filesDir, relativePath)
             outputFile.parentFile?.mkdirs()
@@ -28,12 +29,45 @@ class MockDataBootstrapCallback(
             return outputFile.absolutePath
         }
 
+        fun insertVideoFile(
+            downloadId: Long,
+            filePath: String,
+        ) {
+            db.execSQL(
+                """
+                INSERT INTO download_video (
+                    downloadId, filePath
+                ) VALUES (?, ?)
+                """.trimIndent(),
+                arrayOf<Any?>(
+                    downloadId,
+                    filePath,
+                ),
+            )
+        }
+
+        fun insertAudioFile(
+            downloadId: Long,
+            filePath: String,
+        ) {
+            db.execSQL(
+                """
+                INSERT INTO download_audio (
+                    downloadId, filePath
+                ) VALUES (?, ?)
+                """.trimIndent(),
+                arrayOf<Any?>(
+                    downloadId,
+                    filePath,
+                ),
+            )
+        }
+
         fun insertDownload(
             id: Long,
             uid: String,
             url: String,
             status: String,
-            filePath: String?,
             errorMessage: String?,
             enqueuedAt: Long,
             startedAt: Long?,
@@ -42,16 +76,15 @@ class MockDataBootstrapCallback(
             db.execSQL(
                 """
                 INSERT INTO download (
-                    id, uid, url, status, filePath, errorMessage,
+                    id, uid, url, status, errorMessage,
                     enqueuedAtMillis, startedAtMillis, completedAtMillis
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
                 arrayOf<Any?>(
                     id,
                     uid,
                     url,
                     status,
-                    filePath,
                     errorMessage,
                     enqueuedAt,
                     startedAt,
@@ -112,11 +145,18 @@ class MockDataBootstrapCallback(
             uid = "example-001",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "COMPLETED",
-            filePath = "downloads/example.mp4",
             errorMessage = null,
             enqueuedAt = now - 60 * 60 * 1000,
             startedAt = now - 55 * 60 * 1000,
             completedAt = now - 52 * 60 * 1000,
+        )
+        insertVideoFile(
+            downloadId = 1L,
+            filePath = "downloads/example.V,mp4",
+        )
+        insertAudioFile(
+            downloadId = 1L,
+            filePath = "downloads/example.A.mp3",
         )
         insertMetadata(
             downloadId = 1L,
@@ -138,11 +178,14 @@ class MockDataBootstrapCallback(
             uid = "example-002",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "DOWNLOADING",
-            filePath = "downloads/example.mp4",
             errorMessage = null,
             enqueuedAt = now - 25 * 60 * 1000,
             startedAt = now - 24 * 60 * 1000,
             completedAt = null,
+        )
+        insertVideoFile(
+            downloadId = 2L,
+            filePath = "downloads/example.V.mp4",
         )
         insertMetadata(
             downloadId = 2L,
@@ -164,7 +207,6 @@ class MockDataBootstrapCallback(
             uid = "example-003",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "QUEUED",
-            filePath = null,
             errorMessage = null,
             enqueuedAt = now - 10 * 60 * 1000,
             startedAt = null,
@@ -190,7 +232,6 @@ class MockDataBootstrapCallback(
             uid = "example-004",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "FAILED",
-            filePath = null,
             errorMessage = "Network timeout",
             enqueuedAt = now - 40 * 60 * 1000,
             startedAt = now - 39 * 60 * 1000,
@@ -210,17 +251,20 @@ class MockDataBootstrapCallback(
             expectedBytes = 204_800_000L,
         )
 
-        // 5 - PAUSED
+        // 5 - STOPPED
         insertDownload(
             id = 5L,
             uid = "example-005",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "STOPPED",
-            filePath = "downloads/example.mp4",
             errorMessage = null,
             enqueuedAt = now - 90 * 60 * 1000,
             startedAt = now - 85 * 60 * 1000,
             completedAt = null,
+        )
+        insertVideoFile(
+            downloadId = 5L,
+            filePath = "downloads/example.V.mp4",
         )
         insertMetadata(
             downloadId = 5L,
@@ -242,7 +286,6 @@ class MockDataBootstrapCallback(
             uid = "example-006",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "WAITING_FOR_WIFI",
-            filePath = null,
             errorMessage = null,
             enqueuedAt = now - 15 * 60 * 1000,
             startedAt = null,
@@ -268,7 +311,6 @@ class MockDataBootstrapCallback(
             uid = "example-007",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "METADATA",
-            filePath = null,
             errorMessage = null,
             enqueuedAt = now - 2 * 60 * 1000,
             startedAt = now - 90 * 1000,
@@ -294,7 +336,6 @@ class MockDataBootstrapCallback(
             uid = "example-008",
             url = "https://example.com/watch?v=dQw4w9WgXcQ",
             status = "WAITING_FOR_NETWORK",
-            filePath = null,
             errorMessage = null,
             enqueuedAt = now - 5 * 60 * 1000,
             startedAt = null,
