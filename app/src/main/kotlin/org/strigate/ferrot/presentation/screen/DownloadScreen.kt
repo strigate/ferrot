@@ -130,14 +130,16 @@ fun DownloadScreen(
                     )
                 },
                 actions = {
-                    ActionIconButton(
-                        enabled = true,
+                    IconButton(
                         onClick = {
                             showConfirmDeleteDialog.value = true
                         },
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.content_description_delete_download),
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.content_description_delete_download),
+                        )
+                    }
                 },
             )
         },
