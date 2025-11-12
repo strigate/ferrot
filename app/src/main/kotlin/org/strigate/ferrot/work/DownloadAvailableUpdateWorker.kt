@@ -52,17 +52,13 @@ class DownloadAvailableUpdateWorker(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        return try {
-            runCatching {
-                stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
-            }
+        try {
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
             }.getOrNull()
 
             val currentTag = BuildConfig.VERSION_TAG
             val latestRelease = fetchLatestRelease()
-
             val latestTag = latestRelease.optString("tag_name")
             val isDraft = latestRelease.optBoolean("draft", false)
             val isPre = latestRelease.optBoolean("prerelease", false)
@@ -71,18 +67,18 @@ class DownloadAvailableUpdateWorker(
             if (latestTag.isBlank() || isDraft || isPre) {
                 Log.d(LOG_TAG, "No valid release to check")
                 clearAvailableUpdate()
-                return Result.success()
+                return markCheckSuccess()
             }
 
             val savedTag = savedAvailableUpdate?.tag
             if (savedTag != null && isNewerVersion(savedTag, latestTag)) {
                 Log.d(LOG_TAG, "Saved update ($savedTag) is newer than latest ($latestTag)")
-                return Result.success()
+                return markCheckSuccess()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
                 Log.d(LOG_TAG, "Already up to date: latest=$latestTag current=$currentTag")
                 clearAvailableUpdate()
-                return Result.success()
+                return markCheckSuccess()
             }
             if (savedTag != null && isNewerVersion(latestTag, savedTag)) {
                 Log.d(LOG_TAG, "Found newer update: latest=$latestTag replaces saved=$savedTag")
@@ -93,13 +89,13 @@ class DownloadAvailableUpdateWorker(
             val apkAsset = pickApkAsset(latestRelease.optJSONArray("assets")) ?: run {
                 Log.w(LOG_TAG, "No APK asset found on latest release $latestTag")
                 clearAvailableUpdate()
-                return Result.success()
+                return markCheckSuccess()
             }
             val downloadUrl = apkAsset.optString("browser_download_url")
             if (downloadUrl.isBlank()) {
                 Log.w(LOG_TAG, "APK asset missing browser_download_url")
                 clearAvailableUpdate()
-                return Result.success()
+                return markCheckSuccess()
             }
 
             val apkFile = updatePathProvider.apkFileFor(latestTag)
@@ -112,7 +108,7 @@ class DownloadAvailableUpdateWorker(
                             Log.d(LOG_TAG, "Update already downloaded & verified: ${apkFile.name}")
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
                             notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                            return Result.success()
+                            return markCheckSuccess()
                         }
                         Log.w(LOG_TAG, "Existing file sha256 mismatch. Re-downloading")
                         apkFile.delete()
@@ -123,7 +119,7 @@ class DownloadAvailableUpdateWorker(
                         Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
                         saveAvailableUpdate(latestTag, apkFile.absolutePath)
                         notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                        return Result.success()
+                        return markCheckSuccess()
                     }
 
                     else -> {
@@ -147,7 +143,7 @@ class DownloadAvailableUpdateWorker(
                     if (!validateSha256(partFile, expectedDigest)) {
                         partFile.delete()
                         clearAvailableUpdate()
-                        return Result.retry()
+                        return markCheckRetry()
                     }
                 }
                 if (apkFile.exists()) apkFile.delete()
@@ -155,23 +151,23 @@ class DownloadAvailableUpdateWorker(
                     Log.w(LOG_TAG, "Failed to rename part file to final output")
                     partFile.delete()
                     clearAvailableUpdate()
-                    return Result.retry()
+                    return markCheckRetry()
                 }
 
                 Log.d(LOG_TAG, "Update downloaded successfully: ${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
                 notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                Result.success()
+                return markCheckSuccess()
             } catch (throwable: Throwable) {
                 Log.wtf(LOG_TAG, "Download failed", throwable)
                 partFile.delete()
                 clearAvailableUpdate()
-                Result.retry()
+                return markCheckRetry()
             }
         } catch (throwable: Throwable) {
             Log.wtf(LOG_TAG, "Update check failed", throwable)
             clearAvailableUpdate()
-            Result.retry()
+            return markCheckRetry()
         }
     }
 
@@ -341,6 +337,24 @@ class DownloadAvailableUpdateWorker(
                 if (file.exists()) file.delete()
             }
         }
+    }
+
+    private suspend fun markCheckSuccess(): Result {
+        runCatching {
+            stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
+        }.onFailure {
+            Log.w(LOG_TAG, "Failed to save last check timestamp", it)
+        }
+        return Result.success()
+    }
+
+    private suspend fun markCheckRetry(): Result {
+        runCatching {
+            stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
+        }.onFailure {
+            Log.w(LOG_TAG, "Failed to save last check timestamp", it)
+        }
+        return Result.retry()
     }
 
     companion object {
