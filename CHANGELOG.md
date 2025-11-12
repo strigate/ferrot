@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.1 - 2025-11-12
+### Changed
+- Updated README and in-app intro text
+- Refined phrasing in intro copy
+- Renamed downloads SQL view and added timestamp sorting
+- Migrated database to version 3
+- Replaced custom Action Icon Button with standard Icon Button in Download screen.
+- Updated Android Gradle Plugin to 8.13.1
+
+### Fixed
+- Update-check workers now record timestamps only after completion
+- Removed early timestamp writes during worker execution
+
 ## 1.2.0 - 2025-11-11
 ### Added
 - Split video and audio files into their own database tables
