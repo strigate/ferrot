@@ -9,22 +9,28 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 interface DownloadWithMetadataViewDao {
     @Query(
         """
-        SELECT * FROM DownloadWithMetadataView
-        ORDER BY
-          CASE status
-            WHEN 'QUEUED' THEN 0
-            WHEN 'WAITING_FOR_NETWORK' THEN 1
-            WHEN 'WAITING_FOR_WIFI' THEN 2
-            WHEN 'METADATA' THEN 3
-            WHEN 'PAUSED' THEN 4
-            WHEN 'DOWNLOADING' THEN 5
-            WHEN 'COMPLETED' THEN 6
-            WHEN 'FAILED' THEN 7
-            WHEN 'STOPPED' THEN 8
-            ELSE 9
-          END,
-          id DESC
-        """
+    SELECT * FROM downloads_with_metadata_view
+    ORDER BY
+      CASE status
+        WHEN 'QUEUED' THEN 0
+        WHEN 'WAITING_FOR_NETWORK' THEN 1
+        WHEN 'WAITING_FOR_WIFI' THEN 2
+        WHEN 'METADATA' THEN 3
+        WHEN 'PAUSED' THEN 4
+        WHEN 'DOWNLOADING' THEN 5
+        WHEN 'COMPLETED' THEN 6
+        WHEN 'FAILED' THEN 7
+        WHEN 'STOPPED' THEN 8
+        ELSE 9
+      END,
+      CASE
+        WHEN status = 'COMPLETED' THEN completedAtMillis
+        WHEN status IN ('DOWNLOADING','PAUSED','METADATA') THEN startedAtMillis
+        WHEN status IN ('QUEUED','WAITING_FOR_NETWORK','WAITING_FOR_WIFI','FAILED','STOPPED') THEN enqueuedAtMillis
+        ELSE enqueuedAtMillis
+      END DESC,
+      id DESC
+    """
     )
     fun getAllAsFlow(): Flow<List<DownloadWithMetadataView>>
 }
