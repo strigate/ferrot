@@ -34,9 +34,6 @@ class UpdateDependenciesWorker(
             enableForeground(
                 notificationText = appContext.getString(R.string.worker_notification_text_updating_dependencies),
             )
-            runCatching {
-                stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
-            }
             Log.d(LOG_TAG, "Updating YoutubeDL")
             val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
                 updateChannel = YoutubeDL.UpdateChannel.STABLE,
@@ -45,21 +42,37 @@ class UpdateDependenciesWorker(
             Log.d(LOG_TAG, "YoutubeDL update completed: status=$updateStatus")
 
             when (updateStatus) {
-                YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE -> {
+                YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE ->
                     appContext.toast(appContext.getString(R.string.toast_already_up_to_date))
-                }
 
-                YoutubeDL.UpdateStatus.DONE -> {
+                YoutubeDL.UpdateStatus.DONE ->
                     appContext.toast(appContext.getString(R.string.toast_done))
-                }
 
                 else -> appContext.toast("$updateStatus")
             }
-            Result.success()
+            markCheckSuccess()
         } catch (throwable: Throwable) {
             Log.wtf(LOG_TAG, "An error occurred while updating dependencies", throwable)
-            Result.failure()
+            markCheckFailure()
         }
+    }
+
+    private suspend fun markCheckSuccess(): Result {
+        runCatching {
+            stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
+        }.onFailure {
+            Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
+        }
+        return Result.success()
+    }
+
+    private suspend fun markCheckFailure(): Result {
+        runCatching {
+            stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
+        }.onFailure {
+            Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
+        }
+        return Result.failure()
     }
 
     companion object {
