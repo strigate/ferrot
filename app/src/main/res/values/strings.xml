@@ -22,7 +22,7 @@
     <string name="screen_title_about">About</string>
 
     <string name="downloads_intro_title">Share to %1$s</string>
-    <string name="downloads_intro_body">When viewing a video or post in your browser or another app, tap Share and choose %1$s. %1$s will try to download the media straight to your device and list it here.</string>
+    <string name="downloads_intro_body">When viewing a video or post on social media or in your browser, tap Share and choose %1$s. %1$s will try to download it straight to your device and list it here.</string>
 
     <string name="available_update_ready">Update %1$s is ready to install</string>
 
