@@ -7,7 +7,7 @@ import javax.inject.Inject
 class SaveDownloadMetadataUseCase @Inject constructor(
     private val downloadMetadataRepository: DownloadMetadataRepository,
 ) {
-    suspend operator fun invoke(meta: DownloadMetadata) {
-        downloadMetadataRepository.save(meta)
+    suspend operator fun invoke(downloadMetadata: DownloadMetadata) {
+        downloadMetadataRepository.save(downloadMetadata)
     }
 }

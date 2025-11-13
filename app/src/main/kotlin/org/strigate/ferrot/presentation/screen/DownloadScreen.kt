@@ -241,15 +241,15 @@ private fun DownloadContent(
                 horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val selectedExtension = when (selectedMedia) {
-                    DownloadMediaType.VIDEO -> video?.extension
-                    DownloadMediaType.AUDIO -> audio?.extension
+                val selectedFileExtension = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> video?.fileExtension
+                    DownloadMediaType.AUDIO -> audio?.fileExtension
                 }?.takeIf {
                     it.isNotBlank()
                 }
-                selectedExtension?.let { extension ->
-                    ExtensionPill(
-                        text = extension.uppercase(),
+                selectedFileExtension?.let { fileExtension ->
+                    FileExtensionPill(
+                        text = fileExtension.uppercase(),
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -435,7 +435,7 @@ private fun ThumbnailCard(
 }
 
 @Composable
-private fun ExtensionPill(
+private fun FileExtensionPill(
     text: String,
     modifier: Modifier = Modifier,
 ) {

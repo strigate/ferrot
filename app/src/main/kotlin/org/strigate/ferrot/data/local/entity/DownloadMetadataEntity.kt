@@ -23,4 +23,5 @@ data class DownloadMetadataEntity(
     val downloadId: Long,
     val title: String? = null,
     val thumbnailFilePath: String? = null,
+    val durationSeconds: Int? = null,
 )

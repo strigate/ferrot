@@ -7,9 +7,11 @@ internal fun DownloadVideo.toEntity() = DownloadVideoEntity(
     id = 0L,
     downloadId = downloadId,
     filePath = filePath,
+    fileExtension = fileExtension,
 )
 
 internal fun DownloadVideoEntity.toDomain() = DownloadVideo(
     downloadId = downloadId,
     filePath = filePath,
+    fileExtension = fileExtension,
 )

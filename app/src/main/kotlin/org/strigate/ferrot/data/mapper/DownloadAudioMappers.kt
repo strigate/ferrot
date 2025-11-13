@@ -7,9 +7,11 @@ internal fun DownloadAudio.toEntity() = DownloadAudioEntity(
     id = 0L,
     downloadId = downloadId,
     filePath = filePath,
+    fileExtension = fileExtension,
 )
 
 internal fun DownloadAudioEntity.toDomain() = DownloadAudio(
     downloadId = downloadId,
     filePath = filePath,
+    fileExtension = fileExtension,
 )

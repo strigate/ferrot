@@ -7,10 +7,12 @@ internal fun DownloadMetadataEntity.toDomain() = DownloadMetadata(
     downloadId = downloadId,
     title = title,
     thumbnailFilePath = thumbnailFilePath,
+    durationSeconds = durationSeconds,
 )
 
 internal fun DownloadMetadata.toEntity() = DownloadMetadataEntity(
     downloadId = downloadId,
     title = title,
     thumbnailFilePath = thumbnailFilePath,
+    durationSeconds = durationSeconds,
 )
