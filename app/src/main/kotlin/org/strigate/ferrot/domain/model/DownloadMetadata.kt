@@ -4,4 +4,5 @@ data class DownloadMetadata(
     val downloadId: Long,
     val title: String?,
     val thumbnailFilePath: String?,
+    val durationSeconds: Int?,
 )

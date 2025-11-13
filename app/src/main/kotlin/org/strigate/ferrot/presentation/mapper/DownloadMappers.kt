@@ -5,10 +5,12 @@ import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadProgress
 import org.strigate.ferrot.domain.model.DownloadVideo
+import org.strigate.ferrot.extensions.extractFileExtension
+import org.strigate.ferrot.extensions.extractFileName
+import org.strigate.ferrot.extensions.stripFileExtension
 import org.strigate.ferrot.presentation.model.DownloadAudioUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.model.DownloadVideoUiData
-import java.util.Locale
 
 fun Download.toUiData(
     video: DownloadVideo?,
@@ -22,7 +24,10 @@ fun Download.toUiData(
             DownloadVideoUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                extension = filePath.extractFileExtension(),
+                fileExtension = (
+                        video.fileExtension.takeIf { it.isNotBlank() }
+                            ?: filePath.extractFileExtension()
+                        ).orEmpty(),
             )
         }
 
@@ -32,13 +37,21 @@ fun Download.toUiData(
             DownloadAudioUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                extension = filePath.extractFileExtension(),
+                fileExtension = (
+                        audio.fileExtension.takeIf { it.isNotBlank() }
+                            ?: filePath.extractFileExtension()
+                        ).orEmpty(),
             )
         }
 
-    val derivedTitleFromVideo = downloadVideoUiData?.fileName?.stripFileExtension()
+    val derivedTitleFromVideo = downloadVideoUiData
+        ?.fileName
+        ?.stripFileExtension()
         ?.takeIf { it.isNotBlank() }
-    val derivedTitleFromAudio = downloadAudioUiData?.fileName?.stripFileExtension()
+
+    val derivedTitleFromAudio = downloadAudioUiData
+        ?.fileName
+        ?.stripFileExtension()
         ?.takeIf { it.isNotBlank() }
 
     val titleValue = metadata?.title
@@ -46,6 +59,7 @@ fun Download.toUiData(
         ?: derivedTitleFromVideo
         ?: derivedTitleFromAudio
         ?: url
+
     val fraction = progress?.progressPercent
         ?.let { it.coerceIn(0f, 100f) / 100f }
         ?.takeIf { it.isFinite() }
@@ -54,6 +68,7 @@ fun Download.toUiData(
         title = titleValue,
         url = url,
         status = status.toUiData(),
+        durationSeconds = metadata?.durationSeconds,
         video = downloadVideoUiData,
         audio = downloadAudioUiData,
         errorMessage = errorMessage,
@@ -64,13 +79,3 @@ fun Download.toUiData(
         thumbnailFilePath = metadata?.thumbnailFilePath,
     )
 }
-
-private fun String.extractFileName() = substringAfterLast('/', missingDelimiterValue = "")
-    .takeIf { it.isNotBlank() }
-
-private fun String.stripFileExtension() = substringBeforeLast('.', missingDelimiterValue = this)
-
-private fun String.extractFileExtension() = extractFileName()
-    ?.substringAfterLast('.', missingDelimiterValue = "")
-    ?.takeIf { it.isNotBlank() }
-    ?.uppercase(Locale.ROOT)
