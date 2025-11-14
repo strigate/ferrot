@@ -85,6 +85,7 @@ fun DownloadScreen(
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedMedia by viewModel.selectedMediaFlow.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
@@ -199,18 +200,18 @@ private fun DownloadContent(
                 style = MaterialTheme.typography.titleLarge,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 2,
-                text = title,
+                text = metadata?.title ?: url,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             DownloadProgressSection(
                 status = status,
-                progressFraction = progressFraction,
-                etaSeconds = etaSeconds,
-                bytesDownloaded = bytesDownloaded,
+                progressFraction = progress?.progressFraction,
+                etaSeconds = progress?.etaSeconds,
+                bytesDownloaded = progress?.bytesDownloaded ?: 0L,
                 forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
             )
             Spacer(modifier = Modifier.height(dimens.spacingXSmall))
-            MediaSwitcherSegmented(
+            MediaSwitcherSegmentedButtonRow(
                 modifier = Modifier
                     .fillMaxWidth(),
                 selected = selectedMedia,
@@ -224,11 +225,11 @@ private fun DownloadContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected =
-                status == DownloadStatusUiData.COMPLETED && !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
+                    && !selectedPath.isNullOrBlank()
 
             ThumbnailCard(
-                thumbnailFilePath = thumbnailFilePath,
+                thumbnailFilePath = metadata?.thumbnailFilePath,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
@@ -300,7 +301,7 @@ private fun DownloadContent(
 }
 
 @Composable
-private fun MediaSwitcherSegmented(
+private fun MediaSwitcherSegmentedButtonRow(
     selected: DownloadMediaType,
     modifier: Modifier = Modifier,
     enableVideo: Boolean,

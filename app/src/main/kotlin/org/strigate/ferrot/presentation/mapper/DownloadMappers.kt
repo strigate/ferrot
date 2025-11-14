@@ -9,6 +9,8 @@ import org.strigate.ferrot.extensions.extractFileExtension
 import org.strigate.ferrot.extensions.extractFileName
 import org.strigate.ferrot.extensions.stripFileExtension
 import org.strigate.ferrot.presentation.model.DownloadAudioUiData
+import org.strigate.ferrot.presentation.model.DownloadMetadataUiData
+import org.strigate.ferrot.presentation.model.DownloadProgressUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.model.DownloadVideoUiData
 
@@ -60,22 +62,34 @@ fun Download.toUiData(
         ?: derivedTitleFromAudio
         ?: url
 
-    val fraction = progress?.progressPercent
-        ?.let { it.coerceIn(0f, 100f) / 100f }
-        ?.takeIf { it.isFinite() }
+    val metadataUiData = DownloadMetadataUiData(
+        title = titleValue,
+        thumbnailFilePath = metadata?.thumbnailFilePath,
+        durationSeconds = metadata?.durationSeconds,
+    )
+
+    val progressUiData = progress?.let {
+        val fraction = it.progressPercent
+            .coerceIn(0f, 100f)
+            .div(100f)
+            .takeIf { value -> value.isFinite() }
+            ?: 0f
+
+        DownloadProgressUiData(
+            progressFraction = fraction,
+            bytesDownloaded = it.bytesDownloaded,
+            etaSeconds = it.etaSeconds,
+            expectedBytes = it.expectedBytes,
+        )
+    }
 
     return DownloadUiData(
-        title = titleValue,
         url = url,
         status = status.toUiData(),
-        durationSeconds = metadata?.durationSeconds,
+        metadata = metadataUiData,
         video = downloadVideoUiData,
         audio = downloadAudioUiData,
+        progress = progressUiData,
         errorMessage = errorMessage,
-        progressFraction = fraction,
-        bytesDownloaded = progress?.bytesDownloaded ?: 0L,
-        etaSeconds = progress?.etaSeconds,
-        expectedBytes = progress?.expectedBytes,
-        thumbnailFilePath = metadata?.thumbnailFilePath,
     )
 }
