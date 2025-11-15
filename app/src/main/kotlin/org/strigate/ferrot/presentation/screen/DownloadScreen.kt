@@ -75,6 +75,7 @@ import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
 import java.io.File
 
@@ -230,6 +231,7 @@ private fun DownloadContent(
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
+                durationSeconds = metadata?.durationSeconds,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
@@ -290,10 +292,23 @@ private fun DownloadContent(
                     DownloadMediaType.AUDIO -> audio?.fileName
                 }
                 selectedName?.let {
-                    MetaItem(stringResource(R.string.download_filename), it)
+                    MetaItem(
+                        label = stringResource(R.string.download_filename),
+                        value = it,
+                    )
+                }
+                val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
+                formattedDuration?.let {
+                    MetaItem(
+                        label = stringResource(R.string.download_duration),
+                        value = it,
+                    )
                 }
                 errorMessage?.let {
-                    MetaItem(stringResource(R.string.download_error_message), it)
+                    MetaItem(
+                        label = stringResource(R.string.download_error_message),
+                        value = it,
+                    )
                 }
             }
         }
@@ -339,6 +354,7 @@ private fun MediaSwitcherSegmentedButtonRow(
 @Composable
 private fun ThumbnailCard(
     thumbnailFilePath: String?,
+    durationSeconds: Int?,
     showRetry: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
@@ -357,6 +373,8 @@ private fun ThumbnailCard(
         showPlay -> onPlayClick
         else -> null
     }
+    val durationText = UiFormatter.formatDuration(durationSeconds)
+    val overlayBackgroundColor = Color.Black.copy(alpha = 0.35f)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -421,13 +439,34 @@ private fun ThumbnailCard(
                         .align(Alignment.Center)
                         .size(dimens.overlayButtonSize)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.35f)),
+                        .background(overlayBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         tint = Color.White,
                         contentDescription = overlayContentDescription,
                         imageVector = overlayIcon,
+                    )
+                }
+            }
+            if (durationText != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(dimens.spacingSmall)
+                        .background(
+                            color = overlayBackgroundColor,
+                            shape = MaterialTheme.shapes.small,
+                        )
+                        .padding(
+                            horizontal = dimens.spacingSmall,
+                            vertical = dimens.spacingXXSmall,
+                        ),
+                ) {
+                    Text(
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        text = durationText,
                     )
                 }
             }
