@@ -296,7 +296,7 @@ class DownloadWorker(
                     Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
                 } else {
                     val audioOutputFilePath = audioOutputFile.absolutePath
-                    val audioOutputFileExtension = videoInfo.ext ?: audioOutputFilePath
+                    val audioOutputFileExtension = audioOutputFilePath
                         .extractFileExtension()
                         .orEmpty()
 
