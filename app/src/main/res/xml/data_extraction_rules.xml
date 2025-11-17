@@ -18,20 +18,14 @@
             path="." />
     </cloud-backup>
     <device-transfer>
-        <exclude
+        <include
             domain="file"
             path="." />
-        <exclude
+        <include
             domain="database"
             path="." />
-        <exclude
+        <include
             domain="sharedpref"
-            path="." />
-        <exclude
-            domain="external"
-            path="." />
-        <exclude
-            domain="root"
             path="." />
     </device-transfer>
 </data-extraction-rules>

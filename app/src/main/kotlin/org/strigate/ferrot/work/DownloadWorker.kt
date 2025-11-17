@@ -30,9 +30,11 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.DownloadPathProvider
+import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.model.DownloadVideo
 import org.strigate.ferrot.domain.model.QualityProfile
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
@@ -41,6 +43,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
+import org.strigate.ferrot.extensions.extractFileExtension
 import org.strigate.ferrot.extensions.parseErrorMessage
 import org.strigate.ferrot.extensions.toast
 import java.io.File
@@ -160,6 +163,7 @@ class DownloadWorker(
                             downloadId = downloadId,
                             title = videoInfo.title,
                             thumbnailFilePath = thumbnailFilePath,
+                            durationSeconds = videoInfo.duration.takeIf { it > 0 },
                         )
                     )
                 }
@@ -235,15 +239,25 @@ class DownloadWorker(
                     wasDownloadDeleted = true
                     throw CancellationException()
                 }
+
                 val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfo.id)
                 if (videoOutputFile == null || !videoOutputFile.exists()) {
                     Log.w(LOG_TAG, "$tag Video output file could not be located or does not exist")
                     return@mainScope handleDownloadFailedResult()
                 }
+
+                val videoOutputFilePath = videoOutputFile.absolutePath
+                val videoOutputFileExtension = videoInfo.ext ?: videoOutputFilePath
+                    .extractFileExtension()
+                    .orEmpty()
+
                 Log.d(LOG_TAG, "$tag Video output file exists, saving path")
-                downloadVideoUseCase.updateDownloadVideoFilePathUseCase(
-                    filePath = videoOutputFile.absolutePath,
-                    downloadId = downloadId,
+                downloadVideoUseCase.saveDownloadVideoUseCase(
+                    DownloadVideo(
+                        downloadId = downloadId,
+                        filePath = videoOutputFilePath,
+                        fileExtension = videoOutputFileExtension,
+                    )
                 )
 
                 withContext(Dispatchers.IO) {
@@ -281,10 +295,18 @@ class DownloadWorker(
                 if (audioOutputFile == null || !audioOutputFile.exists()) {
                     Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
                 } else {
+                    val audioOutputFilePath = audioOutputFile.absolutePath
+                    val audioOutputFileExtension = audioOutputFilePath
+                        .extractFileExtension()
+                        .orEmpty()
+
                     Log.d(LOG_TAG, "$tag Audio output file exists, saving path")
-                    downloadAudioUseCase.updateDownloadAudioFilePathUseCase(
-                        filePath = audioOutputFile.absolutePath,
-                        downloadId = downloadId,
+                    downloadAudioUseCase.saveDownloadAudioUseCase(
+                        DownloadAudio(
+                            downloadId = downloadId,
+                            filePath = audioOutputFilePath,
+                            fileExtension = audioOutputFileExtension,
+                        )
                     )
                 }
 

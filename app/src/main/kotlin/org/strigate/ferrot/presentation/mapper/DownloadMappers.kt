@@ -5,10 +5,14 @@ import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadProgress
 import org.strigate.ferrot.domain.model.DownloadVideo
+import org.strigate.ferrot.extensions.extractFileExtension
+import org.strigate.ferrot.extensions.extractFileName
+import org.strigate.ferrot.extensions.stripFileExtension
 import org.strigate.ferrot.presentation.model.DownloadAudioUiData
+import org.strigate.ferrot.presentation.model.DownloadMetadataUiData
+import org.strigate.ferrot.presentation.model.DownloadProgressUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.model.DownloadVideoUiData
-import java.util.Locale
 
 fun Download.toUiData(
     video: DownloadVideo?,
@@ -22,7 +26,10 @@ fun Download.toUiData(
             DownloadVideoUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                extension = filePath.extractFileExtension(),
+                fileExtension = (
+                        video.fileExtension.takeIf { it.isNotBlank() }
+                            ?: filePath.extractFileExtension()
+                        ).orEmpty(),
             )
         }
 
@@ -32,13 +39,21 @@ fun Download.toUiData(
             DownloadAudioUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                extension = filePath.extractFileExtension(),
+                fileExtension = (
+                        audio.fileExtension.takeIf { it.isNotBlank() }
+                            ?: filePath.extractFileExtension()
+                        ).orEmpty(),
             )
         }
 
-    val derivedTitleFromVideo = downloadVideoUiData?.fileName?.stripFileExtension()
+    val derivedTitleFromVideo = downloadVideoUiData
+        ?.fileName
+        ?.stripFileExtension()
         ?.takeIf { it.isNotBlank() }
-    val derivedTitleFromAudio = downloadAudioUiData?.fileName?.stripFileExtension()
+
+    val derivedTitleFromAudio = downloadAudioUiData
+        ?.fileName
+        ?.stripFileExtension()
         ?.takeIf { it.isNotBlank() }
 
     val titleValue = metadata?.title
@@ -46,31 +61,35 @@ fun Download.toUiData(
         ?: derivedTitleFromVideo
         ?: derivedTitleFromAudio
         ?: url
-    val fraction = progress?.progressPercent
-        ?.let { it.coerceIn(0f, 100f) / 100f }
-        ?.takeIf { it.isFinite() }
+
+    val metadataUiData = DownloadMetadataUiData(
+        title = titleValue,
+        thumbnailFilePath = metadata?.thumbnailFilePath,
+        durationSeconds = metadata?.durationSeconds,
+    )
+
+    val progressUiData = progress?.let {
+        val fraction = it.progressPercent
+            .coerceIn(0f, 100f)
+            .div(100f)
+            .takeIf { value -> value.isFinite() }
+            ?: 0f
+
+        DownloadProgressUiData(
+            progressFraction = fraction,
+            bytesDownloaded = it.bytesDownloaded,
+            etaSeconds = it.etaSeconds,
+            expectedBytes = it.expectedBytes,
+        )
+    }
 
     return DownloadUiData(
-        title = titleValue,
         url = url,
         status = status.toUiData(),
+        metadata = metadataUiData,
         video = downloadVideoUiData,
         audio = downloadAudioUiData,
+        progress = progressUiData,
         errorMessage = errorMessage,
-        progressFraction = fraction,
-        bytesDownloaded = progress?.bytesDownloaded ?: 0L,
-        etaSeconds = progress?.etaSeconds,
-        expectedBytes = progress?.expectedBytes,
-        thumbnailFilePath = metadata?.thumbnailFilePath,
     )
 }
-
-private fun String.extractFileName() = substringAfterLast('/', missingDelimiterValue = "")
-    .takeIf { it.isNotBlank() }
-
-private fun String.stripFileExtension() = substringBeforeLast('.', missingDelimiterValue = this)
-
-private fun String.extractFileExtension() = extractFileName()
-    ?.substringAfterLast('.', missingDelimiterValue = "")
-    ?.takeIf { it.isNotBlank() }
-    ?.uppercase(Locale.ROOT)

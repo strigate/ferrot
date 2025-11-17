@@ -24,4 +24,5 @@ data class DownloadVideoEntity(
     val id: Long = 0L,
     val downloadId: Long,
     val filePath: String,
+    val fileExtension: String,
 )
