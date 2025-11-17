@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.2 - 2025-11-17
+### Added
+- Media duration now shown in the download screen
+- Media file extensions are now stored for both video and audio
+- Duration is now saved as part of download metadata
+- New, cleaner split between metadata and progress in the download UI
+
+### Changed
+- Download UI structure reorganized for better clarity
+- Download screen updated to use the new UI layout
+- Extension pill component renamed and polished
+- Database schema upgraded with a new migration
+
+### Fixed
+- Audio file extensions now detected correctly
+- Device-to-device transfer fully enabled for app data
+
 ## 1.2.1 - 2025-11-12
 ### Changed
 - Updated README and in-app intro text
