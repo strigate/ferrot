@@ -99,7 +99,7 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            keepDebugSymbols += listOf("**/*.zip.so")
+            keepDebugSymbols += listOf("**/*.so")
         }
     }
     applicationVariants.all {
