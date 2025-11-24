@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.3 - 2025-11-24
+### Changed
+- Dependency update flow improved with clearer toast messages.
+- Updated dependencies and refined JNI debug symbol handling.
+
+### Fixed
+- Package replace now properly resets update state and requeues pending downloads.
+
 ## 1.2.2 - 2025-11-17
 ### Added
 - Media duration now shown in the download screen
