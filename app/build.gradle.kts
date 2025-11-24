@@ -29,11 +29,11 @@ android {
     namespace = "org.strigate.ferrot"
     compileSdk = 36
     defaultConfig {
-        val version = "1.2.2"
+        val version = "1.2.3"
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 9
+        versionCode = 10
         versionName = buildVersionName(version, versionCode)
         stringField("VERSION_TAG", "v$version")
         applyFirebaseProperties()
@@ -99,7 +99,7 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
-            keepDebugSymbols += listOf("**/*.zip.so")
+            keepDebugSymbols += listOf("**/*.so")
         }
     }
     applicationVariants.all {

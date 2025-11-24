@@ -43,10 +43,10 @@ class UpdateDependenciesWorker(
 
             when (updateStatus) {
                 YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE ->
-                    appContext.toast(appContext.getString(R.string.toast_already_up_to_date))
+                    appContext.toast(appContext.getString(R.string.toast_dependencies_already_up_to_date))
 
                 YoutubeDL.UpdateStatus.DONE ->
-                    appContext.toast(appContext.getString(R.string.toast_done))
+                    appContext.toast(appContext.getString(R.string.toast_dependencies_update_complete))
 
                 else -> appContext.toast("$updateStatus")
             }
