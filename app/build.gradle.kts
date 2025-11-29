@@ -26,16 +26,17 @@ if (googleServicesPropertiesFile.exists()) {
 }
 
 android {
+    val baseVersion = "1.2.3"
     namespace = "org.strigate.ferrot"
     compileSdk = 36
+
     defaultConfig {
-        val version = "1.2.3"
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
         versionCode = 10
-        versionName = buildVersionName(version, versionCode)
-        stringField("VERSION_TAG", "v$version")
+        versionName = buildVersionName(baseVersion, versionCode)
+        stringField("VERSION_TAG", "v$baseVersion")
         applyFirebaseProperties()
         applyMockBootstrapProperty(false)
         ndk {
