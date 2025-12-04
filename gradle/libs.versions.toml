@@ -6,8 +6,8 @@ startupRuntime = "1.2.0"
 datastorePreferences = "1.2.0"
 material = "1.13.0"
 lifecycle = "2.10.0"
-composeBom = "2025.11.01"
-activityCompose = "1.12.0"
+composeBom = "2025.12.00"
+activityCompose = "1.12.1"
 navigationCompose = "2.9.6"
 work = "2.11.0"
 hilt = "2.57.2"
@@ -24,7 +24,7 @@ kotlin = "2.2.21"
 ksp = "2.2.21-2.0.4"
 
 [libraries]
-# Core
+# Android
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startupRuntime" }
