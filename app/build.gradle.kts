@@ -119,7 +119,6 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-
 private fun ApplicationDefaultConfig.applyMockBootstrapProperty(enabled: Boolean) {
     boolField("BOOTSTRAP_MOCK_DATA", enabled)
 }
@@ -183,7 +182,7 @@ private fun isDebugBuildType(): Boolean {
 }
 
 dependencies {
-    // Core
+    // Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.startup.runtime)
