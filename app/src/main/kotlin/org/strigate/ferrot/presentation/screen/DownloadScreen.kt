@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,6 +63,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -161,21 +164,26 @@ fun DownloadScreen(
             )
         },
         content = { contentPadding ->
-            Surface(
-                modifier = modifier
-                    .padding(contentPadding)
-                    .fillMaxSize(),
-            ) {
-                when (val state = uiState) {
-                    is DownloadUiState.Loading -> LoadingState()
-                    is DownloadUiState.Error -> DownloadError()
-                    is DownloadUiState.Data -> {
-                        DownloadPager(
-                            data = state.data,
-                            selectedMedia = selectedMedia,
-                            viewModel = viewModel,
-                        )
-                    }
+            val dimens = LocalDimens.current
+            when (val state = uiState) {
+                is DownloadUiState.Loading -> LoadingState()
+                is DownloadUiState.Error -> DownloadError()
+                is DownloadUiState.Data -> {
+                    val peekPadding = dimens.spacingMediumAlt
+                    val pageSpacing = dimens.spacingSmall
+                    DownloadPager(
+                        modifier = modifier
+                            .padding(contentPadding)
+                            .fillMaxSize(),
+                        data = state.data,
+                        selectedMedia = selectedMedia,
+                        viewModel = viewModel,
+                        pagePadding = PaddingValues(
+                            horizontal = peekPadding,
+                            vertical = 0.dp,
+                        ),
+                        pageSpacing = pageSpacing,
+                    )
                 }
             }
         },
@@ -185,10 +193,14 @@ fun DownloadScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DownloadPager(
+    modifier: Modifier = Modifier,
     data: DownloadUiData,
     selectedMedia: DownloadMediaType,
     viewModel: DownloadViewModel,
+    pagePadding: PaddingValues,
+    pageSpacing: Dp,
 ) {
+    val dimens = LocalDimens.current
     val downloads = data.downloads
     if (downloads.isEmpty()) {
         DownloadError()
@@ -227,33 +239,43 @@ private fun DownloadPager(
     }
 
     HorizontalPager(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize(),
         state = pagerState,
+        contentPadding = pagePadding,
+        pageSpacing = pageSpacing,
     ) { page ->
         val item = downloads[page]
-        DownloadPageContent(
-            data = item,
-            selectedMedia = selectedMedia,
-            onMediaChange = {
-                viewModel.setSelectedMedia(it)
-            },
-            onEnsureValidSelection = {
-                viewModel.setSelectedMedia(it)
-            },
-            onPlayClick = {
-                viewModel.playDownload(item.id)
-            },
-            onSaveClick = {
-                viewModel.saveDownload(item.id)
-            },
-            onShareClick = {
-                viewModel.shareDownload(item.id)
-            },
-            onRetryClick = {
-                viewModel.retryDownload(item.id)
-            },
-        )
+        Surface(
+            modifier = Modifier
+                .fillMaxSize(),
+            shape = MaterialTheme.shapes.medium,
+            tonalElevation = dimens.tonalElevationHigh,
+            shadowElevation = dimens.shadowElevationLow,
+        ) {
+            DownloadPageContent(
+                data = item,
+                selectedMedia = selectedMedia,
+                onMediaChange = {
+                    viewModel.setSelectedMedia(it)
+                },
+                onEnsureValidSelection = {
+                    viewModel.setSelectedMedia(it)
+                },
+                onPlayClick = {
+                    viewModel.playDownload(item.id)
+                },
+                onSaveClick = {
+                    viewModel.saveDownload(item.id)
+                },
+                onShareClick = {
+                    viewModel.shareDownload(item.id)
+                },
+                onRetryClick = {
+                    viewModel.retryDownload(item.id)
+                },
+            )
+        }
     }
 }
 
@@ -282,6 +304,7 @@ private fun DownloadPageContent(
                 .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             Text(
                 style = MaterialTheme.typography.titleLarge,
                 overflow = TextOverflow.Ellipsis,
