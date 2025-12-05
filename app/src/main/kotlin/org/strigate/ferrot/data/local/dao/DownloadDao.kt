@@ -16,6 +16,9 @@ interface DownloadDao {
     @Query("SELECT * FROM download ORDER BY enqueuedAtMillis DESC")
     suspend fun getAll(): List<DownloadEntity>
 
+    @Query("SELECT * FROM download ORDER BY enqueuedAtMillis DESC")
+    fun getAllAsFlow(): Flow<List<DownloadEntity>>
+
     @Query("SELECT * FROM download WHERE id = :id")
     suspend fun getById(id: Long): DownloadEntity?
 

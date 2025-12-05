@@ -7,6 +7,7 @@ import org.strigate.ferrot.domain.model.DownloadStatus
 interface DownloadRepository {
     suspend fun save(download: Download): Long
     suspend fun getAll(): List<Download>
+    fun getAllAsFlow(): Flow<List<Download>>
     suspend fun getById(id: Long): Download?
     fun getByIdAsFlow(id: Long): Flow<Download?>
     suspend fun updateStatusById(id: Long, status: DownloadStatus): Int

@@ -25,6 +25,16 @@ class DownloadRepositoryImpl @Inject constructor(
             .map { it.toDomain() }
     }
 
+    override fun getAllAsFlow(): Flow<List<Download>> {
+        return downloadDao
+            .getAllAsFlow()
+            .map { entities ->
+                entities.map {
+                    it.toDomain()
+                }
+            }
+    }
+
     override suspend fun getById(id: Long): Download? {
         return downloadDao.getById(id)?.toDomain()
     }

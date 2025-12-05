@@ -10,16 +10,16 @@ import org.strigate.ferrot.extensions.extractFileName
 import org.strigate.ferrot.extensions.stripFileExtension
 import org.strigate.ferrot.presentation.model.DownloadAudioUiData
 import org.strigate.ferrot.presentation.model.DownloadMetadataUiData
+import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadProgressUiData
-import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.model.DownloadVideoUiData
 
-fun Download.toUiData(
+fun Download.toDetailUiData(
     video: DownloadVideo?,
     audio: DownloadAudio?,
     metadata: DownloadMetadata?,
     progress: DownloadProgress?,
-): DownloadUiData {
+): DownloadPageUiData {
     val downloadVideoUiData = video?.filePath
         ?.takeIf { it.isNotBlank() }
         ?.let { filePath ->
@@ -83,7 +83,8 @@ fun Download.toUiData(
         )
     }
 
-    return DownloadUiData(
+    return DownloadPageUiData(
+        id = id,
         url = url,
         status = status.toUiData(),
         metadata = metadataUiData,

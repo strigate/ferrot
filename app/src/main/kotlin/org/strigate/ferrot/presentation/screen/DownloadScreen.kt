@@ -184,131 +184,137 @@ private fun DownloadContent(
     onRetryClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
-    with(data) {
-        LaunchedEffect(audio?.filePath, selectedMedia) {
-            if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
-                onEnsureValidSelection(DownloadMediaType.VIDEO)
+    val selected = data.downloads.firstOrNull { it.id == data.id }
+    if (selected == null) {
+        DownloadError()
+    } else {
+        with(selected) {
+            LaunchedEffect(audio?.filePath, selectedMedia) {
+                if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
+                    onEnsureValidSelection(DownloadMediaType.VIDEO)
+                }
             }
-        }
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimens.spacingMediumAlt),
-            verticalArrangement = Arrangement.Top,
-        ) {
-            Text(
-                style = MaterialTheme.typography.titleLarge,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2,
-                text = metadata?.title ?: url,
-            )
-            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
-            DownloadProgressSection(
-                status = status,
-                progressFraction = progress?.progressFraction,
-                etaSeconds = progress?.etaSeconds,
-                bytesDownloaded = progress?.bytesDownloaded ?: 0L,
-                forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
-            )
-            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
-            MediaSwitcherSegmentedButtonRow(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                selected = selectedMedia,
-                enableVideo = video != null,
-                enableAudio = audio != null,
-                onSelect = onMediaChange,
-            )
-            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
 
-            val selectedPath = when (selectedMedia) {
-                DownloadMediaType.VIDEO -> video?.filePath
-                DownloadMediaType.AUDIO -> audio?.filePath
-            }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
-                    && !selectedPath.isNullOrBlank()
-
-            ThumbnailCard(
-                thumbnailFilePath = metadata?.thumbnailFilePath,
-                durationSeconds = metadata?.durationSeconds,
-                showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
-                showPlay = canActOnSelected,
-                onPlayClick = onPlayClick,
-                onRetryClick = onRetryClick,
-            )
-            Spacer(modifier = Modifier.height(dimens.spacingSmall))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimens.spacingMediumAlt),
+                verticalArrangement = Arrangement.Top,
             ) {
-                val selectedFileExtension = when (selectedMedia) {
-                    DownloadMediaType.VIDEO -> video?.fileExtension
-                    DownloadMediaType.AUDIO -> audio?.fileExtension
-                }?.takeIf {
-                    it.isNotBlank()
-                }
-                selectedFileExtension?.let { fileExtension ->
-                    FileExtensionPill(
-                        text = fileExtension.uppercase(),
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                ActionIconButton(
-                    enabled = canActOnSelected,
-                    onClick = {
-                        if (canActOnSelected) {
-                            onSaveClick()
-                        }
-                    },
-                    imageVector = Icons.Filled.Save,
-                    contentDescription = stringResource(R.string.content_description_save_to_device),
+                Text(
+                    style = MaterialTheme.typography.titleLarge,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 2,
+                    text = metadata?.title ?: url,
                 )
-                ActionIconButton(
-                    enabled = canActOnSelected,
-                    onClick = {
-                        if (canActOnSelected) {
-                            onShareClick()
-                        }
-                    },
-                    imageVector = Icons.Filled.Share,
-                    contentDescription = stringResource(R.string.content_description_share_download),
+                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+                DownloadProgressSection(
+                    status = status,
+                    progressFraction = progress?.progressFraction,
+                    etaSeconds = progress?.etaSeconds,
+                    bytesDownloaded = progress?.bytesDownloaded ?: 0L,
+                    forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
                 )
-            }
-            Spacer(modifier = Modifier.height(dimens.spacingSmall))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(dimens.spacingSmall))
-            Column {
-                MetaItem(
-                    label = stringResource(R.string.download_url),
-                    isCopyable = true,
-                    isUrl = true,
-                    value = url,
+                Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+                MediaSwitcherSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    selected = selectedMedia,
+                    enableVideo = video != null,
+                    enableAudio = audio != null,
+                    onSelect = onMediaChange,
                 )
-                val selectedName = when (selectedMedia) {
-                    DownloadMediaType.VIDEO -> video?.fileName
-                    DownloadMediaType.AUDIO -> audio?.fileName
+                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+
+                val selectedPath = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> video?.filePath
+                    DownloadMediaType.AUDIO -> audio?.filePath
                 }
-                selectedName?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_filename),
-                        value = it,
+                val canActOnSelected = status == DownloadStatusUiData.COMPLETED
+                        && !selectedPath.isNullOrBlank()
+
+                ThumbnailCard(
+                    thumbnailFilePath = metadata?.thumbnailFilePath,
+                    durationSeconds = metadata?.durationSeconds,
+                    showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
+                    showPlay = canActOnSelected,
+                    onPlayClick = onPlayClick,
+                    onRetryClick = onRetryClick,
+                )
+                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val selectedFileExtension = when (selectedMedia) {
+                        DownloadMediaType.VIDEO -> video?.fileExtension
+                        DownloadMediaType.AUDIO -> audio?.fileExtension
+                    }?.takeIf {
+                        it.isNotBlank()
+                    }
+                    selectedFileExtension?.let { fileExtension ->
+                        FileExtensionPill(
+                            text = fileExtension.uppercase(),
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    ActionIconButton(
+                        enabled = canActOnSelected,
+                        onClick = {
+                            if (canActOnSelected) {
+                                onSaveClick()
+                            }
+                        },
+                        imageVector = Icons.Filled.Save,
+                        contentDescription = stringResource(R.string.content_description_save_to_device),
+                    )
+                    ActionIconButton(
+                        enabled = canActOnSelected,
+                        onClick = {
+                            if (canActOnSelected) {
+                                onShareClick()
+                            }
+                        },
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = stringResource(R.string.content_description_share_download),
                     )
                 }
-                val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
-                formattedDuration?.let {
+                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                Column {
                     MetaItem(
-                        label = stringResource(R.string.download_duration),
-                        value = it,
+                        label = stringResource(R.string.download_url),
+                        isCopyable = true,
+                        isUrl = true,
+                        value = url,
                     )
-                }
-                errorMessage?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_error_message),
-                        value = it,
-                    )
+                    val selectedName = when (selectedMedia) {
+                        DownloadMediaType.VIDEO -> video?.fileName
+                        DownloadMediaType.AUDIO -> audio?.fileName
+                    }
+                    selectedName?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_filename),
+                            value = it,
+                        )
+                    }
+                    val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
+                    formattedDuration?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_duration),
+                            value = it,
+                        )
+                    }
+                    errorMessage?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_error_message),
+                            value = it,
+                        )
+                    }
                 }
             }
         }
