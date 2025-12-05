@@ -1,6 +1,7 @@
 package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +47,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,11 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
@@ -71,6 +81,7 @@ import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
@@ -106,8 +117,12 @@ fun DownloadScreen(
                 showConfirmDeleteDialog.value = false
             },
             negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = { showConfirmDeleteDialog.value = false },
-            onDismissRequest = { showConfirmDeleteDialog.value = false },
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
         )
     }
 
@@ -155,15 +170,10 @@ fun DownloadScreen(
                     is DownloadUiState.Loading -> LoadingState()
                     is DownloadUiState.Error -> DownloadError()
                     is DownloadUiState.Data -> {
-                        DownloadContent(
+                        DownloadPager(
                             data = state.data,
                             selectedMedia = selectedMedia,
-                            onMediaChange = { viewModel.setSelectedMedia(it) },
-                            onEnsureValidSelection = { viewModel.setSelectedMedia(it) },
-                            onPlayClick = { viewModel.playDownload() },
-                            onSaveClick = { viewModel.saveDownload() },
-                            onShareClick = { viewModel.shareDownload() },
-                            onRetryClick = { viewModel.retryDownload() },
+                            viewModel = viewModel,
                         )
                     }
                 }
@@ -172,9 +182,84 @@ fun DownloadScreen(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DownloadContent(
+private fun DownloadPager(
     data: DownloadUiData,
+    selectedMedia: DownloadMediaType,
+    viewModel: DownloadViewModel,
+) {
+    val downloads = data.downloads
+    if (downloads.isEmpty()) {
+        DownloadError()
+        return
+    }
+    val initialIndex = downloads
+        .indexOfFirst { it.id == data.id }
+        .coerceAtLeast(0)
+
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(
+        initialPage = initialIndex,
+        pageCount = { downloads.size }
+    )
+
+    LaunchedEffect(pagerState, downloads) {
+        snapshotFlow { pagerState.currentPage }
+            .map { page -> downloads.getOrNull(page)?.id }
+            .filter { it != null }
+            .distinctUntilChanged()
+            .collect { id ->
+                id?.let { viewModel.selectDownload(it) }
+            }
+    }
+    LaunchedEffect(data, viewModel.selectedId) {
+        snapshotFlow { viewModel.selectedId.value }
+            .mapNotNull { id -> downloads.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+            .distinctUntilChanged()
+            .collect { pageIndex ->
+                coroutineScope.launch {
+                    if (pagerState.currentPage != pageIndex) {
+                        pagerState.animateScrollToPage(pageIndex)
+                    }
+                }
+            }
+    }
+
+    HorizontalPager(
+        modifier = Modifier
+            .fillMaxSize(),
+        state = pagerState,
+    ) { page ->
+        val item = downloads[page]
+        DownloadPageContent(
+            data = item,
+            selectedMedia = selectedMedia,
+            onMediaChange = {
+                viewModel.setSelectedMedia(it)
+            },
+            onEnsureValidSelection = {
+                viewModel.setSelectedMedia(it)
+            },
+            onPlayClick = {
+                viewModel.playDownload(item.id)
+            },
+            onSaveClick = {
+                viewModel.saveDownload(item.id)
+            },
+            onShareClick = {
+                viewModel.shareDownload(item.id)
+            },
+            onRetryClick = {
+                viewModel.retryDownload(item.id)
+            },
+        )
+    }
+}
+
+@Composable
+private fun DownloadPageContent(
+    data: DownloadPageUiData,
     selectedMedia: DownloadMediaType,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -226,8 +311,8 @@ private fun DownloadContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
-                    && !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
+                    !selectedPath.isNullOrBlank()
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
