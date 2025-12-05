@@ -248,7 +248,8 @@ private fun DownloadPager(
         val item = downloads[page]
         Surface(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .padding(bottom = dimens.spacingSmall),
             shape = MaterialTheme.shapes.medium,
             tonalElevation = dimens.tonalElevationHigh,
             shadowElevation = dimens.shadowElevationLow,
