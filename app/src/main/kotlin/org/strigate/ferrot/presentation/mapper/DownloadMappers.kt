@@ -14,7 +14,7 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadProgressUiData
 import org.strigate.ferrot.presentation.model.DownloadVideoUiData
 
-fun Download.toDetailUiData(
+fun Download.toPageUiData(
     video: DownloadVideo?,
     audio: DownloadAudio?,
     metadata: DownloadMetadata?,

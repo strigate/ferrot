@@ -1,6 +1,7 @@
 package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +47,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,11 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
@@ -71,6 +81,7 @@ import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
@@ -106,8 +117,12 @@ fun DownloadScreen(
                 showConfirmDeleteDialog.value = false
             },
             negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = { showConfirmDeleteDialog.value = false },
-            onDismissRequest = { showConfirmDeleteDialog.value = false },
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
         )
     }
 
@@ -155,15 +170,10 @@ fun DownloadScreen(
                     is DownloadUiState.Loading -> LoadingState()
                     is DownloadUiState.Error -> DownloadError()
                     is DownloadUiState.Data -> {
-                        DownloadContent(
+                        DownloadPager(
                             data = state.data,
                             selectedMedia = selectedMedia,
-                            onMediaChange = { viewModel.setSelectedMedia(it) },
-                            onEnsureValidSelection = { viewModel.setSelectedMedia(it) },
-                            onPlayClick = { viewModel.playDownload() },
-                            onSaveClick = { viewModel.saveDownload() },
-                            onShareClick = { viewModel.shareDownload() },
-                            onRetryClick = { viewModel.retryDownload() },
+                            viewModel = viewModel,
                         )
                     }
                 }
@@ -172,9 +182,84 @@ fun DownloadScreen(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DownloadContent(
+private fun DownloadPager(
     data: DownloadUiData,
+    selectedMedia: DownloadMediaType,
+    viewModel: DownloadViewModel,
+) {
+    val downloads = data.downloads
+    if (downloads.isEmpty()) {
+        DownloadError()
+        return
+    }
+    val initialIndex = downloads
+        .indexOfFirst { it.id == data.id }
+        .coerceAtLeast(0)
+
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(
+        initialPage = initialIndex,
+        pageCount = { downloads.size }
+    )
+
+    LaunchedEffect(pagerState, downloads) {
+        snapshotFlow { pagerState.currentPage }
+            .map { page -> downloads.getOrNull(page)?.id }
+            .filter { it != null }
+            .distinctUntilChanged()
+            .collect { id ->
+                id?.let { viewModel.selectDownload(it) }
+            }
+    }
+    LaunchedEffect(data, viewModel.selectedId) {
+        snapshotFlow { viewModel.selectedId.value }
+            .mapNotNull { id -> downloads.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+            .distinctUntilChanged()
+            .collect { pageIndex ->
+                coroutineScope.launch {
+                    if (pagerState.currentPage != pageIndex) {
+                        pagerState.animateScrollToPage(pageIndex)
+                    }
+                }
+            }
+    }
+
+    HorizontalPager(
+        modifier = Modifier
+            .fillMaxSize(),
+        state = pagerState,
+    ) { page ->
+        val item = downloads[page]
+        DownloadPageContent(
+            data = item,
+            selectedMedia = selectedMedia,
+            onMediaChange = {
+                viewModel.setSelectedMedia(it)
+            },
+            onEnsureValidSelection = {
+                viewModel.setSelectedMedia(it)
+            },
+            onPlayClick = {
+                viewModel.playDownload(item.id)
+            },
+            onSaveClick = {
+                viewModel.saveDownload(item.id)
+            },
+            onShareClick = {
+                viewModel.shareDownload(item.id)
+            },
+            onRetryClick = {
+                viewModel.retryDownload(item.id)
+            },
+        )
+    }
+}
+
+@Composable
+private fun DownloadPageContent(
+    data: DownloadPageUiData,
     selectedMedia: DownloadMediaType,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -184,137 +269,131 @@ private fun DownloadContent(
     onRetryClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
-    val selected = data.downloads.firstOrNull { it.id == data.id }
-    if (selected == null) {
-        DownloadError()
-    } else {
-        with(selected) {
-            LaunchedEffect(audio?.filePath, selectedMedia) {
-                if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
-                    onEnsureValidSelection(DownloadMediaType.VIDEO)
-                }
+    with(data) {
+        LaunchedEffect(audio?.filePath, selectedMedia) {
+            if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
+                onEnsureValidSelection(DownloadMediaType.VIDEO)
             }
+        }
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = dimens.spacingMediumAlt),
+            verticalArrangement = Arrangement.Top,
+        ) {
+            Text(
+                style = MaterialTheme.typography.titleLarge,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 2,
+                text = metadata?.title ?: url,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+            DownloadProgressSection(
+                status = status,
+                progressFraction = progress?.progressFraction,
+                etaSeconds = progress?.etaSeconds,
+                bytesDownloaded = progress?.bytesDownloaded ?: 0L,
+                forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+            MediaSwitcherSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                selected = selectedMedia,
+                enableVideo = video != null,
+                enableAudio = audio != null,
+                onSelect = onMediaChange,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
 
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimens.spacingMediumAlt),
-                verticalArrangement = Arrangement.Top,
+            val selectedPath = when (selectedMedia) {
+                DownloadMediaType.VIDEO -> video?.filePath
+                DownloadMediaType.AUDIO -> audio?.filePath
+            }
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
+                    !selectedPath.isNullOrBlank()
+
+            ThumbnailCard(
+                thumbnailFilePath = metadata?.thumbnailFilePath,
+                durationSeconds = metadata?.durationSeconds,
+                showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
+                showPlay = canActOnSelected,
+                onPlayClick = onPlayClick,
+                onRetryClick = onRetryClick,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    style = MaterialTheme.typography.titleLarge,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 2,
-                    text = metadata?.title ?: url,
-                )
-                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
-                DownloadProgressSection(
-                    status = status,
-                    progressFraction = progress?.progressFraction,
-                    etaSeconds = progress?.etaSeconds,
-                    bytesDownloaded = progress?.bytesDownloaded ?: 0L,
-                    forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
-                )
-                Spacer(modifier = Modifier.height(dimens.spacingXSmall))
-                MediaSwitcherSegmentedButtonRow(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    selected = selectedMedia,
-                    enableVideo = video != null,
-                    enableAudio = audio != null,
-                    onSelect = onMediaChange,
-                )
-                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
-
-                val selectedPath = when (selectedMedia) {
-                    DownloadMediaType.VIDEO -> video?.filePath
-                    DownloadMediaType.AUDIO -> audio?.filePath
+                val selectedFileExtension = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> video?.fileExtension
+                    DownloadMediaType.AUDIO -> audio?.fileExtension
+                }?.takeIf {
+                    it.isNotBlank()
                 }
-                val canActOnSelected = status == DownloadStatusUiData.COMPLETED
-                        && !selectedPath.isNullOrBlank()
-
-                ThumbnailCard(
-                    thumbnailFilePath = metadata?.thumbnailFilePath,
-                    durationSeconds = metadata?.durationSeconds,
-                    showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
-                    showPlay = canActOnSelected,
-                    onPlayClick = onPlayClick,
-                    onRetryClick = onRetryClick,
-                )
-                Spacer(modifier = Modifier.height(dimens.spacingSmall))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(dimens.spacingSmall),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val selectedFileExtension = when (selectedMedia) {
-                        DownloadMediaType.VIDEO -> video?.fileExtension
-                        DownloadMediaType.AUDIO -> audio?.fileExtension
-                    }?.takeIf {
-                        it.isNotBlank()
-                    }
-                    selectedFileExtension?.let { fileExtension ->
-                        FileExtensionPill(
-                            text = fileExtension.uppercase(),
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    ActionIconButton(
-                        enabled = canActOnSelected,
-                        onClick = {
-                            if (canActOnSelected) {
-                                onSaveClick()
-                            }
-                        },
-                        imageVector = Icons.Filled.Save,
-                        contentDescription = stringResource(R.string.content_description_save_to_device),
-                    )
-                    ActionIconButton(
-                        enabled = canActOnSelected,
-                        onClick = {
-                            if (canActOnSelected) {
-                                onShareClick()
-                            }
-                        },
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = stringResource(R.string.content_description_share_download),
+                selectedFileExtension?.let { fileExtension ->
+                    FileExtensionPill(
+                        text = fileExtension.uppercase(),
                     )
                 }
-                Spacer(modifier = Modifier.height(dimens.spacingSmall))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(dimens.spacingSmall))
-                Column {
+                Spacer(modifier = Modifier.weight(1f))
+                ActionIconButton(
+                    enabled = canActOnSelected,
+                    onClick = {
+                        if (canActOnSelected) {
+                            onSaveClick()
+                        }
+                    },
+                    imageVector = Icons.Filled.Save,
+                    contentDescription = stringResource(R.string.content_description_save_to_device),
+                )
+                ActionIconButton(
+                    enabled = canActOnSelected,
+                    onClick = {
+                        if (canActOnSelected) {
+                            onShareClick()
+                        }
+                    },
+                    imageVector = Icons.Filled.Share,
+                    contentDescription = stringResource(R.string.content_description_share_download),
+                )
+            }
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            Column {
+                MetaItem(
+                    label = stringResource(R.string.download_url),
+                    isCopyable = true,
+                    isUrl = true,
+                    value = url,
+                )
+                val selectedName = when (selectedMedia) {
+                    DownloadMediaType.VIDEO -> video?.fileName
+                    DownloadMediaType.AUDIO -> audio?.fileName
+                }
+                selectedName?.let {
                     MetaItem(
-                        label = stringResource(R.string.download_url),
-                        isCopyable = true,
-                        isUrl = true,
-                        value = url,
+                        label = stringResource(R.string.download_filename),
+                        value = it,
                     )
-                    val selectedName = when (selectedMedia) {
-                        DownloadMediaType.VIDEO -> video?.fileName
-                        DownloadMediaType.AUDIO -> audio?.fileName
-                    }
-                    selectedName?.let {
-                        MetaItem(
-                            label = stringResource(R.string.download_filename),
-                            value = it,
-                        )
-                    }
-                    val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
-                    formattedDuration?.let {
-                        MetaItem(
-                            label = stringResource(R.string.download_duration),
-                            value = it,
-                        )
-                    }
-                    errorMessage?.let {
-                        MetaItem(
-                            label = stringResource(R.string.download_error_message),
-                            value = it,
-                        )
-                    }
+                }
+                val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
+                formattedDuration?.let {
+                    MetaItem(
+                        label = stringResource(R.string.download_duration),
+                        value = it,
+                    )
+                }
+                errorMessage?.let {
+                    MetaItem(
+                        label = stringResource(R.string.download_error_message),
+                        value = it,
+                    )
                 }
             }
         }
