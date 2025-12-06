@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -256,10 +256,10 @@ private fun AvailableUpdateBanner(
                 .clickable {
                     onClick(localFilePath)
                 },
-            tonalElevation = dimens.tonalElevationHigh,
-            shadowElevation = dimens.shadowElevationLow,
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.secondaryContainer,
+            tonalElevation = dimens.tonalElevationHigh,
+            shadowElevation = dimens.shadowElevationLow,
         ) {
             Row(
                 modifier = Modifier
@@ -402,8 +402,7 @@ private fun DownloadsList(
     ) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = dimens.spacingMediumAlt),
+                .fillMaxSize(),
             state = listState,
         ) {
             items(
@@ -470,7 +469,6 @@ private fun DownloadsList(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = dimens.spacingSmall)
                             .onGloballyPositioned { layoutCoordinates ->
                                 rowWidthPx = layoutCoordinates.size.width.toFloat()
                             },
@@ -538,16 +536,18 @@ private fun DownloadItem(
     val dimens = LocalDimens.current
     Surface(
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = dimens.tonalElevationHigh,
-        shadowElevation = dimens.shadowElevationLow,
+        color = MaterialTheme.colorScheme.surface,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(dimens.spacingMediumAlt),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(
+                    vertical = dimens.spacingSmall,
+                    horizontal = dimens.spacingMedium,
+                ),
             horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             with(item) {
                 DownloadPrimaryActionButton(
@@ -558,7 +558,7 @@ private fun DownloadItem(
                 Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
                 Column(
                     modifier = Modifier
-                        .wrapContentHeight()
+                        .fillMaxHeight()
                         .weight(1f),
                 ) {
                     Text(

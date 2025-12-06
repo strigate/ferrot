@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.component
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Refresh
@@ -53,9 +54,10 @@ fun DownloadPrimaryActionButton(
         )
     }
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .size(dimens.iconXLarge),
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = dimens.tonalElevationLow,
+        tonalElevation = dimens.tonalElevationHigh,
     ) {
         with(actionConfig) {
             IconButton(
