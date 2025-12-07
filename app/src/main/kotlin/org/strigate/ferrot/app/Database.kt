@@ -55,26 +55,17 @@ abstract class Database : RoomDatabase() {
         @Volatile
         private var instance: Database? = null
 
-        fun getInstance(
-            context: Context,
-            bootstrapCallbacks: Set<Callback>,
-        ): Database {
+        fun getInstance(context: Context): Database {
             return instance ?: synchronized(this) {
-                instance ?: buildDatabase(context, bootstrapCallbacks).also { instance = it }
+                instance ?: buildDatabase(context).also { instance = it }
             }
         }
 
-        private fun buildDatabase(
-            context: Context,
-            bootstrapCallbacks: Set<Callback>,
-        ): Database {
+        private fun buildDatabase(context: Context): Database {
             val roomDatabaseBuilder = Room
                 .databaseBuilder(context, Database::class.java, DATABASE_NAME)
                 .applyMigrations()
 
-            bootstrapCallbacks.forEach {
-                roomDatabaseBuilder.addCallback(it)
-            }
             return roomDatabaseBuilder.build()
         }
     }
