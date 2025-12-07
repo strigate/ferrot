@@ -181,7 +181,7 @@ fun DownloadsScreen(
                                     AvailableUpdateBanner(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = dimens.spacingMediumAlt)
+                                            .padding(horizontal = dimens.spacingMedium)
                                             .padding(bottom = dimens.spacingSmall),
                                         tag = it.tag,
                                         localFilePath = it.localFilePath,
@@ -343,6 +343,10 @@ private fun DownloadsList(
         )
         if (result == SnackbarResult.ActionPerformed) {
             pendingDeleteIds = pendingDeleteIds - snackId
+            val index = items.indexOfFirst { it.id == snackId }
+            if (index == 0) {
+                runCatching { listState.animateScrollToItem(0) }
+            }
         } else {
             onDelete(snackId)
         }
@@ -570,6 +574,8 @@ private fun DownloadItem(
                     )
                     Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                     DownloadProgressSection(
+                        modifier = Modifier
+                            .padding(end = dimens.spacingXSmall),
                         status = status,
                         progressFraction = progressFraction,
                         etaSeconds = etaSeconds,
