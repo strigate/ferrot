@@ -1,14 +1,12 @@
 package org.strigate.ferrot.app.di.module
 
 import android.content.Context
-import androidx.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import org.strigate.ferrot.app.Database
-import org.strigate.ferrot.app.di.BootstrapCallbacks
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
@@ -25,9 +23,8 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-        @BootstrapCallbacks bootstrapCallbacks: Set<@JvmSuppressWildcards RoomDatabase.Callback>,
     ): Database {
-        return Database.getInstance(context, bootstrapCallbacks)
+        return Database.getInstance(context)
     }
 
     @Provides

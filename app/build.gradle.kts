@@ -1,5 +1,4 @@
 import com.android.build.api.dsl.ApplicationDefaultConfig
-import com.android.build.api.dsl.BuildType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.io.FileInputStream
@@ -38,7 +37,6 @@ android {
         versionName = buildVersionName(baseVersion, versionCode)
         stringField("VERSION_TAG", "v$baseVersion")
         applyFirebaseProperties()
-        applyMockBootstrapProperty(false)
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
@@ -67,7 +65,6 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            applyMockBootstrapProperty(false)
         }
         release {
             isDebuggable = false
@@ -119,14 +116,6 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-private fun ApplicationDefaultConfig.applyMockBootstrapProperty(enabled: Boolean) {
-    boolField("BOOTSTRAP_MOCK_DATA", enabled)
-}
-
-private fun BuildType.applyMockBootstrapProperty(enabled: Boolean) {
-    boolField("BOOTSTRAP_MOCK_DATA", enabled)
-}
-
 private fun ApplicationDefaultConfig.applyFirebaseProperties(
     includeResString: Boolean = true,
 ) {
@@ -144,14 +133,6 @@ private fun ApplicationDefaultConfig.applyFirebaseProperties(
     if (includeResString && firebaseAppId.isNotBlank()) {
         resString("google_app_id", firebaseAppId)
     }
-}
-
-private fun ApplicationDefaultConfig.boolField(name: String, value: Boolean) {
-    buildConfigField("boolean", name, value.toString())
-}
-
-private fun BuildType.boolField(name: String, value: Boolean) {
-    buildConfigField("boolean", name, value.toString())
 }
 
 private fun ApplicationDefaultConfig.stringField(name: String, value: String) {
