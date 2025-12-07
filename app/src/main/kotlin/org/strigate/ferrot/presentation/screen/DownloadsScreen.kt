@@ -563,6 +563,7 @@ private fun DownloadItem(
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
+                        .padding(end = dimens.spacingXSmall)
                         .weight(1f),
                 ) {
                     Text(
@@ -574,8 +575,6 @@ private fun DownloadItem(
                     )
                     Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                     DownloadProgressSection(
-                        modifier = Modifier
-                            .padding(end = dimens.spacingXSmall),
                         status = status,
                         progressFraction = progressFraction,
                         etaSeconds = etaSeconds,
