@@ -169,7 +169,7 @@ fun DownloadScreen(
                 is DownloadUiState.Loading -> LoadingState()
                 is DownloadUiState.Error -> DownloadError()
                 is DownloadUiState.Data -> {
-                    val peekPadding = dimens.spacingMedium
+                    val peekPadding = dimens.spacingMediumAlt
                     val pageSpacing = dimens.spacingSmall
                     DownloadPager(
                         modifier = modifier
@@ -302,7 +302,7 @@ private fun DownloadPageContent(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimens.spacingMedium),
+                .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
