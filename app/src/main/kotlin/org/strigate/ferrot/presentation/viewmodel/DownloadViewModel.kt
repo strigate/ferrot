@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,8 +66,17 @@ class DownloadViewModel @Inject constructor(
     private val _selectedId = MutableStateFlow(initialId)
     val selectedId: StateFlow<Long> = _selectedId
 
-    private val selectedMedia = MutableStateFlow(DownloadMediaType.VIDEO)
-    val selectedMediaFlow: Flow<DownloadMediaType> = selectedMedia
+    private val _selectedMediaById = MutableStateFlow<Map<Long, DownloadMediaType>>(emptyMap())
+    val selectedMedia: StateFlow<DownloadMediaType> = combine(
+        selectedId,
+        _selectedMediaById,
+    ) { id, map ->
+        map[id] ?: DownloadMediaType.VIDEO
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = DownloadMediaType.VIDEO,
+    )
 
     init {
         viewModelScope.launch {
@@ -132,10 +140,38 @@ class DownloadViewModel @Inject constructor(
 
     fun selectDownload(id: Long) {
         _selectedId.value = id
+        if (_selectedMediaById.value[id] == null) {
+            _selectedMediaById.value = _selectedMediaById
+                .value
+                .toMutableMap()
+                .also {
+                    it[id] = DownloadMediaType.VIDEO
+                }
+        }
     }
 
-    fun setSelectedMedia(type: DownloadMediaType) {
-        selectedMedia.value = type
+    fun setSelectedMedia(type: DownloadMediaType, forDownloadId: Long? = null) {
+        val id = forDownloadId ?: _selectedId.value
+        _selectedMediaById.value = _selectedMediaById
+            .value
+            .toMutableMap()
+            .also {
+                it[id] = type
+            }
+    }
+
+    fun setDefaultsForIds(ids: List<Long>) {
+        val current = _selectedMediaById.value.toMutableMap()
+        var changed = false
+        ids.forEach { id ->
+            if (current[id] == null) {
+                current[id] = DownloadMediaType.VIDEO
+                changed = true
+            }
+        }
+        if (changed) {
+            _selectedMediaById.value = current
+        }
     }
 
     fun deleteDownload(id: Long? = null) {
@@ -148,19 +184,19 @@ class DownloadViewModel @Inject constructor(
 
     fun shareDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        val path = currentSelectedFilePath(downloadId) ?: return@launch
+        val path = getSelectedMediaFilePath(downloadId) ?: return@launch
         ShareHelper.shareFileIfExists(appContext, path)
     }
 
     fun saveDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        val path = currentSelectedFilePath(downloadId) ?: return@launch
+        val path = getSelectedMediaFilePath(downloadId) ?: return@launch
         SaveHelper.saveToDownloads(appContext, path)
     }
 
     fun playDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        val path = currentSelectedFilePath(downloadId) ?: return@launch
+        val path = getSelectedMediaFilePath(downloadId) ?: return@launch
         PlayHelper.playFileIfExists(appContext, path)
     }
 
@@ -169,15 +205,16 @@ class DownloadViewModel @Inject constructor(
         startDownloadUseCase(downloadId)
     }
 
-    private fun currentSelectedFilePath(id: Long): String? {
+    private fun getSelectedMediaFilePath(downloadId: Long): String? {
         val state = uiState.value
         if (state !is DownloadUiState.Data) {
             return null
         }
-        val selected = state.data.downloads.firstOrNull { it.id == id } ?: return null
-        return when (selectedMedia.value) {
-            DownloadMediaType.VIDEO -> selected.video?.filePath
-            DownloadMediaType.AUDIO -> selected.audio?.filePath
+        val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return null
+        val mediaType = selectedMedia.value
+        return when (mediaType) {
+            DownloadMediaType.VIDEO -> download.video?.filePath
+            DownloadMediaType.AUDIO -> download.audio?.filePath
         }
     }
 

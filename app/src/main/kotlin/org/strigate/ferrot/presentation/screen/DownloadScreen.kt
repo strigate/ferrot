@@ -48,7 +48,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,10 +71,8 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
@@ -102,7 +99,7 @@ fun DownloadScreen(
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedMedia by viewModel.selectedMediaFlow.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
+    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -210,31 +207,33 @@ private fun DownloadPager(
         .indexOfFirst { it.id == data.id }
         .coerceAtLeast(0)
 
-    val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
         initialPage = initialIndex,
         pageCount = { downloads.size }
     )
 
+    LaunchedEffect(downloads) {
+        viewModel.setDefaultsForIds(downloads.map { it.id })
+    }
     LaunchedEffect(pagerState, downloads) {
         snapshotFlow { pagerState.currentPage }
-            .map { page -> downloads.getOrNull(page)?.id }
-            .filter { it != null }
+            .map { pageIndex -> downloads.getOrNull(pageIndex)?.id }
+            .filterNotNull()
             .distinctUntilChanged()
-            .collect { id ->
-                id?.let { viewModel.selectDownload(it) }
-            }
-    }
-    LaunchedEffect(data, viewModel.selectedId) {
-        snapshotFlow { viewModel.selectedId.value }
-            .mapNotNull { id -> downloads.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
-            .distinctUntilChanged()
-            .collect { pageIndex ->
-                coroutineScope.launch {
-                    if (pagerState.currentPage != pageIndex) {
-                        pagerState.animateScrollToPage(pageIndex)
-                    }
+            .collect { downloadId ->
+                viewModel.selectDownload(downloadId)
+                val currentDownload = downloads.firstOrNull { it.id == downloadId }
+                val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
+                val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
+                val currentlySelectedMedia = viewModel.selectedMedia.value
+                val correctedMediaType = when {
+                    isAudioAvailable && currentlySelectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
+                    isVideoAvailable && currentlySelectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
+                    isAudioAvailable -> DownloadMediaType.AUDIO
+                    isVideoAvailable -> DownloadMediaType.VIDEO
+                    else -> DownloadMediaType.VIDEO
                 }
+                viewModel.setSelectedMedia(correctedMediaType, downloadId)
             }
     }
 
@@ -257,11 +256,11 @@ private fun DownloadPager(
             DownloadPageContent(
                 data = item,
                 selectedMedia = selectedMedia,
-                onMediaChange = {
-                    viewModel.setSelectedMedia(it)
+                onMediaChange = { type ->
+                    viewModel.setSelectedMedia(type, item.id)
                 },
-                onEnsureValidSelection = {
-                    viewModel.setSelectedMedia(it)
+                onEnsureValidSelection = { type ->
+                    viewModel.setSelectedMedia(type, item.id)
                 },
                 onPlayClick = {
                     viewModel.playDownload(item.id)
@@ -273,6 +272,7 @@ private fun DownloadPager(
                     viewModel.shareDownload(item.id)
                 },
                 onRetryClick = {
+                    viewModel.selectDownload(item.id)
                     viewModel.retryDownload(item.id)
                 },
             )
@@ -325,8 +325,8 @@ private fun DownloadPageContent(
                 modifier = Modifier
                     .fillMaxWidth(),
                 selected = selectedMedia,
-                enableVideo = video != null,
-                enableAudio = audio != null,
+                enableVideo = video?.filePath?.isNotBlank() == true,
+                enableAudio = audio?.filePath?.isNotBlank() == true,
                 onSelect = onMediaChange,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
