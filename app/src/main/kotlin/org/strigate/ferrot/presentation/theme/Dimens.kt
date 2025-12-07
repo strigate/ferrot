@@ -27,9 +27,12 @@ data class Dimens(
     val radiusLarge: Dp = 16.dp,
 
     val tonalElevationLow: Dp = 1.dp,
+    val tonalElevation: Dp = 2.dp,
     val tonalElevationHigh: Dp = 4.dp,
 
     val shadowElevationLow: Dp = 1.dp,
+    val shadowElevation: Dp = 2.dp,
+    val shadowElevationHigh: Dp = 4.dp,
 
     val contentMaxWidth: Dp = 320.dp,
 

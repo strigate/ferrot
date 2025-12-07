@@ -169,7 +169,7 @@ fun DownloadScreen(
                 is DownloadUiState.Loading -> LoadingState()
                 is DownloadUiState.Error -> DownloadError()
                 is DownloadUiState.Data -> {
-                    val peekPadding = dimens.spacingMediumAlt
+                    val peekPadding = dimens.spacingMedium
                     val pageSpacing = dimens.spacingSmall
                     DownloadPager(
                         modifier = modifier
@@ -251,7 +251,7 @@ private fun DownloadPager(
                 .fillMaxSize()
                 .padding(bottom = dimens.spacingSmall),
             shape = MaterialTheme.shapes.medium,
-            tonalElevation = dimens.tonalElevationHigh,
+            tonalElevation = dimens.tonalElevationLow,
             shadowElevation = dimens.shadowElevationLow,
         ) {
             DownloadPageContent(
@@ -302,15 +302,15 @@ private fun DownloadPageContent(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = dimens.spacingMediumAlt),
+                .padding(horizontal = dimens.spacingMedium),
             verticalArrangement = Arrangement.Top,
         ) {
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             Text(
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 overflow = TextOverflow.Ellipsis,
-                maxLines = 2,
                 text = metadata?.title ?: url,
+                maxLines = 2,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             DownloadProgressSection(
