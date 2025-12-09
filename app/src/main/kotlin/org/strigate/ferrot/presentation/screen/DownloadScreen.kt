@@ -112,8 +112,11 @@ fun DownloadScreen(
             message = stringResource(R.string.confirm_dialog_delete_download_description),
             positiveButtonText = stringResource(R.string.yes),
             onPositiveClick = {
+                val isLastItem = (uiState as? DownloadUiState.Data)?.data?.downloads?.size == 1
                 viewModel.deleteDownload()
-                backDispatcher?.onBackPressed()
+                if (isLastItem) {
+                    backDispatcher?.onBackPressed()
+                }
                 showConfirmDeleteDialog.value = false
             },
             negativeButtonText = stringResource(R.string.no),
@@ -198,84 +201,86 @@ private fun DownloadPager(
     pageSpacing: Dp,
 ) {
     val dimens = LocalDimens.current
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
     val downloads = data.downloads
     if (downloads.isEmpty()) {
         DownloadError()
-        return
-    }
-    val initialIndex = downloads
-        .indexOfFirst { it.id == data.id }
-        .coerceAtLeast(0)
+    } else {
+        val initialIndex = downloads
+            .indexOfFirst { it.id == data.id }
+            .coerceAtLeast(0)
 
-    val pagerState = rememberPagerState(
-        initialPage = initialIndex,
-        pageCount = { downloads.size }
-    )
+        val pagerState = rememberPagerState(
+            initialPage = initialIndex,
+            pageCount = { downloads.size }
+        )
 
-    LaunchedEffect(downloads) {
-        viewModel.setDefaultsForIds(downloads.map { it.id })
-    }
-    LaunchedEffect(pagerState, downloads) {
-        snapshotFlow { pagerState.currentPage }
-            .map { pageIndex -> downloads.getOrNull(pageIndex)?.id }
-            .filterNotNull()
-            .distinctUntilChanged()
-            .collect { downloadId ->
-                viewModel.selectDownload(downloadId)
-                val currentDownload = downloads.firstOrNull { it.id == downloadId }
-                val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
-                val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
-                val currentlySelectedMedia = viewModel.selectedMedia.value
-                val correctedMediaType = when {
-                    isAudioAvailable && currentlySelectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
-                    isVideoAvailable && currentlySelectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
-                    isAudioAvailable -> DownloadMediaType.AUDIO
-                    isVideoAvailable -> DownloadMediaType.VIDEO
-                    else -> DownloadMediaType.VIDEO
+        LaunchedEffect(downloads) {
+            viewModel.setDefaultsForIds(downloads.map { it.id })
+        }
+        LaunchedEffect(pagerState, downloads) {
+            snapshotFlow { pagerState.currentPage }
+                .map { pageIndex -> downloads.getOrNull(pageIndex)?.id }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { downloadId ->
+                    viewModel.selectDownload(downloadId)
+                    val currentDownload = downloads.firstOrNull { it.id == downloadId }
+                    val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
+                    val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
+                    val currentlySelectedMedia = viewModel.selectedMedia.value
+                    val correctedMediaType = when {
+                        isAudioAvailable && currentlySelectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
+                        isVideoAvailable && currentlySelectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
+                        isAudioAvailable -> DownloadMediaType.AUDIO
+                        isVideoAvailable -> DownloadMediaType.VIDEO
+                        else -> DownloadMediaType.VIDEO
+                    }
+                    viewModel.setSelectedMedia(correctedMediaType, downloadId)
                 }
-                viewModel.setSelectedMedia(correctedMediaType, downloadId)
-            }
-    }
+        }
 
-    HorizontalPager(
-        modifier = modifier
-            .fillMaxSize(),
-        state = pagerState,
-        contentPadding = pagePadding,
-        pageSpacing = pageSpacing,
-    ) { page ->
-        val item = downloads[page]
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = dimens.spacingSmall),
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = dimens.tonalElevationLow,
-            shadowElevation = dimens.shadowElevationLow,
-        ) {
-            DownloadPageContent(
-                data = item,
-                selectedMedia = selectedMedia,
-                onMediaChange = { type ->
-                    viewModel.setSelectedMedia(type, item.id)
-                },
-                onEnsureValidSelection = { type ->
-                    viewModel.setSelectedMedia(type, item.id)
-                },
-                onPlayClick = {
-                    viewModel.playDownload(item.id)
-                },
-                onSaveClick = {
-                    viewModel.saveDownload(item.id)
-                },
-                onShareClick = {
-                    viewModel.shareDownload(item.id)
-                },
-                onRetryClick = {
-                    viewModel.selectDownload(item.id)
-                    viewModel.retryDownload(item.id)
-                },
-            )
+        HorizontalPager(
+            modifier = modifier
+                .fillMaxSize(),
+            state = pagerState,
+            contentPadding = pagePadding,
+            pageSpacing = pageSpacing,
+        ) { page ->
+            val download = downloads[page]
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = dimens.spacingSmall),
+                shape = MaterialTheme.shapes.medium,
+                tonalElevation = dimens.tonalElevationLow,
+                shadowElevation = dimens.shadowElevationLow,
+            ) {
+                DownloadPageContent(
+                    data = download,
+                    selectedMedia = selectedMedia,
+                    onMediaChange = { mediaType ->
+                        viewModel.setSelectedMedia(mediaType, download.id)
+                    },
+                    onEnsureValidSelection = { mediaType ->
+                        viewModel.setSelectedMedia(mediaType, download.id)
+                    },
+                    onPlayClick = {
+                        viewModel.playDownload(download.id)
+                    },
+                    onSaveClick = {
+                        viewModel.saveDownload(download.id)
+                    },
+                    onShareClick = {
+                        viewModel.shareDownload(download.id)
+                    },
+                    onRetryClick = {
+                        backDispatcher?.onBackPressed()
+                        viewModel.retryDownload(download.id)
+                    },
+                )
+            }
         }
     }
 }
