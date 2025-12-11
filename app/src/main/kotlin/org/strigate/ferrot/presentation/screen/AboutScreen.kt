@@ -2,7 +2,6 @@ package org.strigate.ferrot.presentation.screen
 
 import android.content.Intent
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,19 +15,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -37,11 +32,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
+import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
-import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,36 +128,10 @@ fun AboutScreen(
                             viewModel.onUrlClicked(urlLicense)
                         }
                     }
-                    Column(
+                    Copyright(
                         modifier = Modifier
                             .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Spacer(modifier = Modifier.height(dimens.spacingLarge))
-                        Icon(
-                            modifier = Modifier
-                                .height(dimens.iconXLarge),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                alpha = 0.8f,
-                            ),
-                            painter = painterResource(R.drawable.strigate_logo),
-                            contentDescription = stringResource(R.string.content_description_strigate_logo),
-                        )
-                        Text(
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                    alpha = 0.75f,
-                                ),
-                            ),
-                            textAlign = TextAlign.Center,
-                            text = stringResource(
-                                R.string.copyright,
-                                Calendar.getInstance().get(Calendar.YEAR),
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(dimens.spacingLarge))
-                    }
+                    )
                 }
             }
         },
