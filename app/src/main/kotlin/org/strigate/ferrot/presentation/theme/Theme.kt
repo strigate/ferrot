@@ -12,7 +12,7 @@ val FerrotCoral = Color(0xFFFF8557)
 
 private val LightColorScheme = lightColorScheme(
     primary = FerrotCoral,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     primaryContainer = Color(0xFFFFD5C8),
     onPrimaryContainer = Color(0xFF2F0A00),
 
@@ -43,7 +43,7 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = FerrotCoral,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     primaryContainer = Color(0xFF7A3C2E),
     onPrimaryContainer = Color(0xFFFFDBCF),
 
