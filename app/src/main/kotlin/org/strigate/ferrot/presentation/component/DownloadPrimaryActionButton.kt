@@ -1,5 +1,8 @@
 package org.strigate.ferrot.presentation.component
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Refresh
@@ -9,6 +12,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -53,23 +57,32 @@ fun DownloadPrimaryActionButton(
         )
     }
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .wrapContentSize(),
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = dimens.tonalElevationLow,
+        tonalElevation = dimens.tonalElevationHigh,
     ) {
         with(actionConfig) {
-            IconButton(
-                onClick = onClick,
+            Box(
+                modifier = Modifier
+                    .size(dimens.iconXLarge),
             ) {
-                Icon(
-                    imageVector = icon,
-                    tint = if (usePrimaryTint) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    contentDescription = contentDescription,
-                )
+                IconButton(
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .align(Alignment.Center),
+                    onClick = onClick,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        tint = if (usePrimaryTint) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        contentDescription = contentDescription,
+                    )
+                }
             }
         }
     }

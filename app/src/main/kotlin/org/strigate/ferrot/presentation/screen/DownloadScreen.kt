@@ -1,6 +1,7 @@
 package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,12 +62,17 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
@@ -71,6 +81,7 @@ import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
@@ -88,7 +99,7 @@ fun DownloadScreen(
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedMedia by viewModel.selectedMediaFlow.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
+    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -101,13 +112,20 @@ fun DownloadScreen(
             message = stringResource(R.string.confirm_dialog_delete_download_description),
             positiveButtonText = stringResource(R.string.yes),
             onPositiveClick = {
+                val isLastItem = (uiState as? DownloadUiState.Data)?.data?.downloads?.size == 1
                 viewModel.deleteDownload()
-                backDispatcher?.onBackPressed()
+                if (isLastItem) {
+                    backDispatcher?.onBackPressed()
+                }
                 showConfirmDeleteDialog.value = false
             },
             negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = { showConfirmDeleteDialog.value = false },
-            onDismissRequest = { showConfirmDeleteDialog.value = false },
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
         )
     }
 
@@ -146,35 +164,130 @@ fun DownloadScreen(
             )
         },
         content = { contentPadding ->
-            Surface(
-                modifier = modifier
-                    .padding(contentPadding)
-                    .fillMaxSize(),
-            ) {
-                when (val state = uiState) {
-                    is DownloadUiState.Loading -> LoadingState()
-                    is DownloadUiState.Error -> DownloadError()
-                    is DownloadUiState.Data -> {
-                        DownloadContent(
-                            data = state.data,
-                            selectedMedia = selectedMedia,
-                            onMediaChange = { viewModel.setSelectedMedia(it) },
-                            onEnsureValidSelection = { viewModel.setSelectedMedia(it) },
-                            onPlayClick = { viewModel.playDownload() },
-                            onSaveClick = { viewModel.saveDownload() },
-                            onShareClick = { viewModel.shareDownload() },
-                            onRetryClick = { viewModel.retryDownload() },
-                        )
-                    }
+            val dimens = LocalDimens.current
+            when (val state = uiState) {
+                is DownloadUiState.Loading -> LoadingState()
+                is DownloadUiState.Error -> DownloadError()
+                is DownloadUiState.Data -> {
+                    val peekPadding = dimens.spacingMediumAlt
+                    val pageSpacing = dimens.spacingSmall
+                    DownloadPager(
+                        modifier = modifier
+                            .padding(contentPadding)
+                            .fillMaxSize(),
+                        data = state.data,
+                        selectedMedia = selectedMedia,
+                        viewModel = viewModel,
+                        pagePadding = PaddingValues(
+                            horizontal = peekPadding,
+                            vertical = 0.dp,
+                        ),
+                        pageSpacing = pageSpacing,
+                    )
                 }
             }
         },
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DownloadContent(
+private fun DownloadPager(
+    modifier: Modifier = Modifier,
     data: DownloadUiData,
+    selectedMedia: DownloadMediaType,
+    viewModel: DownloadViewModel,
+    pagePadding: PaddingValues,
+    pageSpacing: Dp,
+) {
+    val dimens = LocalDimens.current
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
+    val downloads = data.downloads
+    if (downloads.isEmpty()) {
+        DownloadError()
+    } else {
+        val initialIndex = downloads
+            .indexOfFirst { it.id == data.id }
+            .coerceAtLeast(0)
+
+        val pagerState = rememberPagerState(
+            initialPage = initialIndex,
+            pageCount = { downloads.size }
+        )
+
+        LaunchedEffect(downloads) {
+            viewModel.setDefaultsForIds(downloads.map { it.id })
+        }
+        LaunchedEffect(pagerState, downloads) {
+            snapshotFlow { pagerState.currentPage }
+                .map { pageIndex -> downloads.getOrNull(pageIndex)?.id }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { downloadId ->
+                    viewModel.selectDownload(downloadId)
+                    val currentDownload = downloads.firstOrNull { it.id == downloadId }
+                    val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
+                    val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
+                    val currentlySelectedMedia = viewModel.selectedMedia.value
+                    val correctedMediaType = when {
+                        isAudioAvailable && currentlySelectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
+                        isVideoAvailable && currentlySelectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
+                        isAudioAvailable -> DownloadMediaType.AUDIO
+                        isVideoAvailable -> DownloadMediaType.VIDEO
+                        else -> DownloadMediaType.VIDEO
+                    }
+                    viewModel.setSelectedMedia(correctedMediaType, downloadId)
+                }
+        }
+
+        HorizontalPager(
+            modifier = modifier
+                .fillMaxSize(),
+            state = pagerState,
+            contentPadding = pagePadding,
+            pageSpacing = pageSpacing,
+        ) { page ->
+            val download = downloads[page]
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = dimens.spacingSmall),
+                shape = MaterialTheme.shapes.medium,
+                tonalElevation = dimens.tonalElevationLow,
+                shadowElevation = dimens.shadowElevationLow,
+            ) {
+                DownloadPageContent(
+                    data = download,
+                    selectedMedia = selectedMedia,
+                    onMediaChange = { mediaType ->
+                        viewModel.setSelectedMedia(mediaType, download.id)
+                    },
+                    onEnsureValidSelection = { mediaType ->
+                        viewModel.setSelectedMedia(mediaType, download.id)
+                    },
+                    onPlayClick = {
+                        viewModel.playDownload(download.id)
+                    },
+                    onSaveClick = {
+                        viewModel.saveDownload(download.id)
+                    },
+                    onShareClick = {
+                        viewModel.shareDownload(download.id)
+                    },
+                    onRetryClick = {
+                        backDispatcher?.onBackPressed()
+                        viewModel.retryDownload(download.id)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DownloadPageContent(
+    data: DownloadPageUiData,
     selectedMedia: DownloadMediaType,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -197,11 +310,12 @@ private fun DownloadContent(
                 .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
+            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             Text(
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 overflow = TextOverflow.Ellipsis,
-                maxLines = 2,
                 text = metadata?.title ?: url,
+                maxLines = 2,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
             DownloadProgressSection(
@@ -216,8 +330,8 @@ private fun DownloadContent(
                 modifier = Modifier
                     .fillMaxWidth(),
                 selected = selectedMedia,
-                enableVideo = video != null,
-                enableAudio = audio != null,
+                enableVideo = video?.filePath?.isNotBlank() == true,
+                enableAudio = audio?.filePath?.isNotBlank() == true,
                 onSelect = onMediaChange,
             )
             Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
@@ -226,8 +340,8 @@ private fun DownloadContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
-                    && !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
+                    !selectedPath.isNullOrBlank()
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,

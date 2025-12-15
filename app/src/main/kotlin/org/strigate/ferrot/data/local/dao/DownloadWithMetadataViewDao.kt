@@ -7,30 +7,37 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 
 @Dao
 interface DownloadWithMetadataViewDao {
-    @Query(
-        """
-    SELECT * FROM downloads_with_metadata_view
-    ORDER BY
-      CASE status
-        WHEN 'QUEUED' THEN 0
-        WHEN 'WAITING_FOR_NETWORK' THEN 1
-        WHEN 'WAITING_FOR_WIFI' THEN 2
-        WHEN 'METADATA' THEN 3
-        WHEN 'PAUSED' THEN 4
-        WHEN 'DOWNLOADING' THEN 5
-        WHEN 'COMPLETED' THEN 6
-        WHEN 'FAILED' THEN 7
-        WHEN 'STOPPED' THEN 8
-        ELSE 9
-      END,
-      CASE
-        WHEN status = 'COMPLETED' THEN completedAtMillis
-        WHEN status IN ('DOWNLOADING','PAUSED','METADATA') THEN startedAtMillis
-        WHEN status IN ('QUEUED','WAITING_FOR_NETWORK','WAITING_FOR_WIFI','FAILED','STOPPED') THEN enqueuedAtMillis
-        ELSE enqueuedAtMillis
-      END DESC,
-      id DESC
-    """
-    )
+    @Query(SELECT_ALL_QUERY)
     fun getAllAsFlow(): Flow<List<DownloadWithMetadataView>>
+
+    @Query(SELECT_IDS_QUERY)
+    fun getAllIdsAsFlow(): Flow<List<Long>>
+
+    companion object {
+        private const val ORDER_BY = "ORDER BY\n" +
+                "  CASE status\n" +
+                "    WHEN 'QUEUED' THEN 0\n" +
+                "    WHEN 'WAITING_FOR_NETWORK' THEN 1\n" +
+                "    WHEN 'WAITING_FOR_WIFI' THEN 2\n" +
+                "    WHEN 'METADATA' THEN 3\n" +
+                "    WHEN 'PAUSED' THEN 4\n" +
+                "    WHEN 'DOWNLOADING' THEN 5\n" +
+                "    WHEN 'COMPLETED' THEN 6\n" +
+                "    WHEN 'FAILED' THEN 7\n" +
+                "    WHEN 'STOPPED' THEN 8\n" +
+                "    ELSE 9\n" +
+                "  END,\n" +
+                "  CASE\n" +
+                "    WHEN status = 'COMPLETED' THEN completedAtMillis\n" +
+                "    WHEN status IN ('DOWNLOADING','PAUSED','METADATA') THEN startedAtMillis\n" +
+                "    WHEN status IN ('QUEUED','WAITING_FOR_NETWORK','WAITING_FOR_WIFI','FAILED','STOPPED') THEN enqueuedAtMillis\n" +
+                "    ELSE enqueuedAtMillis\n" +
+                "  END DESC,\n" +
+                "  id DESC"
+
+        private const val SELECT_ALL_QUERY =
+            "SELECT * FROM downloads_with_metadata_view\n$ORDER_BY"
+        private const val SELECT_IDS_QUERY =
+            "SELECT id FROM downloads_with_metadata_view\n$ORDER_BY"
+    }
 }
