@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.0 - 2025-12-15
+### Added
+- Multi-download pager on the Download screen, allowing navigation between multiple downloads
+- Ability to view and navigate between multiple downloads within a single Download screen
+- Per-download media selection with independent video and audio state during a session
+
+### Changed
+- Download screen reworked to use an ordered, id-driven pager model
+- Download ViewModel refactored to aggregate per-download state and metadata
+- Layout, spacing, and elevation standardized across download-related screens
+- Extracted reusable Copyright component for About screen
+- Updated Android Gradle Plugin to 8.13.2
+- Updated Firebase BoM to 34.7.0
+
+### Fixed
+- Delete and retry behavior in the download pager
+- Selected media now persists per download within the current session
+- Snackbar undo now scrolls to the top when restoring the first item in the list
+- Improved padding consistency across download lists and pager pages
+- Improved contrast by setting `onPrimary` color to white in both light and dark themes
+
 ## 1.2.3 - 2025-11-24
 ### Changed
 - Dependency update flow improved with clearer toast messages.

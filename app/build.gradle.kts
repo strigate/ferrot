@@ -25,7 +25,7 @@ if (googleServicesPropertiesFile.exists()) {
 }
 
 android {
-    val baseVersion = "1.2.3"
+    val baseVersion = "1.3.0"
     namespace = "org.strigate.ferrot"
     compileSdk = 36
 
@@ -33,7 +33,7 @@ android {
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 10
+        versionCode = 11
         versionName = buildVersionName(baseVersion, versionCode)
         stringField("VERSION_TAG", "v$baseVersion")
         applyFirebaseProperties()
