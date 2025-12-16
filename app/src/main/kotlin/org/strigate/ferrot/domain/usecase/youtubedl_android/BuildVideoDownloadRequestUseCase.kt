@@ -3,7 +3,6 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
-import org.strigate.ferrot.app.Constants.NAME_INTERNAL
 import org.strigate.ferrot.domain.model.QualityProfile
 import javax.inject.Inject
 
@@ -20,16 +19,17 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
             addOption("-o", template)
             addOption("--restrict-filenames")
 
-            val encoderString = "$NAME ${BuildConfig.VERSION_TAG}"
+            val encoderString = "$NAME ${BuildConfig.VERSION}"
             addOption("--add-metadata")
-            addOption("--embed-metadata")
             addOption(
                 "--postprocessor-args",
                 buildString {
                     append("Merger+ffmpeg:")
-                    append("-metadata:s:v:0 encoder=\"$encoderString\" ")
                     append("-metadata encoder=\"$encoderString\" ")
-                    append("-metadata $NAME_INTERNAL=true")
+                    append("-metadata encoded_by=\"$encoderString\" ")
+                    append("-metadata:s:v:0 encoder=\"$encoderString\" ")
+                    append("-metadata:s:v:0 encoded_by=\"$encoderString\" ")
+                    append("-metadata:s:a:0 encoder=\"$encoderString\" ")
                 }
             )
 
