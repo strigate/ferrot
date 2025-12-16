@@ -14,8 +14,9 @@ fun DownloadWithMetadata.toUiData(): DownloadItemUiData {
     }
     return DownloadItemUiData(
         id = id,
-        title = title,
         url = url,
+        title = title,
+        thumbnailFilePath = thumbnailFilePath,
         status = status.toUiData(),
         progressFraction = fraction,
         etaSeconds = etaSeconds,

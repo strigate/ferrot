@@ -7,6 +7,7 @@ fun DownloadWithMetadataView.toDomain() = DownloadWithMetadata(
     id = id,
     url = url,
     title = resolvedTitle,
+    thumbnailFilePath = thumbnailFilePath,
     status = status.toDomain(),
     progressPercent = progressPercent,
     etaSeconds = etaSeconds,

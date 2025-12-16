@@ -21,6 +21,7 @@ import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
 import org.strigate.ferrot.data.local.migration.MIGRATION_1_2
 import org.strigate.ferrot.data.local.migration.MIGRATION_2_3
 import org.strigate.ferrot.data.local.migration.MIGRATION_3_4
+import org.strigate.ferrot.data.local.migration.MIGRATION_4_5
 import org.strigate.ferrot.data.local.typeconverter.DownloadStatusTypeConverter
 import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 
@@ -37,7 +38,7 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
         DownloadWithMetadataView::class,
     ],
     exportSchema = false,
-    version = 4,
+    version = 5,
 )
 @TypeConverters(
     DownloadStatusTypeConverter::class,
@@ -76,5 +77,6 @@ private fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrations(): RoomDa
         MIGRATION_1_2,
         MIGRATION_2_3,
         MIGRATION_3_4,
+        MIGRATION_4_5,
     )
 }
