@@ -20,11 +20,17 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
             addOption("-o", template)
             addOption("--restrict-filenames")
 
-            val encoderString = "$NAME ${BuildConfig.VERSION_NAME}"
+            val encoderString = "$NAME ${BuildConfig.VERSION_TAG}"
             addOption("--add-metadata")
+            addOption("--embed-metadata")
             addOption(
                 "--postprocessor-args",
-                "ffmpeg:-metadata encoder=\"$encoderString\" -metadata $NAME_INTERNAL=true"
+                buildString {
+                    append("Merger+ffmpeg:")
+                    append("-metadata:s:v:0 encoder=\"$encoderString\" ")
+                    append("-metadata encoder=\"$encoderString\" ")
+                    append("-metadata $NAME_INTERNAL=true")
+                }
             )
 
             if (qualityProfile == QualityProfile.COMPAT_2160) {
@@ -40,11 +46,13 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
             } else {
                 addOption("--newline")
             }
+
             addOption("--external-downloader", "aria2c")
             addOption("--external-downloader-args", "aria2c:-x16 -k1M")
         }
     }
 }
+
 
 private fun formatSelectorFor(profile: QualityProfile): String = when (profile) {
     QualityProfile.MAX -> "bv*+ba/b"
