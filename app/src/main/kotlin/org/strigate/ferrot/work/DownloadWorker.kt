@@ -76,7 +76,6 @@ class DownloadWorker(
 
         val downloadId = _downloadId
         val tag = "Download[$downloadId]:"
-
         Log.d(LOG_TAG, "$tag Starting work")
 
         if (runAttemptCount > 20 || downloadId <= 0L) {
