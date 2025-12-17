@@ -35,6 +35,7 @@ android {
         targetSdk = 36
         versionCode = 11
         versionName = buildVersionName(baseVersion, versionCode)
+        stringField("VERSION", baseVersion)
         stringField("VERSION_TAG", "v$baseVersion")
         applyFirebaseProperties()
         ndk {
