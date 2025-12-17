@@ -23,7 +23,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
-import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import org.strigate.ferrot.R
@@ -86,11 +85,9 @@ fun DownloadPrimaryActionButton(
                 .size(dimens.iconXLarge),
             contentAlignment = Alignment.Center,
         ) {
-            if (thumbnailFile != null) {
-                val request = ImageRequest.Builder(context)
-                    .data(thumbnailFile)
-                    .memoryCachePolicy(CachePolicy.DISABLED)
-                    .diskCachePolicy(CachePolicy.DISABLED)
+            thumbnailFile?.let {
+                val imageRequest = ImageRequest.Builder(context)
+                    .data(it)
                     .crossfade(true)
                     .build()
 
@@ -98,8 +95,8 @@ fun DownloadPrimaryActionButton(
                     modifier = Modifier
                         .matchParentSize(),
                     contentScale = ContentScale.Crop,
+                    model = imageRequest,
                     contentDescription = null,
-                    model = request,
                 )
                 Box(
                     modifier = Modifier
