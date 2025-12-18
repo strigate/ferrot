@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.1 - 2025-12-18
+### Added
+- Thumbnails are now shown on downloads
+
+### Changed
+- Improved how media metadata and authorship information is written to downloaded files
+- Updated Compose and Activity Compose libraries
+- Small wording and branding text refinements
+
+### Fixed
+- Reduced metadata conflicts when processing and merging media files
+
 ## 1.3.0 - 2025-12-15
 ### Added
 - Multi-download pager on the Download screen, allowing navigation between multiple downloads
