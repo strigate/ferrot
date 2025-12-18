@@ -78,6 +78,9 @@ class DownloadAvailableUpdateWorker(
                 return markCheckSuccess()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
+                if (isAppInForeground()) {
+                    appContext.toast(R.string.toast_already_up_to_date, true)
+                }
                 Log.d(LOG_TAG, "Already up to date: latest=$latestTag current=$currentTag")
                 clearAvailableUpdate()
                 return markCheckSuccess()
