@@ -31,6 +31,8 @@ import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
+import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.isAppInForeground
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -136,6 +138,9 @@ class DownloadAvailableUpdateWorker(
             enableForeground(
                 notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
             )
+            if (isAppInForeground()) {
+                appContext.toast(R.string.toast_downloading_app_update, true)
+            }
 
             try {
                 downloadFile(downloadUrl, partFile)

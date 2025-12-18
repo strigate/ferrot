@@ -19,6 +19,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.isAppInForeground
 import java.time.Duration.between
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -41,14 +42,20 @@ class UpdateDependenciesWorker(
             )
             Log.d(LOG_TAG, "YoutubeDL update completed: status=$updateStatus")
 
-            when (updateStatus) {
-                YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE ->
-                    appContext.toast(appContext.getString(R.string.toast_dependencies_already_up_to_date))
+            if (isAppInForeground()) {
+                when (updateStatus) {
+                    YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE -> {
+                        appContext.toast(appContext.getString(R.string.toast_dependencies_already_up_to_date))
+                    }
 
-                YoutubeDL.UpdateStatus.DONE ->
-                    appContext.toast(appContext.getString(R.string.toast_dependencies_update_complete))
+                    YoutubeDL.UpdateStatus.DONE -> {
+                        appContext.toast(appContext.getString(R.string.toast_dependencies_update_complete))
+                    }
 
-                else -> appContext.toast("$updateStatus")
+                    else -> {
+                        appContext.toast("$updateStatus")
+                    }
+                }
             }
             markCheckSuccess()
         } catch (throwable: Throwable) {
