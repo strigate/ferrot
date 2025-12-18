@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Ferrot</string>
-    <string name="copyright">© %1$d Michael Bentz / Strigate</string>
+    <string name="copyright">© Strigate %1$d</string>
     <string name="file_provider">fileprovider</string>
     <string name="settings_description_website">ferrot.org</string>
     <string name="url_website">https://ferrot.org/</string>

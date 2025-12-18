@@ -555,9 +555,10 @@ private fun DownloadItem(
         ) {
             with(item) {
                 DownloadPrimaryActionButton(
+                    thumbnailFilePath = thumbnailFilePath,
+                    status = status,
                     onPauseResume = onPauseResume,
                     onOpen = onOpen,
-                    status = status,
                 )
                 Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
                 Column(

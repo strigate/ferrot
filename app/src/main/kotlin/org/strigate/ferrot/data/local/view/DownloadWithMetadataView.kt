@@ -11,6 +11,7 @@ import org.strigate.ferrot.data.local.entity.DownloadStatus
         download.url AS url,
         download.status AS status,
         COALESCE(download_metadata.title, download.url) AS resolvedTitle,
+        download_metadata.thumbnailFilePath AS thumbnailFilePath,
         COALESCE(download_progress.progressPercent, 0) AS progressPercent,
         download_progress.etaSeconds AS etaSeconds,
         download_progress.bytesDownloaded AS bytesDownloaded,
@@ -26,8 +27,9 @@ import org.strigate.ferrot.data.local.entity.DownloadStatus
 data class DownloadWithMetadataView(
     val id: Long,
     val url: String,
-    val status: DownloadStatus,
     val resolvedTitle: String,
+    val thumbnailFilePath: String?,
+    val status: DownloadStatus,
     val progressPercent: Float,
     val etaSeconds: Long?,
     val bytesDownloaded: Long,

@@ -534,7 +534,7 @@ private fun ThumbnailCard(
                 ) {
                     Icon(
                         modifier = Modifier
-                            .size(dimens.overlayIconSize),
+                            .size(dimens.overlayIcon),
                         imageVector = Icons.Filled.Image,
                         contentDescription = thumbnailContentDescription,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -551,7 +551,7 @@ private fun ThumbnailCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(dimens.overlayButtonSize)
+                        .size(dimens.overlayButton)
                         .clip(CircleShape)
                         .background(overlayBackgroundColor),
                     contentAlignment = Alignment.Center,

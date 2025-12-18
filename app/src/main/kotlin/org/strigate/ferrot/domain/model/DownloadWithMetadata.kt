@@ -4,6 +4,7 @@ data class DownloadWithMetadata(
     val id: Long,
     val url: String,
     val title: String,
+    val thumbnailFilePath: String?,
     val status: DownloadStatus,
     val progressPercent: Float,
     val etaSeconds: Long?,
