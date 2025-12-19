@@ -43,6 +43,10 @@ class DownloadRepositoryImpl @Inject constructor(
         return downloadDao.updateErrorMessageById(id, errorMessage)
     }
 
+    override suspend fun updateSeenById(id: Long, seen: Boolean): Int {
+        return downloadDao.updateSeenById(id, seen)
+    }
+
     override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int {
         return downloadDao.updateStartedAtById(id, startedAtMillis)
     }

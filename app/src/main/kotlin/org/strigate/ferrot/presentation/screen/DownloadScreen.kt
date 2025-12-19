@@ -226,6 +226,8 @@ private fun DownloadPager(
                 .distinctUntilChanged()
                 .collect { downloadId ->
                     viewModel.selectDownload(downloadId)
+                    viewModel.markSeenIfCompleted(downloadId)
+
                     val currentDownload = downloads.firstOrNull { it.id == downloadId }
                     val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
                     val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true

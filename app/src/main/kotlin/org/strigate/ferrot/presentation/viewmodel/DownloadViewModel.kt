@@ -35,6 +35,7 @@ import org.strigate.ferrot.helper.SaveHelper
 import org.strigate.ferrot.helper.ShareHelper
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.mapper.toPageUiData
+import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import javax.inject.Inject
@@ -147,6 +148,19 @@ class DownloadViewModel @Inject constructor(
                 .also {
                     it[id] = DownloadMediaType.VIDEO
                 }
+        }
+    }
+
+    fun markSeenIfCompleted(downloadId: Long) {
+        viewModelScope.launch {
+            val state = uiState.value
+            if (state !is DownloadUiState.Data) {
+                return@launch
+            }
+            val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return@launch
+            if (download.status == DownloadStatusUiData.COMPLETED && !download.seen) {
+                downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
+            }
         }
     }
 
