@@ -574,7 +574,8 @@ private fun DownloadItem(
                     ) {
                         val showUnseen = !seen && status == DownloadStatusUiData.COMPLETED
                         Text(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f),
                             color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = if (showUnseen) {
