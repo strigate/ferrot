@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
@@ -564,16 +567,38 @@ private fun DownloadItem(
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(end = dimens.spacingXSmall)
                         .weight(1f),
                 ) {
-                    Text(
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        text = title,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val showUnseen = !seen && status == DownloadStatusUiData.COMPLETED
+                        Text(
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = if (showUnseen) {
+                                    FontWeight.Bold
+                                } else {
+                                    FontWeight.Normal
+                                },
+                            ),
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
+                            text = title,
+                        )
+                        if (showUnseen) {
+                            Spacer(modifier = Modifier.width(dimens.spacingSmall))
+                            Box(
+                                modifier = Modifier
+                                    .size(dimens.dotSize)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape,
+                                    ),
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                     DownloadProgressSection(
                         status = status,

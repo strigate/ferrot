@@ -36,13 +36,13 @@ data class Dimens(
 
     val contentMaxWidth: Dp = 320.dp,
 
-    val thumbnailHeight: Dp = 240.dp,
-
     val overlayButtonSmall: Dp = 32.dp,
     val overlayButton: Dp = 56.dp,
     val overlayIcon: Dp = 48.dp,
 
-    val actionIconSize: Dp = 38.dp
+    val thumbnailHeight: Dp = 240.dp,
+    val actionIconSize: Dp = 38.dp,
+    val dotSize: Dp = 8.dp,
 )
 
 val LocalDimens = staticCompositionLocalOf<Dimens> {
