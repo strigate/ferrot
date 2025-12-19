@@ -91,6 +91,7 @@ fun Download.toPageUiData(
         video = downloadVideoUiData,
         audio = downloadAudioUiData,
         progress = progressUiData,
+        seen = seen,
         errorMessage = errorMessage,
     )
 }

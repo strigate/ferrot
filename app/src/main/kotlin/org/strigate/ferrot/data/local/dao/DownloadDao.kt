@@ -25,6 +25,9 @@ interface DownloadDao {
     @Query("UPDATE download SET status = :status WHERE id = :id")
     suspend fun updateStatusById(id: Long, status: DownloadStatus): Int
 
+    @Query("UPDATE download SET seen = :seen WHERE id = :id")
+    suspend fun updateSeenById(id: Long, seen: Boolean): Int
+
     @Query("UPDATE download SET errorMessage = :errorMessage WHERE id = :id")
     suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int
 
