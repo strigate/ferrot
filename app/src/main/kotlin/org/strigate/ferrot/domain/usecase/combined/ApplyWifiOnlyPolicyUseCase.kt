@@ -1,47 +1,55 @@
-package org.strigate.ferrot.domain.usecase.download
+package org.strigate.ferrot.domain.usecase.combined
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.domain.model.DownloadStatus
-import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
+import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusByIdUseCase
 import org.strigate.ferrot.util.NetworkOps
 import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
 
 class ApplyWifiOnlyPolicyUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
-    private val downloadUseCase: DownloadUseCase,
+    private val getAllDownloadsUseCase: GetAllDownloadsUseCase,
+    private val updateDownloadErrorMessageUseCase: UpdateDownloadErrorMessageUseCase,
+    private val updateDownloadStatusByIdUseCase: UpdateDownloadStatusByIdUseCase,
+    private val deleteDownloadFilesUseCase: DeleteDownloadFilesUseCase,
 ) {
     suspend operator fun invoke(isWifiOnly: Boolean) = withContext(Dispatchers.IO) {
         val (_, isOnWifi) = NetworkOps.quickNetworkProbe(appContext)
-        val downloads = downloadUseCase.getAllDownloadsUseCase()
+        val downloads = getAllDownloadsUseCase()
 
         if (isWifiOnly) {
             if (!isOnWifi) {
-                val pushToWifiStatuses = setOf(
+                val downloadStatuses = setOf(
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
                     DownloadStatus.PAUSED,
                     DownloadStatus.METADATA,
                     DownloadStatus.DOWNLOADING,
                 )
-                downloads.filter { it.status in pushToWifiStatuses }
+                downloads
+                    .filter {
+                        it.status in downloadStatuses
+                    }
                     .forEach { download ->
                         runCatching {
-                            downloadUseCase.updateDownloadErrorMessageUseCase(
-                                download.id,
-                                null,
+                            updateDownloadErrorMessageUseCase(download.id, null)
+                        }
+                        runCatching {
+                            updateDownloadStatusByIdUseCase(
+                                status = DownloadStatus.WAITING_FOR_WIFI,
+                                id = download.id,
                             )
                         }
                         runCatching {
-                            downloadUseCase.updateDownloadStatusByIdUseCase(
-                                download.id,
-                                DownloadStatus.WAITING_FOR_WIFI,
-                            )
+                            deleteDownloadFilesUseCase(download.id)
                         }
-                        runCatching { downloadUseCase.deleteDownloadFilesUseCase(download.id) }
                         DownloadWorker.enqueueOneTimeReplace(
                             context = appContext,
                             id = download.id,
@@ -50,18 +58,18 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                     }
             }
         } else {
-            downloads.filter { it.status == DownloadStatus.WAITING_FOR_WIFI }
+            downloads
+                .filter {
+                    it.status == DownloadStatus.WAITING_FOR_WIFI
+                }
                 .forEach { download ->
                     runCatching {
-                        downloadUseCase.updateDownloadErrorMessageUseCase(
-                            download.id,
-                            null,
-                        )
+                        updateDownloadErrorMessageUseCase(download.id, null)
                     }
                     runCatching {
-                        downloadUseCase.updateDownloadStatusByIdUseCase(
-                            download.id,
-                            DownloadStatus.WAITING_FOR_NETWORK,
+                        updateDownloadStatusByIdUseCase(
+                            status = DownloadStatus.WAITING_FOR_NETWORK,
+                            id = download.id,
                         )
                     }
                     DownloadWorker.enqueueOneTimeReplace(
