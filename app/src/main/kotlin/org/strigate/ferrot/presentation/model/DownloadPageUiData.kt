@@ -8,5 +8,6 @@ data class DownloadPageUiData(
     val video: DownloadVideoUiData?,
     val audio: DownloadAudioUiData?,
     val progress: DownloadProgressUiData?,
+    val seen: Boolean,
     val errorMessage: String?,
 )

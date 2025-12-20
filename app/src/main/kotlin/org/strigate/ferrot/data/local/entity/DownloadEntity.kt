@@ -18,6 +18,7 @@ data class DownloadEntity(
     val uid: String,
     val url: String,
     val status: DownloadStatus = DownloadStatus.QUEUED,
+    val seen: Boolean = false,
     val errorMessage: String? = null,
     val enqueuedAtMillis: Long = System.currentTimeMillis(),
     val startedAtMillis: Long? = null,

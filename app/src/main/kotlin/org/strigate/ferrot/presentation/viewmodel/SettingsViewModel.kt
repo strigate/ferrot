@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.domain.usecase.download.ApplyWifiOnlyPolicyUseCase
+import org.strigate.ferrot.domain.usecase.combined.ApplyWifiOnlyPolicyUseCase
 import org.strigate.ferrot.presentation.model.SettingsUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import javax.inject.Inject

@@ -49,6 +49,7 @@ class MainViewModel @Inject constructor(
                     url = url,
                     uid = UidUtil.generateUid(),
                     status = DownloadStatus.QUEUED,
+                    seen = false,
                 ),
             )
             if (downloadId != -1L) {

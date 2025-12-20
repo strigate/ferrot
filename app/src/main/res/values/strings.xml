@@ -66,6 +66,8 @@
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="toast_dependencies_update_complete">Dependencies update complete</string>
     <string name="toast_dependencies_already_up_to_date">Dependencies already up to date</string>
+    <string name="toast_downloading_app_update">Downloading app update</string>
+    <string name="toast_already_up_to_date">Already up to date</string>
 
     <string name="settings_section_general">General</string>
     <string name="settings_section_app_info">App info</string>

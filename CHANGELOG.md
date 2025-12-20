@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.2 - 2025-12-20
+### Added
+- Seen state tracking for completed downloads
+- Visual indicator for unseen completed downloads in the list
+
+### Changed
+- Completed downloads now visually stand out until opened
+- Download title styling updated for unseen completed items
+- Wifi-only policy logic refactored into a combined use case package
+
+### Fixed
+- App update and dependency update toasts are now shown only when the app is in the foreground
+- “Already up to date” feedback is now shown when no update is available
+
 ## 1.3.1 - 2025-12-18
 ### Added
 - Thumbnails are now shown on downloads

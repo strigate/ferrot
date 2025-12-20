@@ -5,5 +5,6 @@ data class Download(
     val uid: String,
     val url: String,
     val status: DownloadStatus,
+    val seen: Boolean,
     val errorMessage: String? = null,
 )

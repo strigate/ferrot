@@ -8,6 +8,7 @@ internal fun DownloadEntity.toDomain() = Download(
     uid = uid,
     url = url,
     status = status.toDomain(),
+    seen = seen,
     errorMessage = errorMessage,
 )
 
@@ -16,5 +17,6 @@ internal fun Download.toEntity() = DownloadEntity(
     uid = uid,
     url = url,
     status = status.toEntity(),
+    seen = seen,
     errorMessage = errorMessage,
 )
