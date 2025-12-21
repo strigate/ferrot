@@ -120,7 +120,7 @@ fun DownloadPrimaryActionButton(
                             tint = if (usePrimaryTint) {
                                 MaterialTheme.colorScheme.primary
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                Color.White
                             },
                             contentDescription = contentDescription,
                         )
