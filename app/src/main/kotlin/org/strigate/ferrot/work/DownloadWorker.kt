@@ -207,8 +207,8 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val videoTemplate = "${uidDir.absolutePath}/%(id)s.V.%(ext)s"
-                val audioTemplate = "${uidDir.absolutePath}/%(id)s.A.%(ext)s"
+                val videoTemplate = "${uidDir.absolutePath}/%(title)s [%(id)s] - Video.%(ext)s"
+                val audioTemplate = "${uidDir.absolutePath}/%(title)s [%(id)s] - Audio.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,
@@ -501,8 +501,14 @@ class DownloadWorker(
         extensions.map { File(dir, "$infoId.$it") }
             .firstOrNull { it.exists() && it.length() > 0L }
             ?.let { return it }
+
         return dir.listFiles()
-            ?.filter { it.isFile && it.name.startsWith("$infoId.") && it.length() > 0L }
+            ?.filter {
+                it.isFile && !it.name.startsWith("thumb_") && it.length() > 0L
+            }
+            ?.filter {
+                extensions.any { extension -> it.name.endsWith(".$extension") }
+            }
             ?.maxByOrNull { it.lastModified() }
     }
 

@@ -32,6 +32,10 @@ class DownloadThumbnailUseCase @Inject constructor(
             .firstOrNull {
                 it.exists() && it.length() > 0
             }
-            ?.absolutePath
+            ?.let { sourceFile ->
+                val extension = sourceFile.extension
+                val destinationFile = File(outputDir, "thumb_${id}.$extension")
+                if (sourceFile.renameTo(destinationFile)) destinationFile.absolutePath else null
+            }
     }
 }

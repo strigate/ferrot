@@ -62,7 +62,7 @@
     <string name="toast_checking_for_available_update">Checking for available update</string>
     <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
     <string name="toast_saved_to">Saved to %1$s</string>
-    <string name="toast_already_saved">%1$s already saved in %2$s</string>
+    <string name="toast_already_saved">Already saved in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="toast_dependencies_update_complete">Dependencies update complete</string>
     <string name="toast_dependencies_already_up_to_date">Dependencies already up to date</string>
