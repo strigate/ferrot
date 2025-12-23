@@ -35,11 +35,7 @@ object SaveHelper {
             displayName = displayName,
         )
         if (existsInDownloads) {
-            val message = context.getString(
-                R.string.toast_already_saved,
-                displayName,
-                relativePathWithSlash,
-            )
+            val message = context.getString(R.string.toast_already_saved, relativePath)
             context.toast(message)
             return false
         }
@@ -65,10 +61,7 @@ object SaveHelper {
             }.also {
                 contentResolver.update(uri, it, null, null)
             }
-            val message = context.getString(
-                R.string.toast_saved_to,
-                "$relativePathWithSlash$displayName",
-            )
+            val message = context.getString(R.string.toast_saved_to, relativePath)
             context.toast(message)
             true
         } catch (throwable: Throwable) {

@@ -17,7 +17,7 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
             addOption("-o", template)
-            addOption("--restrict-filenames")
+            addOption("--windows-filenames")
 
             val encoderString = "$NAME ${BuildConfig.VERSION}"
             addOption("--add-metadata")

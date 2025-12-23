@@ -13,7 +13,7 @@ class BuildAudioDownloadRequestUseCase @Inject constructor() {
         return YoutubeDLRequest(url).apply {
             addOption("-f", "ba/b")
             addOption("-o", template)
-            addOption("--restrict-filenames")
+            addOption("--windows-filenames")
             addOption("--extract-audio")
             addOption("--audio-format", "mp3")
             addOption("--audio-quality", "0")
