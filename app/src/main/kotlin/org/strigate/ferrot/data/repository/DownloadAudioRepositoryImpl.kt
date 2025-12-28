@@ -15,7 +15,7 @@ class DownloadAudioRepositoryImpl @Inject constructor(
     private val downloadAudioDao: DownloadAudioDao,
 ) : DownloadAudioRepository {
     override suspend fun save(downloadAudio: DownloadAudio): Long {
-        return downloadAudioDao.insertOrReplace(downloadAudio.toEntity())
+        return downloadAudioDao.insertReplace(downloadAudio.toEntity())
     }
 
     override fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadAudio?> {
