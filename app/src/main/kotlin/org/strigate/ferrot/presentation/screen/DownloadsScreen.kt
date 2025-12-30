@@ -367,10 +367,7 @@ private fun DownloadsList(
                 lastSnackId = null
             }
         }
-        on(Lifecycle.Event.ON_PAUSE) {
-            delete()
-        }
-        on(Lifecycle.Event.ON_STOP) {
+        on(Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP) {
             delete()
         }
     }
