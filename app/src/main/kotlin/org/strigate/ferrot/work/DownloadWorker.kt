@@ -45,6 +45,7 @@ import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.extensions.extractFileExtension
 import org.strigate.ferrot.extensions.parseErrorMessage
+import org.strigate.ferrot.extensions.toSafeFileName
 import org.strigate.ferrot.extensions.toast
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -207,8 +208,9 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val videoTemplate = "${uidDir.absolutePath}/%(title)s [%(id)s] - Video.%(ext)s"
-                val audioTemplate = "${uidDir.absolutePath}/%(title)s [%(id)s] - Audio.%(ext)s"
+                val title = (videoInfo.title ?: "video").toSafeFileName()
+                val videoTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Video.%(ext)s"
+                val audioTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Audio.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,
