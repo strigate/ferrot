@@ -18,9 +18,27 @@ fun String.extractFileExtension(): String? {
         ?.uppercase(Locale.ROOT)
 }
 
+fun String.toSafeFileName(maxBytes: Int = 120): String {
+    val byteArray = toByteArray(Charsets.UTF_8)
+    if (byteArray.size <= maxBytes) {
+        return this
+    }
+    var count = 0
+    val stringBuilder = StringBuilder()
+    for (char in this) {
+        val size = char.toString().toByteArray(Charsets.UTF_8).size
+        if (count + size > maxBytes) {
+            break
+        }
+        count += size
+        stringBuilder.append(char)
+    }
+    return stringBuilder.toString().trim()
+}
+
 fun String.guessMimeType(): String {
-    val ext = substringAfterLast('.', "").lowercase()
-    return when (ext) {
+    val extension = substringAfterLast('.', "").lowercase()
+    return when (extension) {
         "mp4", "m4v", "mov", "webm" -> "video/*"
         "mp3", "m4a", "aac", "opus" -> "audio/*"
         "jpg", "jpeg", "png", "webp" -> "image/*"

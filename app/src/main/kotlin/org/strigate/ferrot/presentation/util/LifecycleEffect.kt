@@ -8,13 +8,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-fun LifecycleEffect(block: LifecycleObserverScope.() -> Unit) {
+fun LifecycleEffect(
+    block: LifecycleObserverScope.() -> Unit,
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val scope = remember { LifecycleObserverScope() }.apply(block)
-
+    val lifecycleObserverScope = remember { LifecycleObserverScope() }.apply(block)
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            scope.callbacks[event]?.invoke()
+            lifecycleObserverScope.callbacks[event]?.invoke()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
@@ -26,7 +27,9 @@ fun LifecycleEffect(block: LifecycleObserverScope.() -> Unit) {
 class LifecycleObserverScope {
     internal val callbacks = mutableMapOf<Lifecycle.Event, () -> Unit>()
 
-    fun on(event: Lifecycle.Event, block: () -> Unit) {
-        callbacks[event] = block
+    fun on(vararg events: Lifecycle.Event, block: () -> Unit) {
+        events.forEach { event ->
+            callbacks[event] = block
+        }
     }
 }

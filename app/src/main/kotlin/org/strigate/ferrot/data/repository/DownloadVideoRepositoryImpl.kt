@@ -15,7 +15,7 @@ class DownloadVideoRepositoryImpl @Inject constructor(
     private val downloadVideoDao: DownloadVideoDao,
 ) : DownloadVideoRepository {
     override suspend fun save(downloadVideo: DownloadVideo): Long {
-        return downloadVideoDao.insertOrReplace(downloadVideo.toEntity())
+        return downloadVideoDao.insertReplace(downloadVideo.toEntity())
     }
 
     override fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadVideo?> {
