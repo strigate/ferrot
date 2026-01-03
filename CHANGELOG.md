@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.5 - 2026-01-03
+### Fixed
+- Download failures caused by excessively long filenames from certain sources
+- Safer filename truncation based on UTF-8 byte size to avoid filesystem limits
+- Preserved filename placeholder templates while ensuring generated filenames remain valid
+
 ## 1.3.4 - 2025-12-23
 ### Changed
 - Updated Kotlin to KSP versions
