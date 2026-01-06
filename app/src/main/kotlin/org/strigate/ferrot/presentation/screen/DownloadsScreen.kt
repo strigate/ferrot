@@ -602,12 +602,36 @@ private fun DownloadItem(
                 modifier = Modifier
                     .weight(1f),
             ) {
-                Text(
-                    style = MaterialTheme.typography.bodyLarge,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    text = item.title,
-                )
+                val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .weight(1f),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = if (showUnseen) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            },
+                        ),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        text = item.title,
+                    )
+                    if (showUnseen) {
+                        Spacer(modifier = Modifier.width(dimens.spacingSmall))
+                        Box(
+                            modifier = Modifier
+                                .size(dimens.dotSize)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50),
+                                ),
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                 DownloadProgressSection(
                     status = item.status,
