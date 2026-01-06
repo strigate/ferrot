@@ -603,11 +603,7 @@ private fun DownloadItem(
                     .weight(1f),
             ) {
                 Text(
-                    fontWeight = if (isSelected) {
-                        FontWeight.Bold
-                    } else {
-                        FontWeight.Normal
-                    },
+                    style = MaterialTheme.typography.bodyLarge,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     text = item.title,
