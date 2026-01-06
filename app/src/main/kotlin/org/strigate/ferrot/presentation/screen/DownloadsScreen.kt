@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +16,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
@@ -43,10 +47,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -66,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.DownloadPrimaryActionButton
@@ -331,7 +338,17 @@ private fun DownloadsList(
     snackbarHostState: SnackbarHostState,
 ) {
     val dimens = LocalDimens.current
+    val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
+
+    val showScrollToBottom by remember {
+        derivedStateOf {
+            val layoutInfo = lazyListState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index
+            val atBottom = lastVisibleIndex == layoutInfo.totalItemsCount - 1
+            !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
+        }
+    }
 
     var pendingSnackId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
@@ -392,111 +409,152 @@ private fun DownloadsList(
             }
         }
     }
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize(),
-        state = lazyListState,
     ) {
-        items(
-            items = items,
-            key = { it.id },
-        ) { item ->
-            val isSelected = selectedIds.contains(item.id)
-            val dismissState = rememberSwipeToDismissBoxState()
-            var rowWidthPx by remember {
-                mutableFloatStateOf(0f)
-            }
-            val isVisible = !pendingDeleteIds.contains(item.id)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize(),
+            state = lazyListState,
+        ) {
+            items(
+                items = items,
+                key = { it.id },
+            ) { item ->
+                val isSelected = selectedIds.contains(item.id)
+                val dismissState = rememberSwipeToDismissBoxState()
+                var rowWidthPx by remember {
+                    mutableFloatStateOf(0f)
+                }
+                val isVisible = !pendingDeleteIds.contains(item.id)
 
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
+                AnimatedVisibility(
+                    visible = isVisible,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates ->
+                                rowWidthPx = coordinates.size.width.toFloat()
+                            },
+                    ) {
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            enableDismissFromStartToEnd = false,
+                            enableDismissFromEndToStart = selectedIds.isEmpty(),
+                            backgroundContent = {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    shape = MaterialTheme.shapes.medium,
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize(),
+                                        contentAlignment = Alignment.CenterEnd,
+                                    ) {
+                                        Icon(
+                                            modifier = Modifier
+                                                .padding(end = dimens.spacingMedium),
+                                            imageVector = Icons.Filled.Delete,
+                                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                                            contentDescription = null,
+                                        )
+                                    }
+                                }
+                            },
+                        ) {
+                            DownloadItem(
+                                item = item,
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (selectedIds.isNotEmpty()) {
+                                        onSelectionChange(
+                                            if (isSelected) {
+                                                selectedIds - item.id
+                                            } else {
+                                                selectedIds + item.id
+                                            }
+                                        )
+                                    } else {
+                                        onItemClick(item)
+                                    }
+                                },
+                                onLongClick = {
+                                    onSelectionChange(selectedIds + item.id)
+                                },
+                                onPauseResume = {
+                                    onPauseResume(item)
+                                },
+                                onOpen = {
+                                    onItemClick(item)
+                                },
+                            )
+                        }
+                    }
+                }
+
+                LaunchedEffect(isVisible) {
+                    if (isVisible) {
+                        runCatching {
+                            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+                        }
+                    }
+                }
+                LaunchedEffect(dismissState) {
+                    snapshotFlow {
+                        Pair(
+                            dismissState.currentValue,
+                            runCatching { dismissState.requireOffset() }.getOrDefault(0f),
+                        )
+                    }
+                        .distinctUntilChanged()
+                        .collectLatest { (value, offsetPx) ->
+                            val fullyAtEnd = value == SwipeToDismissBoxValue.EndToStart &&
+                                    rowWidthPx > 0f &&
+                                    abs(offsetPx) >= (rowWidthPx - 1f)
+
+                            if (fullyAtEnd) {
+                                onSelectionChange(selectedIds - item.id)
+                                pendingDeleteIds = pendingDeleteIds + item.id
+                                pendingSnackId = item.id
+                            }
+                        }
+                }
+            }
+        }
+        if (showScrollToBottom) {
+            IconButton(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(dimens.spacingMedium),
+                onClick = {
+                    coroutineScope.launch {
+                        lazyListState.animateScrollToItem(
+                            index = items.lastIndex,
+                        )
+                    }
+                },
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onGloballyPositioned { coordinates ->
-                            rowWidthPx = coordinates.size.width.toFloat()
-                        },
+                        .size(dimens.overlayButton)
+                        .background(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(dimens.overlayButton / 2),
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    SwipeToDismissBox(
-                        state = dismissState,
-                        enableDismissFromStartToEnd = false,
-                        enableDismissFromEndToStart = selectedIds.isEmpty(),
-                        backgroundContent = {
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize(),
-                                    contentAlignment = Alignment.CenterEnd,
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .padding(end = dimens.spacingMedium),
-                                        imageVector = Icons.Filled.Delete,
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                        contentDescription = null,
-                                    )
-                                }
-                            }
-                        },
-                    ) {
-                        DownloadItem(
-                            item = item,
-                            isSelected = isSelected,
-                            onClick = {
-                                if (selectedIds.isNotEmpty()) {
-                                    onSelectionChange(
-                                        if (isSelected) {
-                                            selectedIds - item.id
-                                        } else {
-                                            selectedIds + item.id
-                                        }
-                                    )
-                                } else {
-                                    onItemClick(item)
-                                }
-                            },
-                            onLongClick = {
-                                onSelectionChange(selectedIds + item.id)
-                            },
-                            onPauseResume = { onPauseResume(item) },
-                            onOpen = { onItemClick(item) },
-                        )
-                    }
-                }
-            }
-
-            LaunchedEffect(isVisible) {
-                if (isVisible) {
-                    runCatching {
-                        dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-                    }
-                }
-            }
-            LaunchedEffect(dismissState) {
-                snapshotFlow {
-                    Pair(
-                        dismissState.currentValue,
-                        runCatching { dismissState.requireOffset() }.getOrDefault(0f),
+                    Icon(
+                        modifier = Modifier
+                            .size(dimens.iconSmall),
+                        imageVector = Icons.Default.ArrowDownward,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        contentDescription = null,
                     )
                 }
-                    .distinctUntilChanged()
-                    .collectLatest { (value, offsetPx) ->
-                        val fullyAtEnd = value == SwipeToDismissBoxValue.EndToStart &&
-                                rowWidthPx > 0f &&
-                                abs(offsetPx) >= (rowWidthPx - 1f)
-
-                        if (fullyAtEnd) {
-                            onSelectionChange(selectedIds - item.id)
-                            pendingDeleteIds = pendingDeleteIds + item.id
-                            pendingSnackId = item.id
-                        }
-                    }
             }
         }
     }
@@ -544,16 +602,36 @@ private fun DownloadItem(
                 modifier = Modifier
                     .weight(1f),
             ) {
-                Text(
-                    fontWeight = if (isSelected) {
-                        FontWeight.Bold
-                    } else {
-                        FontWeight.Normal
-                    },
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    text = item.title,
-                )
+                val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .weight(1f),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = if (showUnseen) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            },
+                        ),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        text = item.title,
+                    )
+                    if (showUnseen) {
+                        Spacer(modifier = Modifier.width(dimens.spacingSmall))
+                        Box(
+                            modifier = Modifier
+                                .size(dimens.dotSize)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50),
+                                ),
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
                 DownloadProgressSection(
                     status = item.status,
