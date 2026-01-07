@@ -28,7 +28,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
-import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadIdsWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadIdsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.helper.PlayHelper
 import org.strigate.ferrot.helper.SaveHelper
@@ -51,7 +51,7 @@ class DownloadViewModel @Inject constructor(
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
-    private val getDownloadIdsWithMetadataUseCase: GetDownloadIdsWithMetadataUseCase,
+    private val getDownloadIdsWithMetadataAsFlowUseCase: GetDownloadIdsWithMetadataAsFlowUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
@@ -86,7 +86,7 @@ class DownloadViewModel @Inject constructor(
     }
 
     private fun getUiState(id: Long = initialId) =
-        getDownloadIdsWithMetadataUseCase()
+        getDownloadIdsWithMetadataAsFlowUseCase()
             .flatMapLatest { ids ->
                 if (ids.isEmpty()) {
                     flowOf(
@@ -102,9 +102,9 @@ class DownloadViewModel @Inject constructor(
                         val downloadFlow = downloadUseCase
                             .getDownloadByIdAsFlowUseCase(downloadId)
                         val videoFlow = downloadVideoUseCase
-                            .getDownloadVideoAsFlowUseCase(downloadId)
+                            .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
                         val audioFlow = downloadAudioUseCase
-                            .getDownloadAudioAsFlowUseCase(downloadId)
+                            .getDownloadAudioByDownloadIdAsFlowUseCase(downloadId)
                         val metadataFlow = downloadMetadataUseCase
                             .getDownloadMetadataByIdAsFlowUseCase(downloadId)
                         val progressFlow = downloadProgressUseCase
