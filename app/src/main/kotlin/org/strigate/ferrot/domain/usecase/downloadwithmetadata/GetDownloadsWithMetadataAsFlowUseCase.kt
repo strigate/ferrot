@@ -5,7 +5,7 @@ import org.strigate.ferrot.domain.model.DownloadWithMetadata
 import org.strigate.ferrot.domain.repository.DownloadWithMetadataRepository
 import javax.inject.Inject
 
-class GetDownloadsWithMetadataUseCase @Inject constructor(
+class GetDownloadsWithMetadataAsFlowUseCase @Inject constructor(
     private val downloadWithMetadataRepository: DownloadWithMetadataRepository,
 ) {
     operator fun invoke(): Flow<List<DownloadWithMetadata>> {

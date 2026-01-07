@@ -338,6 +338,14 @@ class DownloadWorker(
                 )
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_COMPLETED)
 
+                sha256?.let {
+                    DeleteDuplicateDownloadsWorker.enqueueOneTimeReplace(
+                        context = appContext,
+                        downloadId = downloadId,
+                        sha256 = sha256,
+                    )
+                }
+
                 val downloadComplete = appContext.getString(R.string.download_complete)
                 val contentText = videoTitle ?: download.url
 

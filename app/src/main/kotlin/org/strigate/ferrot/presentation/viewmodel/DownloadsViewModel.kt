@@ -20,7 +20,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
-import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
@@ -32,12 +32,12 @@ import javax.inject.Inject
 class DownloadsViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
-    private val downloadProgressUseCase: DownloadProgressUseCase,
-    private val getDownloadsWithMetadata: GetDownloadsWithMetadataUseCase,
     private val stopDownloadsUseCase: StopDownloadUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
-    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
+    private val downloadProgressUseCase: DownloadProgressUseCase,
+    private val getDownloadsWithMetadataAsFlowUseCase: GetDownloadsWithMetadataAsFlowUseCase,
+    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -46,7 +46,7 @@ class DownloadsViewModel @Inject constructor(
     )
 
     private fun getUiState(): Flow<DownloadsUiState> {
-        val downloadsFlow = getDownloadsWithMetadata()
+        val downloadsFlow = getDownloadsWithMetadataAsFlowUseCase()
             .map { aggregates -> aggregates.map { it.toUiData() } }
 
         val availableUpdateFlow = availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()

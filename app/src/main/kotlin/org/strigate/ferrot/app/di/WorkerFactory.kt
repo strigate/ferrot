@@ -20,6 +20,7 @@ import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.work.DeleteDuplicateDownloadsWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
 import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
@@ -94,6 +95,15 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     getPendingDownloadsCombinedUseCase = getPendingDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
+                )
+            }
+
+            DeleteDuplicateDownloadsWorker::class.java.name -> {
+                DeleteDuplicateDownloadsWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    downloadVideoUseCase = downloadVideoUseCase,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                 )
             }
 

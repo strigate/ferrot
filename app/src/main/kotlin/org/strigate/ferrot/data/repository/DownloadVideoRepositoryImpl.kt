@@ -19,7 +19,13 @@ class DownloadVideoRepositoryImpl @Inject constructor(
     }
 
     override fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadVideo?> {
-        return downloadVideoDao.getByDownloadIdAsFlow(downloadId).map { it?.toDomain() }
+        return downloadVideoDao
+            .getByDownloadIdAsFlow(downloadId)
+            .map { it?.toDomain() }
+    }
+
+    override suspend fun getDownloadIdsBySha256(sha256: String): List<Long> {
+        return downloadVideoDao.getDownloadIdsBySha256(sha256)
     }
 
     override suspend fun deleteByDownloadId(downloadId: Long): Int {

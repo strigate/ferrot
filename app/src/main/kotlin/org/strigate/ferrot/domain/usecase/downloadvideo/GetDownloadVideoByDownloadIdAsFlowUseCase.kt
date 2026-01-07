@@ -5,7 +5,7 @@ import org.strigate.ferrot.domain.model.DownloadVideo
 import org.strigate.ferrot.domain.repository.DownloadVideoRepository
 import javax.inject.Inject
 
-class GetDownloadVideoAsFlowUseCase @Inject constructor(
+class GetDownloadVideoByDownloadIdAsFlowUseCase @Inject constructor(
     private val downloadVideoRepository: DownloadVideoRepository,
 ) {
     operator fun invoke(downloadId: Long): Flow<DownloadVideo?> {
