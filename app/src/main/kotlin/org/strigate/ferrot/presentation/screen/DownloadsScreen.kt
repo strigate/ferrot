@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -98,6 +99,8 @@ fun DownloadsScreen(
     val dimens = LocalDimens.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val coroutineScope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState()
     val snackbarHostState = remember {
         SnackbarHostState()
     }
@@ -222,6 +225,14 @@ fun DownloadsScreen(
                     },
                     title = {
                         Text(
+                            modifier = Modifier
+                                .combinedClickable(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            lazyListState.animateScrollToItem(0)
+                                        }
+                                    }
+                                ),
                             color = MaterialTheme.colorScheme.onSurface,
                             style = TextStyle(
                                 fontSize = 22.sp,
@@ -315,6 +326,7 @@ fun DownloadsScreen(
                                     viewModel.deleteDownload(it)
                                 },
                                 snackbarHostState = snackbarHostState,
+                                lazyListState = lazyListState,
                             )
                         }
                     }
@@ -336,10 +348,10 @@ private fun DownloadsList(
     onPauseResume: (DownloadItemUiData) -> Unit,
     onDelete: (Long) -> Unit,
     snackbarHostState: SnackbarHostState,
+    lazyListState: LazyListState,
 ) {
     val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
-    val lazyListState = rememberLazyListState()
 
     val showScrollToBottom by remember {
         derivedStateOf {
