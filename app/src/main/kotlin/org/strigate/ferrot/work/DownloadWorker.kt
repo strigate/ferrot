@@ -47,6 +47,7 @@ import org.strigate.ferrot.extensions.extractFileExtension
 import org.strigate.ferrot.extensions.parseErrorMessage
 import org.strigate.ferrot.extensions.toSafeFileName
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.sha256
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.cancellation.CancellationException
@@ -252,12 +253,18 @@ class DownloadWorker(
                     .extractFileExtension()
                     .orEmpty()
 
-                Log.d(LOG_TAG, "$tag Video output file exists, saving path")
+                Log.d(LOG_TAG, "$tag Video output file exists, calculating hash")
+                val sha256 = withContext(Dispatchers.IO) {
+                    sha256(videoOutputFilePath)
+                }
+
+                Log.d(LOG_TAG, "$tag Calculated video file hash, saving download video")
                 downloadVideoUseCase.saveDownloadVideoUseCase(
                     DownloadVideo(
                         downloadId = downloadId,
                         filePath = videoOutputFilePath,
                         fileExtension = videoOutputFileExtension,
+                        sha256 = sha256,
                     )
                 )
 

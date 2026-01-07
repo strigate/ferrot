@@ -8,10 +8,12 @@ internal fun DownloadVideo.toEntity() = DownloadVideoEntity(
     downloadId = downloadId,
     filePath = filePath,
     fileExtension = fileExtension,
+    sha256 = sha256,
 )
 
 internal fun DownloadVideoEntity.toDomain() = DownloadVideo(
     downloadId = downloadId,
     filePath = filePath,
     fileExtension = fileExtension,
+    sha256 = sha256,
 )
