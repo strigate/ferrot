@@ -16,6 +16,7 @@ import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
@@ -68,6 +69,9 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         val automaticDependencyUpdatesSetting = settingsUseCase
             .getAutomaticDependencyUpdatesSettingAsFlowUseCase()
             .first()
+        val automaticDuplicateDownloadDeletionSetting = settingsUseCase
+            .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
+            .first()
 
         if (automaticUpdatesSetting) {
             DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
@@ -78,6 +82,11 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
             UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
         } else {
             UpdateDependenciesWorker.cancelPeriodic(appContext)
+        }
+        if (automaticDuplicateDownloadDeletionSetting) {
+            DeleteAllDuplicateDownloadsWorker.enqueuePeriodicKeep(appContext)
+        } else {
+            DeleteAllDuplicateDownloadsWorker.cancelPeriodic(appContext)
         }
     }
 }

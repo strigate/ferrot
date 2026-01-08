@@ -81,6 +81,7 @@
     <string name="settings_navigate_title_about">About</string>
 
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
+    <string name="settings_title_automatic_duplicate_deletion">Automatically delete duplicate downloads</string>
     <string name="settings_title_automatic_updates">Automatic updates</string>
     <string name="settings_title_check_now">Check now</string>
     <string name="settings_title_last_checked_for_updates">Last checked for updates</string>
@@ -93,6 +94,7 @@
     <string name="settings_title_license">License</string>
 
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
+    <string name="settings_description_automatic_duplicate_deletion">Automatically delete older downloads when an exact duplicate is found.</string>
     <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
     <string name="settings_description_check_now">Check for updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
