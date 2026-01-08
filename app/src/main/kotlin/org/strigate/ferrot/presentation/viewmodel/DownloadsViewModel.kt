@@ -92,10 +92,6 @@ class DownloadsViewModel @Inject constructor(
         }
     }
 
-    fun deleteDownload(downloadId: Long) {
-        deleteDownloads(setOf(downloadId))
-    }
-
     fun deleteDownloads(downloadIds: Set<Long>) {
         if (downloadIds.isEmpty()) {
             return
