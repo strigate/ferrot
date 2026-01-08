@@ -1,4 +1,4 @@
-package org.strigate.ferrot.domain.usecase.combined
+package org.strigate.ferrot.domain.usecase.apply
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext

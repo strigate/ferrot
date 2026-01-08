@@ -6,13 +6,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.domain.usecase.combined.ApplyWifiOnlyPolicyUseCase
+import org.strigate.ferrot.domain.usecase.apply.ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
 import org.strigate.ferrot.presentation.model.SettingsUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import javax.inject.Inject
@@ -22,6 +23,7 @@ class SettingsViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
     private val applyWifiOnlyPolicyUseCase: ApplyWifiOnlyPolicyUseCase,
+    private val applyAutomaticDuplicateDownloadDeletionSettingUseCase: ApplyAutomaticDuplicateDownloadDeletionSettingUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -30,15 +32,17 @@ class SettingsViewModel @Inject constructor(
     )
 
     private fun getUiState(): Flow<SettingsUiState> {
-        return settingsUseCase
-            .getDownloadWifiOnlySettingAsFlowUseCase()
-            .map { downloadWifiOnly ->
-                SettingsUiState.Data(
-                    SettingsUiData(
-                        downloadWifiOnly = downloadWifiOnly,
-                    )
+        return combine(
+            settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase(),
+        ) { downloadWifiOnly, automaticDuplicateDownloadDeletion ->
+            SettingsUiState.Data(
+                SettingsUiData(
+                    downloadWifiOnly = downloadWifiOnly,
+                    automaticDuplicateDownloadDeletion = automaticDuplicateDownloadDeletion,
                 )
-            }
+            )
+        }
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.SETTINGS)
@@ -47,6 +51,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsUseCase.saveDownloadWifiOnlySettingUseCase(enabled)
             applyWifiOnlyPolicyUseCase(enabled)
+        }
+    }
+
+    fun setAutomaticDuplicateDownloadDeletion(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
+            applyAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
         }
     }
 

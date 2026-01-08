@@ -21,10 +21,12 @@ object Constants {
     object Settings {
         const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
         const val DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY = true
-        const val KEY_AUTOMATIC_UPDATES = "automatic_updates"
+        const val KEY_AUTOMATIC_UPDATES = "auto_updates"
         const val DEFAULT_VALUE_AUTOMATIC_UPDATES = true
-        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES = "automatic_dependency_updates"
+        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES = "auto_dependency_updates"
         const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES = true
+        const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = "auto_duplicate_download_deletion"
+        const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = true
     }
 
     object Notifications {
@@ -67,10 +69,12 @@ object Constants {
 
             const val ONETIME_DOWNLOAD = "$ONETIME.DOWNLOAD"
             const val ONETIME_DOWNLOAD_AVAILABLE_UPDATE = "$ONETIME.DOWNLOAD_AVAILABLE_UPDATE"
+            const val ONETIME_CLEANUP_DUPLICATE_DOWNLOADS = "$ONETIME.DELETE_DUPLICATES"
+            const val ONETIME_UPDATE_DEPENDENCIES = "$ONETIME.UPDATE_DEPENDENCIES"
 
             const val PERIODIC_DOWNLOAD_AVAILABLE_UPDATE = "$PERIODIC.DOWNLOAD_AVAILABLE_UPDATE"
             const val PERIODIC_UPDATE_DEPENDENCIES = "$PERIODIC.UPDATE_DEPENDENCIES"
-            const val ONETIME_UPDATE_DEPENDENCIES = "$ONETIME.UPDATE_DEPENDENCIES"
+            const val PERIODIC_CLEANUP_DUPLICATE_DOWNLOADS = "$PERIODIC.DELETE_DUPLICATES"
 
             const val KEY_ID = "$KEY.ID"
             const val KEY_WIFI_ONLY = "$KEY.wifi_only"

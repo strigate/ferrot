@@ -16,6 +16,7 @@ import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -41,6 +42,7 @@ import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.extensions.extractFileExtension
@@ -66,6 +68,7 @@ class DownloadWorker(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
+    private val settingsUseCase: SettingsUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
 
@@ -338,12 +341,11 @@ class DownloadWorker(
                 )
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_COMPLETED)
 
-                sha256?.let {
-                    DeleteDuplicateDownloadsWorker.enqueueOneTimeReplace(
-                        context = appContext,
-                        downloadId = downloadId,
-                        sha256 = sha256,
-                    )
+                val automaticDuplicateDownloadDeletionSetting = settingsUseCase
+                    .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
+                    .first()
+                if (automaticDuplicateDownloadDeletionSetting) {
+                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedCleanup(appContext)
                 }
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
