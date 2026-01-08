@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +67,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -120,6 +122,7 @@ fun DownloadsScreen(
         is DownloadsUiState.Data -> state.data.downloads.map { it.id }.toSet()
         else -> emptySet()
     }
+    val hasDownloads = allIds.isNotEmpty()
     val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
     val selectionMode = selectedIds.isNotEmpty()
 
@@ -257,14 +260,43 @@ fun DownloadsScreen(
                             )
                         }
                         DropdownMenu(
+                            modifier = Modifier
+                                .padding(end = 8.dp),
                             expanded = menuExpanded,
                             onDismissRequest = {
                                 menuExpanded = false
                             },
                         ) {
+                            if (hasDownloads) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.select_all),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.SelectAll,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedIds = allIds
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = {
-                                    Text(stringResource(R.string.screen_title_settings))
+                                    Text(
+                                        text = stringResource(R.string.screen_title_settings),
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.Settings,
+                                        contentDescription = null,
+                                    )
                                 },
                                 onClick = {
                                     navController.navigate(Screen.Settings.route)
