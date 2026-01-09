@@ -22,6 +22,7 @@ import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombi
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.DeleteDownloadsWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
 import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
@@ -98,6 +99,14 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     getPendingDownloadsCombinedUseCase = getPendingDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
+                )
+            }
+
+            DeleteDownloadsWorker::class.java.name -> {
+                DeleteDownloadsWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                 )
             }
 

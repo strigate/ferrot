@@ -1,7 +1,6 @@
 package org.strigate.ferrot.presentation.viewmodel
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,14 +18,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
-import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
-import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadIdsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -38,6 +35,7 @@ import org.strigate.ferrot.presentation.mapper.toPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
+import org.strigate.ferrot.work.DeleteDownloadsWorker
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,7 +51,6 @@ class DownloadViewModel @Inject constructor(
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val getDownloadIdsWithMetadataAsFlowUseCase: GetDownloadIdsWithMetadataAsFlowUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
-    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
 ) : ViewModel() {
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
@@ -189,11 +186,11 @@ class DownloadViewModel @Inject constructor(
     }
 
     fun deleteDownload(id: Long? = null) {
-        viewModelScope.launch {
-            val downloadId = id ?: _selectedId.value
-            val success = deleteDownloadAndRelatedCombinedUseCase(downloadId)
-            Log.d(LOG_TAG, "Deleted download id=$downloadId success=$success")
-        }
+        val downloadId = id ?: _selectedId.value
+        DeleteDownloadsWorker.enqueueOneTimeAppend(
+            context = appContext,
+            downloadIds = listOf(downloadId),
+        )
     }
 
     fun shareDownload(id: Long? = null) = viewModelScope.launch {

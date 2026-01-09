@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -350,7 +351,6 @@ private fun DownloadsList(
             !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
         }
     }
-
     var pendingSnackIds by rememberSaveable { mutableStateOf<Set<Long>>(emptySet()) }
     var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     val visibleCount by remember(items, pendingDeleteIds) {
@@ -365,7 +365,6 @@ private fun DownloadsList(
             pendingSnackIds = pendingSnackIds + bulkDeleteIds
         }
     }
-
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
     LaunchedEffect(pendingSnackIds) {
@@ -410,6 +409,7 @@ private fun DownloadsList(
             }
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -421,12 +421,16 @@ private fun DownloadsList(
             enter = fadeIn(),
             exit = fadeOut(),
         ) {
-            DownloadsIntro()
+            DownloadsIntro(
+                modifier = Modifier
+                    .fillMaxSize(),
+            )
         }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize(),
             state = lazyListState,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             items(
                 items = items,
