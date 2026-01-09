@@ -20,6 +20,7 @@ import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.util.isAppInForeground
+import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.time.Duration.between
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -142,6 +143,7 @@ class UpdateDependenciesWorker(
             val oneTimeWorkRequest = OneTimeWorkRequestBuilder<UpdateDependenciesWorker>()
                 .setConstraints(constraints)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .setExpeditedIfAllowed()
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(

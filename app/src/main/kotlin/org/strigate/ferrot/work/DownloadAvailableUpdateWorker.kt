@@ -33,6 +33,7 @@ import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.util.isAppInForeground
+import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -425,6 +426,7 @@ class DownloadAvailableUpdateWorker(
                 .setConstraints(constraints)
                 .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .setExpeditedIfAllowed()
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(

@@ -1,8 +1,10 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +19,6 @@ import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
-import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
@@ -25,11 +26,13 @@ import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
+import org.strigate.ferrot.work.DeleteDownloadsWorker
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
+    @param:ApplicationContext val appContext: Context,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
     private val stopDownloadsUseCase: StopDownloadUseCase,
@@ -37,7 +40,6 @@ class DownloadsViewModel @Inject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val getDownloadsWithMetadataAsFlowUseCase: GetDownloadsWithMetadataAsFlowUseCase,
-    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -97,9 +99,10 @@ class DownloadsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            downloadIds.forEach { id ->
-                deleteDownloadAndRelatedCombinedUseCase(id)
-            }
+            DeleteDownloadsWorker.enqueueOneTimeAppend(
+                context = appContext,
+                downloadIds = downloadIds,
+            )
         }
     }
 }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.util.setExpeditedIfAllowed
 
 class RequeuePendingDownloadsWorker(
     appContext: Context,
@@ -31,7 +32,12 @@ class RequeuePendingDownloadsWorker(
         fun enqueueOneItem(context: Context) {
             val oneTimeWorkRequestBuilder =
                 OneTimeWorkRequestBuilder<RequeuePendingDownloadsWorker>()
-            WorkManager.getInstance(context).enqueue(oneTimeWorkRequestBuilder.build())
+            val oneTimeWorkRequest = oneTimeWorkRequestBuilder
+                .setExpeditedIfAllowed()
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueue(oneTimeWorkRequest)
         }
     }
 }
