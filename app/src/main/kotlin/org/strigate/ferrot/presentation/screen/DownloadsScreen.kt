@@ -110,7 +110,7 @@ fun DownloadsScreen(
     var selectedIds by rememberSaveable {
         mutableStateOf(setOf<Long>())
     }
-    var pendingBulkDeleteIds by rememberSaveable {
+    var pendingBulkDeleteIds by remember {
         mutableStateOf<Set<Long>>(emptySet())
     }
 
@@ -351,8 +351,12 @@ private fun DownloadsList(
             !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
         }
     }
-    var pendingSnackIds by rememberSaveable { mutableStateOf<Set<Long>>(emptySet()) }
-    var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var pendingSnackIds by remember {
+        mutableStateOf<Set<Long>>(emptySet())
+    }
+    var pendingDeleteIds by rememberSaveable {
+        mutableStateOf(setOf<Long>())
+    }
     val visibleCount by remember(items, pendingDeleteIds) {
         derivedStateOf {
             items.count { it.id !in pendingDeleteIds }
@@ -373,7 +377,9 @@ private fun DownloadsList(
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
     LaunchedEffect(pendingSnackIds) {
-        if (pendingSnackIds.isEmpty()) return@LaunchedEffect
+        if (pendingSnackIds.isEmpty()) {
+            return@LaunchedEffect
+        }
         snackbarHostState.currentSnackbarData?.dismiss()
         val snackbarResult = snackbarHostState.showSnackbar(
             message = snackbarDeletedMessage,
