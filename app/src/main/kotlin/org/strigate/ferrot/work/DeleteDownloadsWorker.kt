@@ -35,8 +35,9 @@ class DeleteDownloadsWorker(
             return@withContext Result.success()
         }
         enableForeground(
-            notificationText = applicationContext.getString(
-                R.string.worker_notification_text_deleting_downloads,
+            notificationText = applicationContext.resources.getQuantityString(
+                R.plurals.worker_notification_text_deleting_downloads,
+                downloadIds.size,
             ),
         )
         Log.d(LOG_TAG, "Starting delete worker for ${downloadIds.size} download(s)")

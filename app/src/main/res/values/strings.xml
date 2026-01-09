@@ -15,7 +15,10 @@
     <string name="worker_notification_text_updating_dependencies">Updating dependencies</string>
     <string name="worker_notification_text_downloading_app_update">Downloading app update</string>
     <string name="worker_notification_text_download_in_progress">Download in progress</string>
-    <string name="worker_notification_text_deleting_downloads">Deleting downloads…</string>
+    <plurals name="worker_notification_text_deleting_downloads">
+        <item quantity="one">Deleting download</item>
+        <item quantity="other">Deleting downloads</item>
+    </plurals>
 
     <string name="screen_title_download">Download</string>
     <string name="screen_title_settings">Settings</string>
