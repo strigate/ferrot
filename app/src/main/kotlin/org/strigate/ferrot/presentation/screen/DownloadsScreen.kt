@@ -112,12 +112,7 @@ fun DownloadsScreen(
     var pendingBulkDeleteIds by rememberSaveable {
         mutableStateOf<Set<Long>>(emptySet())
     }
-    var bulkPendingCommitIds by rememberSaveable {
-        mutableStateOf<Set<Long>>(emptySet())
-    }
-    var bulkUndoIds by rememberSaveable {
-        mutableStateOf<Set<Long>>(emptySet())
-    }
+
     val allIds = when (val state = uiState) {
         is DownloadsUiState.Data -> state.data.downloads.map { it.id }.toSet()
         else -> emptySet()
@@ -129,36 +124,8 @@ fun DownloadsScreen(
     BackHandler(enabled = selectionMode) {
         selectedIds = emptySet()
     }
-    LifecycleEffect {
-        on(Lifecycle.Event.ON_STOP) {
-            if (bulkPendingCommitIds.isNotEmpty()) {
-                viewModel.deleteDownloads(bulkPendingCommitIds)
-                bulkPendingCommitIds = emptySet()
-            }
-        }
-    }
     LaunchedEffect(Unit) {
         viewModel.logShown()
-    }
-
-    val snackbarBulkDeletedMessage = stringResource(R.string.snackbar_bulk_delete_deleted)
-    val snackbarBulkUndoActionLabel = stringResource(R.string.snackbar_bulk_delete_undo)
-    LaunchedEffect(pendingBulkDeleteIds) {
-        if (pendingBulkDeleteIds.isEmpty()) {
-            return@LaunchedEffect
-        }
-        snackbarHostState.currentSnackbarData?.dismiss()
-        val snackbarResult = snackbarHostState.showSnackbar(
-            message = "${pendingBulkDeleteIds.size} $snackbarBulkDeletedMessage",
-            actionLabel = snackbarBulkUndoActionLabel,
-            duration = SnackbarDuration.Short,
-            withDismissAction = true,
-        )
-        if (snackbarResult == SnackbarResult.ActionPerformed) {
-            bulkUndoIds = pendingBulkDeleteIds
-            bulkPendingCommitIds = emptySet()
-        }
-        pendingBulkDeleteIds = emptySet()
     }
 
     Scaffold(
@@ -199,7 +166,6 @@ fun DownloadsScreen(
                         }
                         IconButton(
                             onClick = {
-                                bulkPendingCommitIds = selectedIds
                                 pendingBulkDeleteIds = selectedIds
                                 selectedIds = emptySet()
                             },
@@ -322,45 +288,37 @@ fun DownloadsScreen(
                 is DownloadsUiState.Error -> DownloadsError()
                 is DownloadsUiState.Data -> {
                     with(state.data) {
-                        if (downloads.isEmpty()) {
-                            DownloadsIntro(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                            )
-                        } else {
-                            DownloadsList(
-                                items = downloads,
-                                selectedIds = selectedIds,
-                                bulkDeleteIds = pendingBulkDeleteIds,
-                                bulkUndoIds = bulkUndoIds,
-                                onSelectionChange = {
-                                    selectedIds = it
-                                },
-                                onItemClick = {
-                                    navController.navigate(Screen.Download.route(it.id))
-                                },
-                                onPauseResume = { item ->
-                                    when (item.status) {
-                                        DownloadStatusUiData.QUEUED,
-                                        DownloadStatusUiData.WAITING_FOR_NETWORK,
-                                        DownloadStatusUiData.WAITING_FOR_WIFI,
-                                        DownloadStatusUiData.DOWNLOADING,
-                                        DownloadStatusUiData.METADATA -> {
-                                            viewModel.stopDownload(item.id)
-                                        }
-
-                                        else -> {
-                                            viewModel.retryDownload(item.id)
-                                        }
+                        DownloadsList(
+                            items = downloads,
+                            selectedIds = selectedIds,
+                            bulkDeleteIds = pendingBulkDeleteIds,
+                            onSelectionChange = {
+                                selectedIds = it
+                            },
+                            onItemClick = {
+                                navController.navigate(Screen.Download.route(it.id))
+                            },
+                            onPauseResume = { item ->
+                                when (item.status) {
+                                    DownloadStatusUiData.QUEUED,
+                                    DownloadStatusUiData.WAITING_FOR_NETWORK,
+                                    DownloadStatusUiData.WAITING_FOR_WIFI,
+                                    DownloadStatusUiData.DOWNLOADING,
+                                    DownloadStatusUiData.METADATA -> {
+                                        viewModel.stopDownload(item.id)
                                     }
-                                },
-                                onDelete = {
-                                    viewModel.deleteDownload(it)
-                                },
-                                snackbarHostState = snackbarHostState,
-                                lazyListState = lazyListState,
-                            )
-                        }
+
+                                    else -> {
+                                        viewModel.retryDownload(item.id)
+                                    }
+                                }
+                            },
+                            onDelete = { downloadIds ->
+                                viewModel.deleteDownloads(downloadIds)
+                            },
+                            snackbarHostState = snackbarHostState,
+                            lazyListState = lazyListState,
+                        )
                     }
                 }
             }
@@ -374,11 +332,10 @@ private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
     bulkDeleteIds: Set<Long>,
-    bulkUndoIds: Set<Long>,
     onSelectionChange: (Set<Long>) -> Unit,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
-    onDelete: (Long) -> Unit,
+    onDelete: (Set<Long>) -> Unit,
     snackbarHostState: SnackbarHostState,
     lazyListState: LazyListState,
 ) {
@@ -394,24 +351,25 @@ private fun DownloadsList(
         }
     }
 
-    var pendingSnackId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingSnackIds by rememberSaveable { mutableStateOf<Set<Long>>(emptySet()) }
     var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    val visibleCount by remember(items, pendingDeleteIds) {
+        derivedStateOf {
+            items.count { it.id !in pendingDeleteIds }
+        }
+    }
 
     LaunchedEffect(bulkDeleteIds) {
         if (bulkDeleteIds.isNotEmpty()) {
             pendingDeleteIds = pendingDeleteIds + bulkDeleteIds
-        }
-    }
-    LaunchedEffect(bulkUndoIds) {
-        if (bulkUndoIds.isNotEmpty()) {
-            pendingDeleteIds = pendingDeleteIds - bulkUndoIds
+            pendingSnackIds = pendingSnackIds + bulkDeleteIds
         }
     }
 
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
-    LaunchedEffect(pendingSnackId) {
-        val snackId = pendingSnackId ?: return@LaunchedEffect
+    LaunchedEffect(pendingSnackIds) {
+        if (pendingSnackIds.isEmpty()) return@LaunchedEffect
         snackbarHostState.currentSnackbarData?.dismiss()
         val snackbarResult = snackbarHostState.showSnackbar(
             message = snackbarDeletedMessage,
@@ -420,20 +378,19 @@ private fun DownloadsList(
             withDismissAction = true,
         )
         if (snackbarResult == SnackbarResult.ActionPerformed) {
-            pendingDeleteIds = pendingDeleteIds - snackId
+            pendingDeleteIds = pendingDeleteIds - pendingSnackIds
         } else {
-            onDelete(snackId)
+            onDelete(pendingSnackIds)
         }
-        pendingSnackId = null
+        pendingSnackIds = emptySet()
     }
     LifecycleEffect {
         on(Lifecycle.Event.ON_STOP) {
-            pendingSnackId?.let {
-                snackbarHostState.currentSnackbarData?.dismiss()
-                onDelete(it)
-                pendingSnackId = null
-                pendingDeleteIds = pendingDeleteIds - it
+            if (pendingSnackIds.isNotEmpty()) {
+                onDelete(pendingSnackIds)
             }
+            pendingSnackIds = emptySet()
+            pendingDeleteIds = emptySet()
         }
     }
     LaunchedEffect(items.map { it.id to it.status }) {
@@ -457,6 +414,15 @@ private fun DownloadsList(
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        AnimatedVisibility(
+            modifier = Modifier
+                .align(Alignment.Center),
+            visible = visibleCount == 0,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            DownloadsIntro()
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize(),
@@ -563,7 +529,7 @@ private fun DownloadsList(
                             if (fullyAtEnd) {
                                 onSelectionChange(selectedIds - item.id)
                                 pendingDeleteIds = pendingDeleteIds + item.id
-                                pendingSnackId = item.id
+                                pendingSnackIds = pendingSnackIds + item.id
                             }
                         }
                 }
