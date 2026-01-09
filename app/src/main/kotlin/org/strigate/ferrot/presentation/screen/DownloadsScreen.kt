@@ -358,6 +358,11 @@ private fun DownloadsList(
             items.count { it.id !in pendingDeleteIds }
         }
     }
+    val deleteInProgress by remember {
+        derivedStateOf {
+            pendingSnackIds.isNotEmpty()
+        }
+    }
 
     LaunchedEffect(bulkDeleteIds) {
         if (bulkDeleteIds.isNotEmpty()) {
@@ -483,7 +488,11 @@ private fun DownloadsList(
                             DownloadItem(
                                 item = item,
                                 isSelected = isSelected,
+                                enabled = !deleteInProgress,
                                 onClick = {
+                                    if (deleteInProgress) {
+                                        return@DownloadItem
+                                    }
                                     if (selectedIds.isNotEmpty()) {
                                         onSelectionChange(
                                             if (isSelected) {
@@ -578,6 +587,7 @@ private fun DownloadsList(
 private fun DownloadItem(
     item: DownloadItemUiData,
     isSelected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
@@ -596,6 +606,7 @@ private fun DownloadItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
+                    enabled = enabled,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
