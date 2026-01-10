@@ -110,7 +110,7 @@ fun DownloadsScreen(
     var selectedIds by rememberSaveable {
         mutableStateOf(setOf<Long>())
     }
-    var pendingBulkDeleteIds by rememberSaveable {
+    var pendingBulkDeleteIds by remember {
         mutableStateOf<Set<Long>>(emptySet())
     }
 
@@ -351,11 +351,20 @@ private fun DownloadsList(
             !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
         }
     }
-    var pendingSnackIds by rememberSaveable { mutableStateOf<Set<Long>>(emptySet()) }
-    var pendingDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var pendingSnackIds by remember {
+        mutableStateOf<Set<Long>>(emptySet())
+    }
+    var pendingDeleteIds by rememberSaveable {
+        mutableStateOf(setOf<Long>())
+    }
     val visibleCount by remember(items, pendingDeleteIds) {
         derivedStateOf {
             items.count { it.id !in pendingDeleteIds }
+        }
+    }
+    val deleteInProgress by remember {
+        derivedStateOf {
+            pendingSnackIds.isNotEmpty()
         }
     }
 
@@ -368,7 +377,9 @@ private fun DownloadsList(
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
     LaunchedEffect(pendingSnackIds) {
-        if (pendingSnackIds.isEmpty()) return@LaunchedEffect
+        if (pendingSnackIds.isEmpty()) {
+            return@LaunchedEffect
+        }
         snackbarHostState.currentSnackbarData?.dismiss()
         val snackbarResult = snackbarHostState.showSnackbar(
             message = snackbarDeletedMessage,
@@ -483,7 +494,11 @@ private fun DownloadsList(
                             DownloadItem(
                                 item = item,
                                 isSelected = isSelected,
+                                enabled = !deleteInProgress,
                                 onClick = {
+                                    if (deleteInProgress) {
+                                        return@DownloadItem
+                                    }
                                     if (selectedIds.isNotEmpty()) {
                                         onSelectionChange(
                                             if (isSelected) {
@@ -578,6 +593,7 @@ private fun DownloadsList(
 private fun DownloadItem(
     item: DownloadItemUiData,
     isSelected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
@@ -596,6 +612,7 @@ private fun DownloadItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
+                    enabled = enabled,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
