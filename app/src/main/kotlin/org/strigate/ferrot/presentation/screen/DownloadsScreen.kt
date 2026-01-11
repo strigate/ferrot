@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,7 +67,6 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -100,10 +98,11 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val snackbarHostState = remember {
         SnackbarHostState()
     }
@@ -228,7 +227,7 @@ fun DownloadsScreen(
                         }
                         DropdownMenu(
                             modifier = Modifier
-                                .padding(end = 8.dp),
+                                .padding(end = dimens.spacingSmall),
                             expanded = menuExpanded,
                             onDismissRequest = {
                                 menuExpanded = false
@@ -441,7 +440,6 @@ private fun DownloadsList(
             modifier = Modifier
                 .fillMaxSize(),
             state = lazyListState,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             items(
                 items = items,
@@ -453,75 +451,77 @@ private fun DownloadsList(
                     mutableFloatStateOf(0f)
                 }
                 val isVisible = !pendingDeleteIds.contains(item.id)
-
                 AnimatedVisibility(
                     visible = isVisible,
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut(),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onGloballyPositioned { coordinates ->
-                                rowWidthPx = coordinates.size.width.toFloat()
-                            },
-                    ) {
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            enableDismissFromStartToEnd = false,
-                            enableDismissFromEndToStart = selectedIds.isEmpty(),
-                            backgroundContent = {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.errorContainer,
-                                    shape = MaterialTheme.shapes.medium,
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize(),
-                                        contentAlignment = Alignment.CenterEnd,
-                                    ) {
-                                        Icon(
-                                            modifier = Modifier
-                                                .padding(end = dimens.spacingMedium),
-                                            imageVector = Icons.Filled.Delete,
-                                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                                            contentDescription = null,
-                                        )
-                                    }
-                                }
-                            },
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onGloballyPositioned { coordinates ->
+                                    rowWidthPx = coordinates.size.width.toFloat()
+                                },
                         ) {
-                            DownloadItem(
-                                item = item,
-                                isSelected = isSelected,
-                                enabled = !deleteInProgress,
-                                onClick = {
-                                    if (deleteInProgress) {
-                                        return@DownloadItem
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                enableDismissFromEndToStart = selectedIds.isEmpty(),
+                                backgroundContent = {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.errorContainer,
+                                        shape = MaterialTheme.shapes.medium,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize(),
+                                            contentAlignment = Alignment.CenterEnd,
+                                        ) {
+                                            Icon(
+                                                modifier = Modifier
+                                                    .padding(end = dimens.spacingMedium),
+                                                imageVector = Icons.Filled.Delete,
+                                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                                contentDescription = null,
+                                            )
+                                        }
                                     }
-                                    if (selectedIds.isNotEmpty()) {
-                                        onSelectionChange(
-                                            if (isSelected) {
-                                                selectedIds - item.id
-                                            } else {
-                                                selectedIds + item.id
-                                            }
-                                        )
-                                    } else {
+                                },
+                            ) {
+                                DownloadItem(
+                                    item = item,
+                                    isSelected = isSelected,
+                                    enabled = !deleteInProgress,
+                                    onClick = {
+                                        if (deleteInProgress) {
+                                            return@DownloadItem
+                                        }
+                                        if (selectedIds.isNotEmpty()) {
+                                            onSelectionChange(
+                                                if (isSelected) {
+                                                    selectedIds - item.id
+                                                } else {
+                                                    selectedIds + item.id
+                                                }
+                                            )
+                                        } else {
+                                            onItemClick(item)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        onSelectionChange(selectedIds + item.id)
+                                    },
+                                    onPauseResume = {
+                                        onPauseResume(item)
+                                    },
+                                    onOpen = {
                                         onItemClick(item)
-                                    }
-                                },
-                                onLongClick = {
-                                    onSelectionChange(selectedIds + item.id)
-                                },
-                                onPauseResume = {
-                                    onPauseResume(item)
-                                },
-                                onOpen = {
-                                    onItemClick(item)
-                                },
-                            )
+                                    },
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
                     }
                 }
 
