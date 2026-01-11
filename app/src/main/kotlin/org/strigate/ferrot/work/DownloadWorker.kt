@@ -127,8 +127,8 @@ class DownloadWorker(
                 resetProgressAndCleanup()
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
                 downloadUseCase.updateDownloadStartedAtUseCase(
-                    startedAtMillis = System.currentTimeMillis(),
                     id = downloadId,
+                    startedAtMillis = System.currentTimeMillis(),
                 )
 
                 val uidDir = downloadPathProvider.uidDir(download.uid)
@@ -139,11 +139,30 @@ class DownloadWorker(
                 Log.d(LOG_TAG, "$tag Downloading metadata")
                 downloadUseCase.updateDownloadStatusByIdUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
-                    youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
+                    runCatching {
+                        youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
+                    }.getOrNull()
                 }
-                Log.d(LOG_TAG, "$tag Downloaded metadata")
+                val message = if (videoInfo != null) {
+                    "Downloaded metadata"
+                } else {
+                    "Unable to download metadata"
+                }
+                Log.d(LOG_TAG, "$tag $message")
 
-                videoTitle = videoInfo.title?.takeIf { it.isNotBlank() } ?: download.url
+                val videoInfoId = videoInfo?.id
+                val videoInfoTitle = videoInfo?.title?.takeIf { it.isNotBlank() }
+                val videoInfoExtension = videoInfo?.ext?.takeIf { it.isNotBlank() }
+                val videoInfoDuration = videoInfo?.duration ?: -1
+                val videoInfoVideoBytes = videoInfo
+                    ?.fileSize
+                    ?.takeIf { it > 0L }
+                    ?: videoInfo
+                        ?.fileSizeApproximate
+                        ?.takeIf { it > 0L }
+
+                videoTitle = videoInfoTitle ?: "Download_$downloadId"
+
                 updateForeground(
                     notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
                     indeterminate = true,
@@ -152,36 +171,38 @@ class DownloadWorker(
                 )
 
                 Log.d(LOG_TAG, "$tag Downloading thumbnail")
-                withContext(Dispatchers.IO) {
-                    val thumbnailFilePath = youtubeDlAndroidUseCase.downloadThumbnailUseCase(
-                        url = download.url,
-                        outputDir = uidDir,
-                        videoId = videoInfo.id,
-                    )
-                    if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                        wasDownloadDeleted = true
-                        throw CancellationException()
+                if (videoInfo?.id != null) {
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            val thumbnailFilePath = youtubeDlAndroidUseCase
+                                .downloadThumbnailUseCase(
+                                    url = download.url,
+                                    outputDir = uidDir,
+                                    videoId = videoInfo.id,
+                                )
+                            if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
+                                wasDownloadDeleted = true
+                                throw CancellationException()
+                            }
+                            downloadMetadataUseCase.saveDownloadMetadataUseCase(
+                                DownloadMetadata(
+                                    downloadId = downloadId,
+                                    title = videoInfo.title,
+                                    thumbnailFilePath = thumbnailFilePath,
+                                    durationSeconds = videoInfo.duration.takeIf { it > 0 },
+                                )
+                            )
+                            Log.d(LOG_TAG, "$tag Downloaded thumbnail")
+                        }.onFailure {
+                            Log.w(LOG_TAG, "$tag Unable to download thumbnail", it)
+                        }
                     }
-                    downloadMetadataUseCase.saveDownloadMetadataUseCase(
-                        DownloadMetadata(
-                            downloadId = downloadId,
-                            title = videoInfo.title,
-                            thumbnailFilePath = thumbnailFilePath,
-                            durationSeconds = videoInfo.duration.takeIf { it > 0 },
-                        )
-                    )
                 }
-                Log.d(LOG_TAG, "$tag Downloaded thumbnail")
 
-                val expectedBytes = when {
-                    videoInfo.fileSize > 0L -> videoInfo.fileSize
-                    videoInfo.fileSizeApproximate > 0L -> videoInfo.fileSizeApproximate
-                    else -> null
-                }
-                if (expectedBytes != null) {
+                if (videoInfoVideoBytes != null) {
                     downloadProgressUseCase.updateDownloadExpectedBytesUseCase(
-                        expectedBytes = expectedBytes,
                         id = downloadId,
+                        expectedBytes = videoInfoVideoBytes,
                     )
                 }
                 if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
@@ -189,14 +210,13 @@ class DownloadWorker(
                     throw CancellationException()
                 }
                 downloadUseCase.updateDownloadStatusByIdUseCase(
-                    status = DownloadStatus.DOWNLOADING,
                     id = downloadId,
+                    status = DownloadStatus.DOWNLOADING,
                 )
 
                 val weights = decideWeights(
-                    videoBytes = videoInfo.fileSize.takeIf { it > 0L }
-                        ?: videoInfo.fileSizeApproximate.takeIf { it > 0L },
-                    audioBytes = audioByteEstimateFromDuration(videoInfo.duration),
+                    videoBytes = videoInfoVideoBytes,
+                    audioBytes = audioByteEstimateFromDuration(videoInfoDuration),
                 )
 
                 val baseProcessId = "dl-$downloadId-${System.nanoTime()}"
@@ -212,7 +232,7 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val title = (videoInfo.title ?: "video").toSafeFileName()
+                val title = (videoInfoTitle ?: videoTitle ?: "Download").toSafeFileName()
                 val videoTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Video.%(ext)s"
                 val audioTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Audio.%(ext)s"
 
@@ -245,14 +265,14 @@ class DownloadWorker(
                     throw CancellationException()
                 }
 
-                val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfo.id)
+                val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfoId)
                 if (videoOutputFile == null || !videoOutputFile.exists()) {
                     Log.w(LOG_TAG, "$tag Video output file could not be located or does not exist")
                     return@mainScope handleDownloadFailedResult()
                 }
 
                 val videoOutputFilePath = videoOutputFile.absolutePath
-                val videoOutputFileExtension = videoInfo.ext ?: videoOutputFilePath
+                val videoOutputFileExtension = videoInfoExtension ?: videoOutputFilePath
                     .extractFileExtension()
                     .orEmpty()
 
@@ -302,7 +322,11 @@ class DownloadWorker(
                 }
                 Log.d(LOG_TAG, "$tag Downloaded audio")
 
-                val audioOutputFile = locateOutputFileByInfoId(uidDir, videoInfo.id, audio = true)
+                val audioOutputFile = locateOutputFileByInfoId(
+                    dir = uidDir,
+                    videoInfoId = videoInfoId,
+                    audio = true,
+                )
                 if (audioOutputFile == null || !audioOutputFile.exists()) {
                     Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
                 } else {
@@ -508,19 +532,23 @@ class DownloadWorker(
 
     private fun locateOutputFileByInfoId(
         dir: File,
-        infoId: String?,
+        videoInfoId: String?,
         audio: Boolean = false,
     ): File? {
-        if (infoId.isNullOrBlank() || !dir.exists()) return null
+        if (!dir.exists()) {
+            return null
+        }
         val extensions = if (audio) {
             listOf("mp3", "m4a", "opus")
         } else {
             listOf("mp4", "mkv", "webm")
         }
-        extensions.map { File(dir, "$infoId.$it") }
-            .firstOrNull { it.exists() && it.length() > 0L }
-            ?.let { return it }
-
+        if (!videoInfoId.isNullOrBlank()) {
+            extensions
+                .map { File(dir, "$videoInfoId.$it") }
+                .firstOrNull { it.exists() && it.length() > 0L }
+                ?.let { return it }
+        }
         return dir.listFiles()
             ?.filter {
                 it.isFile && !it.name.startsWith("thumb_") && it.length() > 0L
