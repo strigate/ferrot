@@ -17,10 +17,13 @@ import androidx.room.Index
     ],
     indices = [
         Index(value = ["downloadId"], unique = true),
+        Index(value = ["source", "videoId"]),
     ],
 )
 data class DownloadMetadataEntity(
     val downloadId: Long,
+    val videoId: String? = null,
+    val source: String? = null,
     val title: String? = null,
     val thumbnailFilePath: String? = null,
     val durationSeconds: Int? = null,

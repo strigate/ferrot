@@ -19,7 +19,9 @@ class DownloadAudioRepositoryImpl @Inject constructor(
     }
 
     override fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadAudio?> {
-        return downloadAudioDao.getByDownloadIdAsFlow(downloadId).map { it?.toDomain() }
+        return downloadAudioDao
+            .getByDownloadIdAsFlow(downloadId)
+            .map { it?.toDomain() }
     }
 
     override suspend fun deleteByDownloadId(downloadId: Long): Int {

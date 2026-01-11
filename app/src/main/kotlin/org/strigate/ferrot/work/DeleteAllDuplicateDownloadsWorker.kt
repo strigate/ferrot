@@ -18,6 +18,8 @@ import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_CLEANUP_DUPLICATE_DOWNLOADS
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_CLEANUP_DUPLICATE_DOWNLOADS
+import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
@@ -30,6 +32,7 @@ class DeleteAllDuplicateDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val downloadUseCase: DownloadUseCase,
+    private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
@@ -37,33 +40,66 @@ class DeleteAllDuplicateDownloadsWorker(
         Log.d(LOG_TAG, "Starting scan for duplicate downloads")
 
         val downloads = runCatching {
-            downloadUseCase.getAllDownloadsUseCase()
+            downloadUseCase
+                .getAllDownloadsUseCase()
+                .filter {
+                    it.status == DownloadStatus.COMPLETED
+                }
+
         }.getOrElse {
-            Log.w(LOG_TAG, "Failed to load all downloads", it)
+            Log.w(LOG_TAG, "Failed to load downloads", it)
             return@withContext Result.failure()
         }
+
         downloads.forEach { download ->
-            val downloadId = download.id
+            val downloadMetadata = downloadMetadataUseCase
+                .getDownloadMetadataByIdAsFlowUseCase(download.id)
+                .first() ?: return@forEach
+
+            val source = downloadMetadata.source ?: return@forEach
+            val videoId = downloadMetadata.videoId ?: return@forEach
+            val duplicateDownloadIds = downloadMetadataUseCase
+                .getDownloadIdsBySourceAndVideoIdUseCase(
+                    source = source,
+                    videoId = videoId,
+                )
+            if (duplicateDownloadIds.size <= 1) {
+                return@forEach
+            }
+            val keepDownloadId = duplicateDownloadIds.maxOrNull() ?: return@forEach
+            duplicateDownloadIds
+                .filter { it != keepDownloadId }
+                .forEach { deleteId ->
+                    runCatching {
+                        deleteDownloadAndRelatedCombinedUseCase(deleteId)
+                        val message = "Deleted duplicate downloadId=$deleteId for $source:$videoId"
+                        Log.d(LOG_TAG, message)
+                    }.onFailure {
+                        Log.w(LOG_TAG, "Failed deleting identity duplicate $deleteId", it)
+                    }
+                }
+        }
+
+        downloads.forEach { download ->
             val downloadVideo = downloadVideoUseCase
-                .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
+                .getDownloadVideoByDownloadIdAsFlowUseCase(download.id)
                 .first() ?: return@forEach
 
             val sha256 = downloadVideo.sha256 ?: return@forEach
-            val duplicateDownloadIds = downloadVideoUseCase
-                .getDownloadIdsBySha256UseCase(sha256)
-
-            if (duplicateDownloadIds.size <= 1) return@forEach
-            val latestDownloadId = duplicateDownloadIds.maxOrNull() ?: return@forEach
-
+            val duplicateDownloadIds = downloadVideoUseCase.getDownloadIdsBySha256UseCase(sha256)
+            if (duplicateDownloadIds.size <= 1) {
+                return@forEach
+            }
+            val keepDownloadId = duplicateDownloadIds.maxOrNull() ?: return@forEach
             duplicateDownloadIds
-                .filter { it != latestDownloadId }
-                .forEach { olderDownloadId ->
+                .filter { it != keepDownloadId }
+                .forEach { deleteId ->
                     runCatching {
-                        deleteDownloadAndRelatedCombinedUseCase(olderDownloadId)
-                        val msg = "Deleted duplicate downloadId=$olderDownloadId for sha256=$sha256"
-                        Log.d(LOG_TAG, msg)
+                        deleteDownloadAndRelatedCombinedUseCase(deleteId)
+                        val message = "Deleted duplicate downloadId=$deleteId for sha256=$sha256"
+                        Log.d(LOG_TAG, message)
                     }.onFailure {
-                        Log.w(LOG_TAG, "Failed deleting downloadId=$olderDownloadId", it)
+                        Log.w(LOG_TAG, "Failed deleting sha256 duplicate $deleteId", it)
                     }
                 }
         }

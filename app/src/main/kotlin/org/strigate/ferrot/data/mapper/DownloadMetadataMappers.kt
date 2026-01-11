@@ -5,6 +5,8 @@ import org.strigate.ferrot.domain.model.DownloadMetadata
 
 internal fun DownloadMetadataEntity.toDomain() = DownloadMetadata(
     downloadId = downloadId,
+    videoId = videoId,
+    source = source,
     title = title,
     thumbnailFilePath = thumbnailFilePath,
     durationSeconds = durationSeconds,
@@ -12,6 +14,8 @@ internal fun DownloadMetadataEntity.toDomain() = DownloadMetadata(
 
 internal fun DownloadMetadata.toEntity() = DownloadMetadataEntity(
     downloadId = downloadId,
+    videoId = videoId,
+    source = source,
     title = title,
     thumbnailFilePath = thumbnailFilePath,
     durationSeconds = durationSeconds,

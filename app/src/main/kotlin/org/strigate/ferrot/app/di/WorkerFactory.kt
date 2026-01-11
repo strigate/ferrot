@@ -115,6 +115,7 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
+                    downloadMetadataUseCase = downloadMetadataUseCase,
                     downloadVideoUseCase = downloadVideoUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                 )

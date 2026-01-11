@@ -187,6 +187,8 @@ class DownloadWorker(
                             downloadMetadataUseCase.saveDownloadMetadataUseCase(
                                 DownloadMetadata(
                                     downloadId = downloadId,
+                                    videoId = videoInfo.id,
+                                    source = videoInfo.extractorKey?.lowercase(),
                                     title = videoInfo.title,
                                     thumbnailFilePath = thumbnailFilePath,
                                     durationSeconds = videoInfo.duration.takeIf { it > 0 },
