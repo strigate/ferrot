@@ -14,11 +14,10 @@ import javax.inject.Singleton
 class AvailableUpdateRepositoryImpl @Inject constructor(
     private val availableUpdateDao: AvailableUpdateDao,
 ) : AvailableUpdateRepository {
-
     override fun getAsFlow(): Flow<AvailableUpdate?> {
         return availableUpdateDao
             .get()
-            .map { entity -> entity?.toDomain() }
+            .map { it?.toDomain() }
     }
 
     override suspend fun save(update: AvailableUpdate) {
