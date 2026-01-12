@@ -403,19 +403,11 @@ private fun DownloadsList(
         }
     }
     LaunchedEffect(items.map { it.id to it.status }) {
-        val running = items.any {
-            when (it.status) {
-                DownloadStatusUiData.QUEUED,
-                DownloadStatusUiData.WAITING_FOR_WIFI,
-                DownloadStatusUiData.METADATA,
-                DownloadStatusUiData.DOWNLOADING -> true
-
-                else -> false
-            }
-        }
-        if (running) {
+        if (items.any { it.status == DownloadStatusUiData.QUEUED }) {
             runCatching {
-                lazyListState.animateScrollToItem(0)
+                coroutineScope.launch {
+                    lazyListState.animateScrollToItem(0)
+                }
             }
         }
     }

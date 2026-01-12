@@ -253,9 +253,13 @@ class DownloadWorker(
                         template = videoTemplate,
                         qualityProfile = qualityProfile,
                         bytesProviderRaw = bytesProviderRaw,
-                        phaseContext = phaseContext.copy(phase = DownloadMediaType.VIDEO),
+                        phaseContext = phaseContext.copy(
+                            phase = DownloadMediaType.VIDEO,
+                        ),
                         initialVideoPercent = 0f,
-                        onCanceled = { wasDownloadDeleted = true },
+                        onCanceled = {
+                            wasDownloadDeleted = true
+                        },
                         onCombined = {},
                     )
                 }
@@ -309,20 +313,29 @@ class DownloadWorker(
                 }
 
                 Log.d(LOG_TAG, "$tag Downloading audio")
-                withContext(Dispatchers.IO) {
-                    collectPhase(
-                        processId = audioProcessId,
-                        url = download.url,
-                        template = audioTemplate,
-                        qualityProfile = qualityProfile,
-                        bytesProviderRaw = bytesProviderRaw,
-                        phaseContext = phaseContext.copy(phase = DownloadMediaType.AUDIO),
-                        initialVideoPercent = 100f,
-                        onCanceled = { wasDownloadDeleted = true },
-                        onCombined = {},
-                    )
+                try {
+                    withContext(Dispatchers.IO) {
+                        collectPhase(
+                            processId = audioProcessId,
+                            url = download.url,
+                            template = audioTemplate,
+                            qualityProfile = qualityProfile,
+                            bytesProviderRaw = bytesProviderRaw,
+                            phaseContext = phaseContext.copy(
+                                phase = DownloadMediaType.AUDIO,
+                            ),
+                            initialVideoPercent = 100f,
+                            onCanceled = {
+                                wasDownloadDeleted = true
+                            },
+                            onCombined = {},
+                        )
+                    }
+                    Log.d(LOG_TAG, "$tag Downloaded audio")
+                } catch (throwable: Throwable) {
+                    val message = "$tag Audio download failed, continuing with video-only"
+                    Log.w(LOG_TAG, message, throwable)
                 }
-                Log.d(LOG_TAG, "$tag Downloaded audio")
 
                 val audioOutputFile = locateOutputFileByInfoId(
                     dir = uidDir,
