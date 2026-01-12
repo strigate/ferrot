@@ -1,15 +1,15 @@
 package org.strigate.ferrot.presentation.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -24,24 +24,20 @@ import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
+import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
-import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadIdsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
-import org.strigate.ferrot.helper.PlayHelper
-import org.strigate.ferrot.helper.SaveHelper
-import org.strigate.ferrot.helper.ShareHelper
 import org.strigate.ferrot.presentation.Screen
+import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.mapper.toPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
-import org.strigate.ferrot.work.DeleteDownloadsWorker
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadViewModel @Inject constructor(
-    @param:ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
@@ -49,7 +45,7 @@ class DownloadViewModel @Inject constructor(
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
-    private val getDownloadIdsWithMetadataAsFlowUseCase: GetDownloadIdsWithMetadataAsFlowUseCase,
+    private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
 ) : ViewModel() {
@@ -76,6 +72,12 @@ class DownloadViewModel @Inject constructor(
         initialValue = DownloadMediaType.VIDEO,
     )
 
+    private val _events = MutableSharedFlow<DownloadEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+    )
+    val events = _events.asSharedFlow()
+
     init {
         viewModelScope.launch {
             clearNotificationsByDownloadIdUseCase(initialId)
@@ -83,7 +85,8 @@ class DownloadViewModel @Inject constructor(
     }
 
     private fun getUiState(id: Long = initialId) =
-        getDownloadIdsWithMetadataAsFlowUseCase()
+        downloadWithMetadataUseCase
+            .getDownloadIdsWithMetadataAsFlowUseCase()
             .flatMapLatest { ids ->
                 if (ids.isEmpty()) {
                     flowOf(
@@ -148,16 +151,14 @@ class DownloadViewModel @Inject constructor(
         }
     }
 
-    fun markSeenIfCompleted(downloadId: Long) {
-        viewModelScope.launch {
-            val state = uiState.value
-            if (state !is DownloadUiState.Data) {
-                return@launch
-            }
-            val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return@launch
-            if (download.status == DownloadStatusUiData.COMPLETED && !download.seen) {
-                downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
-            }
+    fun markSeenIfCompleted(downloadId: Long) = viewModelScope.launch {
+        val state = uiState.value
+        if (state !is DownloadUiState.Data) {
+            return@launch
+        }
+        val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return@launch
+        if (download.status == DownloadStatusUiData.COMPLETED && !download.seen) {
+            downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
         }
     }
 
@@ -185,34 +186,39 @@ class DownloadViewModel @Inject constructor(
         }
     }
 
-    fun deleteDownload(id: Long? = null) {
+    fun deleteDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        DeleteDownloadsWorker.enqueueOneTimeAppend(
-            context = appContext,
+        val state = uiState.value as? DownloadUiState.Data ?: return@launch
+        val isLastDownload = state.data.downloads.count { it.id != downloadId } == 0
+        downloadUseCase.requestDeleteDownloadsUseCase(
             downloadIds = listOf(downloadId),
         )
+        if (isLastDownload) {
+            _events.emit(DownloadEvent.NavigateBack)
+        }
     }
 
     fun shareDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
         val path = getSelectedMediaFilePath(downloadId) ?: return@launch
-        ShareHelper.shareFileIfExists(appContext, path)
+        _events.emit(DownloadEvent.Share(path))
     }
 
     fun saveDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
         val path = getSelectedMediaFilePath(downloadId) ?: return@launch
-        SaveHelper.saveToDownloads(appContext, path)
+        _events.emit(DownloadEvent.Save(path))
     }
 
     fun playDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
         val path = getSelectedMediaFilePath(downloadId) ?: return@launch
-        PlayHelper.playFileIfExists(appContext, path)
+        _events.emit(DownloadEvent.Play(path))
     }
 
     fun retryDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
+        _events.emit(DownloadEvent.NavigateBack)
         startDownloadUseCase(downloadId)
     }
 
