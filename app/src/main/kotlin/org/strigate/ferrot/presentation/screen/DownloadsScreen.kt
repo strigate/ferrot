@@ -661,6 +661,7 @@ private fun DownloadItem(
                     progressFraction = item.progressFraction,
                     etaSeconds = item.etaSeconds,
                     bytesDownloaded = item.bytesDownloaded,
+                    completedAtMillis = item.completedAtMillis,
                 )
             }
         }

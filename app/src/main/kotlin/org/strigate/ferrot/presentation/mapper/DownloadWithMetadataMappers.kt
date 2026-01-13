@@ -23,5 +23,6 @@ fun DownloadWithMetadata.toUiData(): DownloadItemUiData {
         etaSeconds = etaSeconds,
         bytesDownloaded = bytesDownloaded,
         expectedBytes = expectedBytes,
+        completedAtMillis = completedAtMillis,
     )
 }

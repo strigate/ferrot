@@ -344,6 +344,7 @@ private fun DownloadPageContent(
                 etaSeconds = progress?.etaSeconds,
                 bytesDownloaded = progress?.bytesDownloaded ?: 0L,
                 forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
+                completedAtMillis = completedAtMillis,
             )
             Spacer(modifier = Modifier.height(dimens.spacingXSmall))
             MediaSwitcherSegmentedButtonRow(
@@ -425,25 +426,42 @@ private fun DownloadPageContent(
                     DownloadMediaType.VIDEO -> video?.fileName
                     DownloadMediaType.AUDIO -> audio?.fileName
                 }
-                selectedName?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_filename),
-                        value = it,
-                    )
-                }
-                val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
-                formattedDuration?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_duration),
-                        value = it,
-                    )
-                }
-                errorMessage?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_error_message),
-                        value = it,
-                    )
-                }
+                selectedName
+                    ?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_filename),
+                            value = it,
+                        )
+                    }
+
+                metadata?.durationSeconds
+                    ?.let(UiFormatter::formatDuration)
+                    ?.let { formattedDuration ->
+                        MetaItem(
+                            label = stringResource(R.string.download_duration),
+                            value = formattedDuration,
+                        )
+                    }
+
+                completedAtMillis
+                    ?.takeIf { status == DownloadStatusUiData.COMPLETED }
+                    ?.let { completedAt ->
+                        MetaItem(
+                            label = stringResource(R.string.download_completed_at),
+                            value = UiFormatter.formatCompletedAtDetail(
+                                context = LocalContext.current,
+                                millis = completedAt,
+                            ),
+                        )
+                    }
+
+                errorMessage
+                    ?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_error_message),
+                            value = it,
+                        )
+                    }
             }
         }
     }
