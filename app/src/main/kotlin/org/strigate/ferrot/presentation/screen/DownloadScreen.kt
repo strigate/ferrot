@@ -63,7 +63,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -104,7 +103,10 @@ fun DownloadScreen(
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
+    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
+        initialValue = DownloadMediaType.VIDEO,
+    )
+
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -199,7 +201,7 @@ fun DownloadScreen(
                         viewModel = viewModel,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
-                            vertical = 0.dp,
+                            vertical = dimens.zero,
                         ),
                         pageSpacing = pageSpacing,
                     )
