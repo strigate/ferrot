@@ -5,6 +5,7 @@ import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.SaveDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadCompletedAtUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
@@ -23,6 +24,7 @@ class DownloadUseCase @Inject constructor(
     val updateDownloadSeenByIdUseCase: UpdateDownloadSeenByIdUseCase,
     val updateDownloadStartedAtUseCase: UpdateDownloadStartedAtUseCase,
     val updateDownloadStatusByIdUseCase: UpdateDownloadStatusByIdUseCase,
+    val requestDeleteDownloadsUseCase: RequestDeleteDownloadsUseCase,
     val deleteDownloadByIdUseCase: DeleteDownloadByIdUseCase,
     val deleteDownloadFilesUseCase: DeleteDownloadFilesUseCase,
 )
