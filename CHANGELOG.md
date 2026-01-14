@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.0 - 2026-01-14
+### Added
+- Multi-select support for downloads
+- Select all action in the downloads overflow menu
+- Bulk delete actions with undo for selected downloads
+- Completed download timestamps shown in the download UI
+- Detailed completed-at metadata on the Download screen
+- Automatic duplicate download deletion setting
+- Deduplication of downloads using metadata (source and video ID)
+- SHA256 hash support for downloaded videos
+- Background workers for bulk deletion and duplicate cleanup
+
+### Changed
+- Download deletion moved fully to WorkManager with expedited handling
+- Download side effects refactored out of ViewModels into explicit events
+- Download screen layout, spacing, and dimens usage standardized
+- Duplicate handling centralized around metadata and hash-based workers
+- Download database schema updated to support deduplication and hashing
+- Download list scrolling behavior refined and made more predictable
+- Reduced download action overlay scrim opacity to improve thumbnail visibility
+
+### Fixed
+- Audio download failures no longer abort video downloads
+- Auto-scroll behaviour fixed when new items are queued
+- Missing or partial video metadata handled safely without crashes
+- Download item interaction correctly disabled during delete undo snackbars
+- Snackbar and delete state no longer restored incorrectly after navigation
+- Long status text now ellipsized to prevent layout overflow
+- Correct pluralization in delete downloads foreground notifications
+
 ## 1.3.5 - 2026-01-03
 ### Fixed
 - Download failures caused by excessively long filenames from certain sources
