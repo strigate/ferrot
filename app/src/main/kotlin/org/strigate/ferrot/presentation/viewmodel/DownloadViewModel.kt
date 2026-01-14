@@ -139,14 +139,14 @@ class DownloadViewModel @Inject constructor(
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOAD)
 
-    fun selectDownload(id: Long) {
-        _selectedId.value = id
-        if (_selectedMediaById.value[id] == null) {
+    fun selectDownload(downloadId: Long) {
+        _selectedId.value = downloadId
+        if (_selectedMediaById.value[downloadId] == null) {
             _selectedMediaById.value = _selectedMediaById
                 .value
                 .toMutableMap()
                 .also {
-                    it[id] = DownloadMediaType.VIDEO
+                    it[downloadId] = DownloadMediaType.VIDEO
                 }
         }
     }
@@ -218,7 +218,6 @@ class DownloadViewModel @Inject constructor(
 
     fun retryDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        _events.emit(DownloadEvent.NavigateBack)
         startDownloadUseCase(downloadId)
     }
 

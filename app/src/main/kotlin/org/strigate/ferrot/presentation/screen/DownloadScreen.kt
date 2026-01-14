@@ -103,6 +103,7 @@ fun DownloadScreen(
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
@@ -197,8 +198,20 @@ fun DownloadScreen(
                             .padding(contentPadding)
                             .fillMaxSize(),
                         data = state.data,
+                        selectedId = selectedId,
                         selectedMedia = selectedMedia,
-                        viewModel = viewModel,
+                        onEnsureDefaults = viewModel::setDefaultsForIds,
+                        onDownloadPageSelected = { downloadId ->
+                            viewModel.selectDownload(downloadId)
+                            viewModel.markSeenIfCompleted(downloadId)
+                        },
+                        onSelectedMedia = { downloadId, type ->
+                            viewModel.setSelectedMedia(type, downloadId)
+                        },
+                        onPlayClick = viewModel::playDownload,
+                        onSaveClick = viewModel::saveDownload,
+                        onShareClick = viewModel::shareDownload,
+                        onRetryClick = viewModel::retryDownload,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
                             vertical = dimens.zero,
@@ -216,8 +229,15 @@ fun DownloadScreen(
 private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
+    selectedId: Long,
     selectedMedia: DownloadMediaType,
-    viewModel: DownloadViewModel,
+    onEnsureDefaults: (List<Long>) -> Unit,
+    onDownloadPageSelected: (Long) -> Unit,
+    onSelectedMedia: (Long, DownloadMediaType) -> Unit,
+    onPlayClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
+    onShareClick: (Long) -> Unit,
+    onRetryClick: (Long) -> Unit,
     pagePadding: PaddingValues,
     pageSpacing: Dp,
 ) {
@@ -232,33 +252,40 @@ private fun DownloadPager(
 
         val pagerState = rememberPagerState(
             initialPage = initialIndex,
-            pageCount = { downloads.size }
+            pageCount = { downloads.size },
         )
+        val resolvedPage = remember(downloads, selectedId) {
+            downloads.indexOfFirst { it.id == selectedId }
+        }
 
         LaunchedEffect(downloads) {
-            viewModel.setDefaultsForIds(downloads.map { it.id })
+            onEnsureDefaults(downloads.map { it.id })
+        }
+        LaunchedEffect(resolvedPage) {
+            if (resolvedPage >= 0 && pagerState.currentPage != resolvedPage) {
+                pagerState.scrollToPage(resolvedPage)
+            }
         }
         LaunchedEffect(pagerState, downloads) {
             snapshotFlow { pagerState.currentPage }
-                .map { pageIndex -> downloads.getOrNull(pageIndex)?.id }
+                .map { pageIndex ->
+                    downloads.getOrNull(pageIndex)?.id
+                }
                 .filterNotNull()
                 .distinctUntilChanged()
                 .collect { downloadId ->
-                    viewModel.selectDownload(downloadId)
-                    viewModel.markSeenIfCompleted(downloadId)
-
+                    onDownloadPageSelected(downloadId)
                     val currentDownload = downloads.firstOrNull { it.id == downloadId }
                     val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
                     val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
-                    val currentlySelectedMedia = viewModel.selectedMedia.value
                     val correctedMediaType = when {
-                        isAudioAvailable && currentlySelectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
-                        isVideoAvailable && currentlySelectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
+                        isAudioAvailable && selectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
+                        isVideoAvailable && selectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
                         isAudioAvailable -> DownloadMediaType.AUDIO
                         isVideoAvailable -> DownloadMediaType.VIDEO
                         else -> DownloadMediaType.VIDEO
                     }
-                    viewModel.setSelectedMedia(correctedMediaType, downloadId)
+                    onSelectedMedia(downloadId, correctedMediaType)
                 }
         }
 
@@ -268,6 +295,7 @@ private fun DownloadPager(
             state = pagerState,
             contentPadding = pagePadding,
             pageSpacing = pageSpacing,
+            key = { page -> downloads[page].id },
         ) { page ->
             val download = downloads[page]
             Surface(
@@ -282,22 +310,22 @@ private fun DownloadPager(
                     data = download,
                     selectedMedia = selectedMedia,
                     onMediaChange = { mediaType ->
-                        viewModel.setSelectedMedia(mediaType, download.id)
+                        onSelectedMedia(download.id, mediaType)
                     },
                     onEnsureValidSelection = { mediaType ->
-                        viewModel.setSelectedMedia(mediaType, download.id)
+                        onSelectedMedia(download.id, mediaType)
                     },
                     onPlayClick = {
-                        viewModel.playDownload(download.id)
+                        onPlayClick(download.id)
                     },
                     onSaveClick = {
-                        viewModel.saveDownload(download.id)
+                        onSaveClick(download.id)
                     },
                     onShareClick = {
-                        viewModel.shareDownload(download.id)
+                        onShareClick(download.id)
                     },
                     onRetryClick = {
-                        viewModel.retryDownload(download.id)
+                        onRetryClick(download.id)
                     },
                 )
             }
