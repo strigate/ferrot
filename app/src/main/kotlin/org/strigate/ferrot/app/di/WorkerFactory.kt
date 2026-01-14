@@ -15,11 +15,14 @@ import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.DeleteDownloadsWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
 import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
@@ -32,6 +35,7 @@ class WorkerFactory @Inject constructor(
     private val hiltWorkerFactory: HiltWorkerFactory,
     private val analyticsLogger: AnalyticsLogger,
     private val stateUseCase: StateUseCase,
+    private val settingsUseCase: SettingsUseCase,
     private val notificationService: NotificationService,
     private val updatePathProvider: UpdatePathProvider,
     private val downloadPathProvider: DownloadPathProvider,
@@ -85,6 +89,7 @@ class WorkerFactory @Inject constructor(
                     downloadMetadataUseCase = downloadMetadataUseCase,
                     downloadProgressUseCase = downloadProgressUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    settingsUseCase = settingsUseCase,
                 )
             }
 
@@ -94,6 +99,25 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     getPendingDownloadsCombinedUseCase = getPendingDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
+                )
+            }
+
+            DeleteDownloadsWorker::class.java.name -> {
+                DeleteDownloadsWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                )
+            }
+
+            DeleteAllDuplicateDownloadsWorker::class.java.name -> {
+                DeleteAllDuplicateDownloadsWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    downloadUseCase = downloadUseCase,
+                    downloadMetadataUseCase = downloadMetadataUseCase,
+                    downloadVideoUseCase = downloadVideoUseCase,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                 )
             }
 

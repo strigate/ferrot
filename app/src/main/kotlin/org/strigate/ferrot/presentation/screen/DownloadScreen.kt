@@ -63,7 +63,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -76,11 +75,15 @@ import kotlinx.coroutines.flow.map
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
+import org.strigate.ferrot.helper.PlayHelper
+import org.strigate.ferrot.helper.SaveHelper
+import org.strigate.ferrot.helper.ShareHelper
 import org.strigate.ferrot.presentation.component.ActionIconButton
 import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
@@ -96,10 +99,14 @@ fun DownloadScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(initialValue = DownloadMediaType.VIDEO)
+    val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
+        initialValue = DownloadMediaType.VIDEO,
+    )
+
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -112,11 +119,7 @@ fun DownloadScreen(
             message = stringResource(R.string.confirm_dialog_delete_download_description),
             positiveButtonText = stringResource(R.string.yes),
             onPositiveClick = {
-                val isLastItem = (uiState as? DownloadUiState.Data)?.data?.downloads?.size == 1
                 viewModel.deleteDownload()
-                if (isLastItem) {
-                    backDispatcher?.onBackPressed()
-                }
                 showConfirmDeleteDialog.value = false
             },
             negativeButtonText = stringResource(R.string.no),
@@ -127,6 +130,24 @@ fun DownloadScreen(
                 showConfirmDeleteDialog.value = false
             },
         )
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                DownloadEvent.NavigateBack ->
+                    backDispatcher?.onBackPressed()
+
+                is DownloadEvent.Play ->
+                    PlayHelper.playFileIfExists(context, event.path)
+
+                is DownloadEvent.Share ->
+                    ShareHelper.shareFileIfExists(context, event.path)
+
+                is DownloadEvent.Save ->
+                    SaveHelper.saveToDownloads(context, event.path)
+            }
+        }
     }
 
     Scaffold(
@@ -180,7 +201,7 @@ fun DownloadScreen(
                         viewModel = viewModel,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
-                            vertical = 0.dp,
+                            vertical = dimens.zero,
                         ),
                         pageSpacing = pageSpacing,
                     )
@@ -201,8 +222,6 @@ private fun DownloadPager(
     pageSpacing: Dp,
 ) {
     val dimens = LocalDimens.current
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-
     val downloads = data.downloads
     if (downloads.isEmpty()) {
         DownloadError()
@@ -278,7 +297,6 @@ private fun DownloadPager(
                         viewModel.shareDownload(download.id)
                     },
                     onRetryClick = {
-                        backDispatcher?.onBackPressed()
                         viewModel.retryDownload(download.id)
                     },
                 )
@@ -326,6 +344,7 @@ private fun DownloadPageContent(
                 etaSeconds = progress?.etaSeconds,
                 bytesDownloaded = progress?.bytesDownloaded ?: 0L,
                 forcePrimaryBar = status == DownloadStatusUiData.COMPLETED,
+                completedAtMillis = completedAtMillis,
             )
             Spacer(modifier = Modifier.height(dimens.spacingXSmall))
             MediaSwitcherSegmentedButtonRow(
@@ -407,25 +426,42 @@ private fun DownloadPageContent(
                     DownloadMediaType.VIDEO -> video?.fileName
                     DownloadMediaType.AUDIO -> audio?.fileName
                 }
-                selectedName?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_filename),
-                        value = it,
-                    )
-                }
-                val formattedDuration = UiFormatter.formatDuration(metadata?.durationSeconds)
-                formattedDuration?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_duration),
-                        value = it,
-                    )
-                }
-                errorMessage?.let {
-                    MetaItem(
-                        label = stringResource(R.string.download_error_message),
-                        value = it,
-                    )
-                }
+                selectedName
+                    ?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_filename),
+                            value = it,
+                        )
+                    }
+
+                metadata?.durationSeconds
+                    ?.let(UiFormatter::formatDuration)
+                    ?.let { formattedDuration ->
+                        MetaItem(
+                            label = stringResource(R.string.download_duration),
+                            value = formattedDuration,
+                        )
+                    }
+
+                completedAtMillis
+                    ?.takeIf { status == DownloadStatusUiData.COMPLETED }
+                    ?.let { completedAt ->
+                        MetaItem(
+                            label = stringResource(R.string.download_completed_at),
+                            value = UiFormatter.formatCompletedAtDetail(
+                                context = LocalContext.current,
+                                millis = completedAt,
+                            ),
+                        )
+                    }
+
+                errorMessage
+                    ?.let {
+                        MetaItem(
+                            label = stringResource(R.string.download_error_message),
+                            value = it,
+                        )
+                    }
             }
         }
     }

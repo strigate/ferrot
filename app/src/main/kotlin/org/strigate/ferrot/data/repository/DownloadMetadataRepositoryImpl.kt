@@ -21,7 +21,17 @@ class DownloadMetadataRepositoryImpl @Inject constructor(
     override fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadMetadata?> {
         return downloadMetadataDao
             .getByDownloadIdAsFlow(downloadId)
-            .map { entity -> entity?.toDomain() }
+            .map { it?.toDomain() }
+    }
+
+    override suspend fun getDownloadIdsBySourceAndVideoId(
+        source: String,
+        videoId: String,
+    ): List<Long> {
+        return downloadMetadataDao.getDownloadIdsBySourceAndVideoId(
+            source = source,
+            videoId = videoId,
+        )
     }
 
     override suspend fun deleteByDownloadId(downloadId: Long): Int {

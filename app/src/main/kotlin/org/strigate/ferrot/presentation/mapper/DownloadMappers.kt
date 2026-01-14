@@ -20,7 +20,8 @@ fun Download.toPageUiData(
     metadata: DownloadMetadata?,
     progress: DownloadProgress?,
 ): DownloadPageUiData {
-    val downloadVideoUiData = video?.filePath
+    val downloadVideoUiData = video
+        ?.filePath
         ?.takeIf { it.isNotBlank() }
         ?.let { filePath ->
             DownloadVideoUiData(
@@ -33,7 +34,8 @@ fun Download.toPageUiData(
             )
         }
 
-    val downloadAudioUiData = audio?.filePath
+    val downloadAudioUiData = audio
+        ?.filePath
         ?.takeIf { it.isNotBlank() }
         ?.let { filePath ->
             DownloadAudioUiData(
@@ -56,7 +58,8 @@ fun Download.toPageUiData(
         ?.stripFileExtension()
         ?.takeIf { it.isNotBlank() }
 
-    val titleValue = metadata?.title
+    val titleValue = metadata
+        ?.title
         ?.takeIf { it.isNotBlank() }
         ?: derivedTitleFromVideo
         ?: derivedTitleFromAudio
@@ -93,5 +96,6 @@ fun Download.toPageUiData(
         progress = progressUiData,
         seen = seen,
         errorMessage = errorMessage,
+        completedAtMillis = completedAtMillis,
     )
 }

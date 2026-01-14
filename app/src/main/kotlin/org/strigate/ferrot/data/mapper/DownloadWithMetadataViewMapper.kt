@@ -14,4 +14,5 @@ fun DownloadWithMetadataView.toDomain() = DownloadWithMetadata(
     etaSeconds = etaSeconds,
     bytesDownloaded = bytesDownloaded,
     expectedBytes = expectedBytes,
+    completedAtMillis = completedAtMillis,
 )

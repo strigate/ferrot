@@ -99,6 +99,15 @@ fun SettingsScreen(
                                             viewModel.setDownloadWifiOnly(checked)
                                         },
                                     )
+                                    Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                    SwitchSetting(
+                                        text = stringResource(id = R.string.settings_title_automatic_duplicate_deletion),
+                                        description = stringResource(id = R.string.settings_description_automatic_duplicate_deletion),
+                                        checked = automaticDuplicateDownloadDeletion,
+                                        onCheckedChange = { checked ->
+                                            viewModel.setAutomaticDuplicateDownloadDeletion(checked)
+                                        },
+                                    )
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(

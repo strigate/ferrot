@@ -1,12 +1,14 @@
 package org.strigate.ferrot.domain.usecase
 
 import org.strigate.ferrot.domain.usecase.downloadvideo.DeleteDownloadVideoUseCase
-import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadVideoAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadIdsBySha256UseCase
+import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadVideoByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadvideo.SaveDownloadVideoUseCase
 import javax.inject.Inject
 
 class DownloadVideoUseCase @Inject constructor(
     val saveDownloadVideoUseCase: SaveDownloadVideoUseCase,
-    val getDownloadVideoAsFlowUseCase: GetDownloadVideoAsFlowUseCase,
+    val getDownloadVideoByDownloadIdAsFlowUseCase: GetDownloadVideoByDownloadIdAsFlowUseCase,
+    val getDownloadIdsBySha256UseCase: GetDownloadIdsBySha256UseCase,
     val deleteDownloadVideoUseCase: DeleteDownloadVideoUseCase,
 )

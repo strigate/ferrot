@@ -10,4 +10,5 @@ data class DownloadPageUiData(
     val progress: DownloadProgressUiData?,
     val seen: Boolean,
     val errorMessage: String?,
+    val completedAtMillis: Long?,
 )

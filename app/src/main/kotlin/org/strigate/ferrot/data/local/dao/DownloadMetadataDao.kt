@@ -15,6 +15,9 @@ interface DownloadMetadataDao {
     @Query("SELECT * FROM download_metadata WHERE downloadId = :downloadId")
     fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadMetadataEntity?>
 
+    @Query("SELECT downloadId FROM download_metadata WHERE source = :source AND videoId = :videoId")
+    suspend fun getDownloadIdsBySourceAndVideoId(source: String, videoId: String): List<Long>
+
     @Query("DELETE FROM download_metadata WHERE downloadId = :downloadId")
     suspend fun deleteByDownloadId(downloadId: Long): Int
 }

@@ -1,18 +1,22 @@
 package org.strigate.ferrot.domain.usecase
 
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveDownloadWifiOnlySettingUseCase
 import javax.inject.Inject
 
 class SettingsUseCase @Inject constructor(
-    val getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase,
     val saveDownloadWifiOnlySettingUseCase: SaveDownloadWifiOnlySettingUseCase,
-    val getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase,
+    val getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase,
     val saveAutomaticUpdatesSettingUseCase: SaveAutomaticUpdatesSettingUseCase,
-    val getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase,
+    val getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase,
     val saveAutomaticDependencyUpdatesSettingUseCase: SaveAutomaticDependencyUpdatesSettingUseCase,
+    val getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase,
+    val saveAutomaticDuplicateDownloadDeletionSettingUseCase: SaveAutomaticDuplicateDownloadDeletionSettingUseCase,
+    val getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase,
 )

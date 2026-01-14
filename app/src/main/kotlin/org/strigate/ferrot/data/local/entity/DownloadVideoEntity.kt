@@ -17,6 +17,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["downloadId"], unique = true),
+        Index(value = ["sha256"]),
     ],
 )
 data class DownloadVideoEntity(
@@ -25,4 +26,5 @@ data class DownloadVideoEntity(
     val downloadId: Long,
     val filePath: String,
     val fileExtension: String,
+    val sha256: String?,
 )

@@ -49,7 +49,6 @@ fun DownloadPrimaryActionButton(
         DownloadStatusUiData.DOWNLOADING -> ActionConfig(
             icon = Icons.Filled.Stop,
             contentDescription = stringResource(R.string.content_description_stop_download),
-            usePrimaryTint = true,
             onClick = onPauseResume,
         )
 
@@ -58,18 +57,17 @@ fun DownloadPrimaryActionButton(
         DownloadStatusUiData.FAILED -> ActionConfig(
             icon = Icons.Filled.Refresh,
             contentDescription = stringResource(R.string.content_description_resume_download),
-            usePrimaryTint = true,
             onClick = onPauseResume,
         )
 
         DownloadStatusUiData.COMPLETED -> ActionConfig(
             icon = Icons.Filled.DownloadDone,
             contentDescription = stringResource(R.string.content_description_open_download),
-            usePrimaryTint = false,
             onClick = onOpen,
         )
     }
 
+    val overlayScrim = Color.Black.copy(alpha = 0.15f)
     val thumbnailFile = thumbnailFilePath
         ?.let { File(it) }
         ?.takeIf { it.exists() && it.length() > 0 }
@@ -86,45 +84,37 @@ fun DownloadPrimaryActionButton(
             contentAlignment = Alignment.Center,
         ) {
             thumbnailFile?.let {
-                val imageRequest = ImageRequest.Builder(context)
-                    .data(it)
-                    .crossfade(true)
-                    .build()
-
                 AsyncImage(
                     modifier = Modifier
                         .matchParentSize(),
+                    model = ImageRequest.Builder(context)
+                        .data(it)
+                        .crossfade(true)
+                        .build(),
                     contentScale = ContentScale.Crop,
-                    model = imageRequest,
                     contentDescription = null,
                 )
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.35f)),
+                        .background(overlayScrim),
                 )
             }
             Box(
                 modifier = Modifier
                     .size(dimens.overlayButtonSmall)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.35f)),
+                    .background(overlayScrim),
                 contentAlignment = Alignment.Center,
             ) {
-                with(actionConfig) {
-                    IconButton(
-                        onClick = onClick,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            tint = if (usePrimaryTint) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                Color.White
-                            },
-                            contentDescription = contentDescription,
-                        )
-                    }
+                IconButton(
+                    onClick = actionConfig.onClick,
+                ) {
+                    Icon(
+                        tint = Color.White,
+                        imageVector = actionConfig.icon,
+                        contentDescription = actionConfig.contentDescription,
+                    )
                 }
             }
         }
@@ -134,6 +124,5 @@ fun DownloadPrimaryActionButton(
 private data class ActionConfig(
     val icon: ImageVector,
     val contentDescription: String,
-    val usePrimaryTint: Boolean,
     val onClick: () -> Unit,
 )
