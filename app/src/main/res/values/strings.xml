@@ -34,6 +34,7 @@
     <string name="download_filename">Filename</string>
     <string name="download_duration">Duration</string>
     <string name="download_error_message">Failed error message</string>
+    <string name="download_completed_at">Downloaded</string>
 
     <string name="status_queued">Queued</string>
     <string name="status_waiting_for_network">Waiting for network</string>

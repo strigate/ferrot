@@ -11,4 +11,5 @@ data class DownloadItemUiData(
     val etaSeconds: Long?,
     val bytesDownloaded: Long,
     val expectedBytes: Long?,
+    val completedAtMillis: Long?,
 )

@@ -12,7 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.theme.LocalDimens
@@ -24,6 +26,7 @@ fun DownloadProgressSection(
     progressFraction: Float?,
     etaSeconds: Long?,
     bytesDownloaded: Long,
+    completedAtMillis: Long?,
     modifier: Modifier = Modifier,
     forcePrimaryBar: Boolean = false,
 ) {
@@ -63,6 +66,7 @@ fun DownloadProgressSection(
                 },
                 bytesDownloaded = bytesDownloaded,
                 etaSeconds = etaSeconds,
+                completedAtMillis = completedAtMillis,
             )
         }
     }
@@ -74,7 +78,9 @@ private fun StatusSizeEtaRow(
     progressFraction: Float?,
     bytesDownloaded: Long,
     etaSeconds: Long?,
+    completedAtMillis: Long?,
 ) {
+    val context = LocalContext.current
     val statusText = when (status) {
         DownloadStatusUiData.QUEUED -> stringResource(R.string.status_queued)
         DownloadStatusUiData.WAITING_FOR_NETWORK -> stringResource(R.string.status_waiting_for_network)
@@ -97,7 +103,10 @@ private fun StatusSizeEtaRow(
     }.joinToString(" · ")
 
     val rightText = when (status) {
-        DownloadStatusUiData.COMPLETED -> null
+        DownloadStatusUiData.COMPLETED -> completedAtMillis?.let {
+            UiFormatter.formatCompletedAtTime(context, it)
+        }
+
         DownloadStatusUiData.STOPPED -> stringResource(R.string.percent_0)
         else -> progressFraction?.let { "${(it * 100f).toInt().coerceIn(0, 100)}%" }
     }
@@ -132,6 +141,7 @@ private fun InfoLine(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
+                overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
                 text = leftText,
             )

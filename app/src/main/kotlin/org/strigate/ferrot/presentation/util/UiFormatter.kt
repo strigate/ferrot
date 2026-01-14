@@ -4,6 +4,10 @@ import android.content.Context
 import android.text.format.DateFormat
 import android.text.format.DateUtils
 import org.strigate.ferrot.R
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -65,5 +69,48 @@ object UiFormatter {
         } else {
             String.format(Locale.getDefault(), "%d:%02d", minutes, remainingSeconds)
         }
+    }
+
+    fun formatCompletedAtTime(
+        context: Context,
+        millis: Long,
+    ): String {
+        val zoned = Instant
+            .ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+
+        val locale = Locale.getDefault()
+        val is24Hour = DateFormat.is24HourFormat(context)
+        val timePattern = if (is24Hour) {
+            "HH:mm"
+        } else {
+            "hh:mm a"
+        }
+        val timeFormatter = DateTimeFormatter.ofPattern(timePattern, locale)
+        val bestDatePattern = DateFormat.getBestDateTimePattern(locale, "EEE, MMM d")
+        val dateFormatter = DateTimeFormatter.ofPattern(bestDatePattern, locale)
+        val today = LocalDate.now()
+        return if (zoned.toLocalDate() == today) {
+            zoned.format(timeFormatter)
+        } else {
+            "${zoned.format(dateFormatter)} ${zoned.format(timeFormatter)}"
+        }
+    }
+
+    fun formatCompletedAtDetail(
+        context: Context,
+        millis: Long,
+    ): String {
+        val zoned = Instant
+            .ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+
+        val is24Hour = DateFormat.is24HourFormat(context)
+        val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
+        val timeFormatter = DateTimeFormatter.ofPattern(
+            if (is24Hour) "HH:mm" else "hh:mm a",
+            Locale.getDefault(),
+        )
+        return "${zoned.format(dateFormatter)} ${zoned.format(timeFormatter)}"
     }
 }
