@@ -25,7 +25,7 @@ if (googleServicesPropertiesFile.exists()) {
 }
 
 android {
-    val baseVersion = "1.3.5"
+    val baseVersion = "1.4.0"
     namespace = "org.strigate.ferrot"
     compileSdk = 36
 
@@ -33,7 +33,7 @@ android {
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 16
+        versionCode = 17
         versionName = buildVersionName(baseVersion, versionCode)
         stringField("VERSION", baseVersion)
         stringField("VERSION_TAG", "v$baseVersion")
