@@ -67,7 +67,7 @@ fun DownloadPrimaryActionButton(
         )
     }
 
-    val overlayScrim = Color.Black.copy(alpha = 0.35f)
+    val overlayScrim = Color.Black.copy(alpha = 0.15f)
     val thumbnailFile = thumbnailFilePath
         ?.let { File(it) }
         ?.takeIf { it.exists() && it.length() > 0 }
