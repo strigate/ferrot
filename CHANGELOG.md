@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.1 - 2026-01-17
+### Changed
+- Updated Hilt, Compose, and Firebase dependency versions
+- Download pager refactored to remove direct ViewModel coupling
+- Download selection and pager position now driven explicitly by download ID
+- Download screen pager logic simplified and made more predictable
+
+### Fixed
+- Pager state desynchronization when switching between downloads
+
 ## 1.4.0 - 2026-01-14
 ### Added
 - Multi-select support for downloads
