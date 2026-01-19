@@ -11,9 +11,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.domain.usecase.ApplyUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.domain.usecase.apply.ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
-import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
 import org.strigate.ferrot.presentation.model.SettingsUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import javax.inject.Inject
@@ -22,8 +21,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
-    private val applyWifiOnlyPolicyUseCase: ApplyWifiOnlyPolicyUseCase,
-    private val applyAutomaticDuplicateDownloadDeletionSettingUseCase: ApplyAutomaticDuplicateDownloadDeletionSettingUseCase,
+    private val applyUseCase: ApplyUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -50,14 +48,16 @@ class SettingsViewModel @Inject constructor(
     fun setDownloadWifiOnly(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveDownloadWifiOnlySettingUseCase(enabled)
-            applyWifiOnlyPolicyUseCase(enabled)
+            applyUseCase.applyWifiOnlyPolicyUseCase(enabled)
         }
     }
 
     fun setAutomaticDuplicateDownloadDeletion(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
-            applyAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
+            applyUseCase.applyAutomaticDuplicateDownloadDeletionSettingUseCase(
+                automaticDuplicateDownloadDeletion = enabled,
+            )
         }
     }
 

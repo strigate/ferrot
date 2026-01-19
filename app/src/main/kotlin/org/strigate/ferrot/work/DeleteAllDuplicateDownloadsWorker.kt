@@ -32,8 +32,8 @@ class DeleteAllDuplicateDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val downloadUseCase: DownloadUseCase,
-    private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
+    private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
