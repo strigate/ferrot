@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -84,8 +85,8 @@ class DownloadViewModel @Inject constructor(
         }
     }
 
-    private fun getUiState(id: Long = initialId) =
-        downloadWithMetadataUseCase
+    private fun getUiState(id: Long = initialId): Flow<DownloadUiState> {
+        return downloadWithMetadataUseCase
             .getDownloadIdsWithMetadataAsFlowUseCase()
             .flatMapLatest { ids ->
                 if (ids.isEmpty()) {
@@ -136,6 +137,7 @@ class DownloadViewModel @Inject constructor(
                     }
                 }
             }
+    }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOAD)
 
