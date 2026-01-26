@@ -30,7 +30,7 @@ fun Copyright(
         Spacer(modifier = Modifier.height(dimens.spacingLarge))
         Icon(
             modifier = Modifier
-                .height(dimens.iconXLarge),
+                .height(dimens.iconLarge),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                 alpha = 0.8f,
             ),
