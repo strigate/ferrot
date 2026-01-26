@@ -570,7 +570,7 @@ private fun DownloadsList(
                 ) {
                     Icon(
                         modifier = Modifier
-                            .size(dimens.iconSmall),
+                            .size(dimens.iconXSmall),
                         imageVector = Icons.Default.ArrowDownward,
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         contentDescription = null,

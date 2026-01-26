@@ -80,7 +80,7 @@ fun DownloadPrimaryActionButton(
     ) {
         Box(
             modifier = Modifier
-                .size(dimens.iconXLarge),
+                .size(dimens.iconLarge),
             contentAlignment = Alignment.Center,
         ) {
             thumbnailFile?.let {
