@@ -59,8 +59,9 @@ class DownloadWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
     private val analyticsLogger: AnalyticsLogger,
-    private val downloadPathProvider: DownloadPathProvider,
     private val notificationService: NotificationService,
+    private val settingsUseCase: SettingsUseCase,
+    private val downloadPathProvider: DownloadPathProvider,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
@@ -68,7 +69,6 @@ class DownloadWorker(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
-    private val settingsUseCase: SettingsUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
 

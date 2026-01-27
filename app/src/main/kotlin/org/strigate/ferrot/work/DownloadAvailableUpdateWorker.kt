@@ -49,9 +49,9 @@ import java.util.concurrent.TimeUnit
 class DownloadAvailableUpdateWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
+    private val notificationService: NotificationService,
     private val stateUseCase: StateUseCase,
     private val updatePathProvider: UpdatePathProvider,
-    private val notificationService: NotificationService,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {

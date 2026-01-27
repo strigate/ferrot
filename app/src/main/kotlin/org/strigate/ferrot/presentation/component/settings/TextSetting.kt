@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -24,16 +25,24 @@ fun TextSetting(
     description: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
+    val clickableModifier = if (onClick != null) {
+        Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+            ) {
+                onClick()
+            }
+    } else Modifier
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) {
-                onClick?.invoke()
-            },
+            .then(clickableModifier)
+            .padding(
+                horizontal = 16.dp,
+                vertical = 12.dp,
+            ),
     ) {
         Row(
             modifier = Modifier
@@ -46,23 +55,17 @@ fun TextSetting(
                     .weight(1f)
                     .padding(end = 24.dp),
             ) {
-                if (description != null) {
-                    Text(
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        text = text,
-                    )
+                Text(
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    text = text,
+                )
+                description?.let {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        text = description,
-                    )
-                } else {
-                    Text(
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        text = text,
+                        text = it,
                     )
                 }
             }

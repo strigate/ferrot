@@ -34,21 +34,21 @@ import javax.inject.Singleton
 class WorkerFactory @Inject constructor(
     private val hiltWorkerFactory: HiltWorkerFactory,
     private val analyticsLogger: AnalyticsLogger,
+    private val notificationService: NotificationService,
     private val stateUseCase: StateUseCase,
     private val settingsUseCase: SettingsUseCase,
-    private val notificationService: NotificationService,
     private val updatePathProvider: UpdatePathProvider,
     private val downloadPathProvider: DownloadPathProvider,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
+    private val startDownloadUseCase: StartDownloadUseCase,
+    private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
+    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
     private val downloadAudioUseCase: DownloadAudioUseCase,
-    private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
-    private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
-    private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
-    private val startDownloadUseCase: StartDownloadUseCase,
+    private val downloadProgressUseCase: DownloadProgressUseCase,
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -60,9 +60,9 @@ class WorkerFactory @Inject constructor(
                 DownloadAvailableUpdateWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    notificationService = notificationService,
                     stateUseCase = stateUseCase,
                     updatePathProvider = updatePathProvider,
-                    notificationService = notificationService,
                     availableUpdateUseCase = availableUpdateUseCase,
                 )
             }
@@ -80,8 +80,9 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     analyticsLogger = analyticsLogger,
-                    downloadPathProvider = downloadPathProvider,
                     notificationService = notificationService,
+                    settingsUseCase = settingsUseCase,
+                    downloadPathProvider = downloadPathProvider,
                     youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
                     downloadUseCase = downloadUseCase,
                     downloadVideoUseCase = downloadVideoUseCase,
@@ -89,7 +90,6 @@ class WorkerFactory @Inject constructor(
                     downloadMetadataUseCase = downloadMetadataUseCase,
                     downloadProgressUseCase = downloadProgressUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
-                    settingsUseCase = settingsUseCase,
                 )
             }
 
@@ -115,8 +115,8 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
-                    downloadMetadataUseCase = downloadMetadataUseCase,
                     downloadVideoUseCase = downloadVideoUseCase,
+                    downloadMetadataUseCase = downloadMetadataUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                 )
             }

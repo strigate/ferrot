@@ -11,10 +11,9 @@ val googleServicesProperties = Properties()
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 if (keystorePropertiesFile.exists()) {
@@ -24,21 +23,29 @@ if (googleServicesPropertiesFile.exists()) {
     googleServicesProperties.load(FileInputStream(googleServicesPropertiesFile))
 }
 
+object BuildInfo {
+    const val PACKAGE_NAME = "org.strigate.ferrot"
+    const val BASE_VERSION = "1.4.2"
+    const val VERSION_CODE = 19
+    const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
+    const val RELEASE_APK_NAME = "ferrot"
+}
+
 android {
-    val baseVersion = "1.4.1"
-    namespace = "org.strigate.ferrot"
+    namespace = BuildInfo.PACKAGE_NAME
     compileSdk = 36
 
     defaultConfig {
         applicationId = "org.strigate.ferrot"
         minSdk = 30
         targetSdk = 36
-        versionCode = 18
-        versionName = buildVersionName(baseVersion, versionCode)
-        stringField("VERSION", baseVersion)
-        stringField("VERSION_TAG", "v$baseVersion")
+        versionCode = BuildInfo.VERSION_CODE
+        versionName = BuildInfo.VERSION_NAME
+        stringField("VERSION", BuildInfo.BASE_VERSION)
+        stringField("VERSION_TAG", "v${BuildInfo.BASE_VERSION}")
         applyFirebaseProperties()
         ndk {
+            ndkVersion = "29.0.14206865"
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -66,6 +73,7 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            versionNameSuffix = "-D"
         }
         release {
             isDebuggable = false
@@ -80,6 +88,7 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            versionNameSuffix = "-R"
         }
     }
     compileOptions {
@@ -89,6 +98,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
     splits {
         abi {
@@ -101,20 +111,33 @@ android {
             keepDebugSymbols += listOf("**/*.so")
         }
     }
-    applicationVariants.all {
-        outputs
-            .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
-            .all {
-                it.outputFileName = "ferrot-${if (isDebugBuildType()) "debug" else "release"}.apk"
-                false
-            }
-    }
 }
 
 tasks.withType<KotlinJvmCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
     }
+}
+
+tasks.register<Copy>("renameReleaseApk") {
+    val releaseDir = layout.buildDirectory.dir("outputs/apk/release")
+    from(releaseDir)
+    include("app-release.apk")
+    into(releaseDir)
+    rename {
+        "${BuildInfo.RELEASE_APK_NAME}-release.apk"
+    }
+    doFirst {
+        println("Renaming APK")
+    }
+}
+
+tasks.named("renameReleaseApk") {
+    mustRunAfter("createReleaseApkListingFileRedirect")
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy("renameReleaseApk")
 }
 
 private fun ApplicationDefaultConfig.applyFirebaseProperties(
@@ -144,23 +167,12 @@ private fun ApplicationDefaultConfig.resString(name: String, value: String) {
     resValue("string", name, value.escapeForBuildConfig())
 }
 
-private fun Properties.getString(key: String): String = (this[key] as? String)?.trim().orEmpty()
-
-private fun String.escapeForBuildConfig(): String =
-    "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-
-private fun buildVersionName(baseVersion: String, versionCode: Int?): String {
-    val buildType = if (isDebugBuildType()) "D" else "R"
-    val versionCodePart = versionCode?.let { "-$it-" } ?: "-"
-    return "$baseVersion$versionCodePart$buildType"
+private fun Properties.getString(key: String): String {
+    return (this[key] as? String)?.trim().orEmpty()
 }
 
-private fun isDebugBuildType(): Boolean {
-    val taskNames = gradle.startParameter.taskNames
-    val isDebugTask = taskNames.any { taskName ->
-        taskName.contains("Debug", ignoreCase = true)
-    }
-    return isDebugTask
+private fun String.escapeForBuildConfig(): String {
+    return "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
 dependencies {
@@ -190,11 +202,12 @@ dependencies {
     // Work Manager
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.work.runtime.ktx)
+    // Dagger / Hilt
+    implementation(libs.dagger.hilt.android)
+    ksp(libs.dagger.hilt.compiler)
     // Hilt
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.android)
-    implementation(libs.hilt.navigation.compose)
-    implementation(libs.hilt.work)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
     // Room
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime)
