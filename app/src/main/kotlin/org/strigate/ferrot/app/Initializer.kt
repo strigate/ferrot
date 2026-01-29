@@ -13,9 +13,13 @@ class Initializer : Initializer<Unit> {
 
     override fun create(context: Context) {
         Log.d(LOG_TAG, "Initializing")
-        YoutubeDL.getInstance().init(context)
-        FFmpeg.getInstance().init(context)
-        Aria2c.getInstance().init(context)
-        Log.d(LOG_TAG, "Initialized")
+        try {
+            YoutubeDL.getInstance().init(context)
+            FFmpeg.getInstance().init(context)
+            Aria2c.getInstance().init(context)
+            Log.d(LOG_TAG, "Initialized")
+        } catch (throwable: Throwable) {
+            Log.e(LOG_TAG, "Initialization failed", throwable)
+        }
     }
 }
