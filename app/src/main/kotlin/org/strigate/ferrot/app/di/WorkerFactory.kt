@@ -129,6 +129,7 @@ class WorkerFactory @Inject constructor(
                     downloadPathProvider = downloadPathProvider,
                     downloadAudioUseCase = downloadAudioUseCase,
                     downloadVideoUseCase = downloadVideoUseCase,
+                    downloadMetadataUseCase = downloadMetadataUseCase,
                 )
             }
 

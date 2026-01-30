@@ -19,6 +19,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_ORPHAN_DOWNLOA
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DELETE_ORPHAN_DOWNLOADS
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
+import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import java.io.File
 import java.time.Duration.between
@@ -32,6 +33,7 @@ class DeleteAllOrphanDownloadFilesWorker(
     private val downloadPathProvider: DownloadPathProvider,
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
+    private val downloadMetadataUseCase: DownloadMetadataUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         Log.d(LOG_TAG, "Starting orphan download file cleanup")
@@ -43,8 +45,11 @@ class DeleteAllOrphanDownloadFilesWorker(
             val videoPaths = downloadVideoUseCase
                 .getAllDownloadVideoFilePathsUseCase()
                 .mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }
+            val thumbnailPaths = downloadMetadataUseCase
+                .getAllDownloadThumbnailFilePathsUseCase()
+                .mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }
 
-            (audioPaths + videoPaths).toSet()
+            (audioPaths + videoPaths + thumbnailPaths).toSet()
         }.getOrElse {
             Log.w(LOG_TAG, "Failed to load referenced download file paths", it)
             return@withContext Result.failure()
