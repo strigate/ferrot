@@ -17,6 +17,7 @@ import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.DeleteAllOrphanDownloadFilesWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
@@ -88,5 +89,6 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         } else {
             DeleteAllDuplicateDownloadsWorker.cancelPeriodic(appContext)
         }
+        DeleteAllOrphanDownloadFilesWorker.enqueuePeriodicKeep(appContext)
     }
 }

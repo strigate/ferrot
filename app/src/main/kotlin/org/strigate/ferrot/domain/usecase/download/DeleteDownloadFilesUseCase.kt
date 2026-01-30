@@ -1,7 +1,9 @@
 package org.strigate.ferrot.domain.usecase.download
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,6 +16,13 @@ class DeleteDownloadFilesUseCase @Inject constructor(
     suspend operator fun invoke(downloadId: Long): Boolean = withContext(Dispatchers.IO) {
         val download = getDownloadByIdUseCase(downloadId) ?: return@withContext false
         val uidDir = downloadPathProvider.uidDir(download.uid)
-        runCatching { uidDir.deleteRecursively() }.getOrDefault(false)
+        if (!uidDir.exists()) {
+            return@withContext true
+        }
+        runCatching {
+            uidDir.deleteRecursively()
+        }.onFailure {
+            Log.w(LOG_TAG, "Failed to delete download files for uid=${download.uid}", it)
+        }.getOrDefault(false)
     }
 }

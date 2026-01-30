@@ -22,6 +22,7 @@ import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombi
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.DeleteAllOrphanDownloadFilesWorker
 import org.strigate.ferrot.work.DeleteDownloadsWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
@@ -118,6 +119,16 @@ class WorkerFactory @Inject constructor(
                     downloadVideoUseCase = downloadVideoUseCase,
                     downloadMetadataUseCase = downloadMetadataUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                )
+            }
+
+            DeleteAllOrphanDownloadFilesWorker::class.java.name -> {
+                DeleteAllOrphanDownloadFilesWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    downloadPathProvider = downloadPathProvider,
+                    downloadAudioUseCase = downloadAudioUseCase,
+                    downloadVideoUseCase = downloadVideoUseCase,
                 )
             }
 

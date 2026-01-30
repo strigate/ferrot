@@ -24,6 +24,10 @@ class DownloadAudioRepositoryImpl @Inject constructor(
             .map { it?.toDomain() }
     }
 
+    override suspend fun getAllFilePaths(): List<String> {
+        return downloadAudioDao.getAllFilePaths()
+    }
+
     override suspend fun deleteByDownloadId(downloadId: Long): Int {
         return downloadAudioDao.deleteByDownloadId(downloadId)
     }

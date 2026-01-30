@@ -6,5 +6,6 @@ import org.strigate.ferrot.domain.model.DownloadAudio
 interface DownloadAudioRepository {
     suspend fun save(downloadAudio: DownloadAudio): Long
     fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadAudio?>
+    suspend fun getAllFilePaths(): List<String>
     suspend fun deleteByDownloadId(downloadId: Long): Int
 }
