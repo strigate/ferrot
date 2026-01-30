@@ -34,6 +34,10 @@ class DownloadMetadataRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun getAllThumbnailFilePaths(): List<String> {
+        return downloadMetadataDao.getAllThumbnailFilePaths()
+    }
+
     override suspend fun deleteByDownloadId(downloadId: Long): Int {
         return downloadMetadataDao.deleteByDownloadId(downloadId)
     }

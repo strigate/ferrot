@@ -15,6 +15,9 @@ interface DownloadAudioDao {
     @Query("SELECT * FROM download_audio WHERE downloadId = :downloadId LIMIT 1")
     fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadAudioEntity?>
 
+    @Query("SELECT filePath FROM download_audio")
+    suspend fun getAllFilePaths(): List<String>
+
     @Query("DELETE FROM download_audio WHERE downloadId = :downloadId")
     suspend fun deleteByDownloadId(downloadId: Long): Int
 }

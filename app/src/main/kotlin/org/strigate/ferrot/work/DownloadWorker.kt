@@ -384,8 +384,9 @@ class DownloadWorker(
                     .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
                     .first()
                 if (automaticDuplicateDownloadDeletionSetting) {
-                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedCleanup(appContext)
+                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(appContext)
                 }
+                DeleteAllOrphanDownloadFilesWorker.enqueueDebouncedReplace(appContext)
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
                 val contentText = videoTitle ?: download.url

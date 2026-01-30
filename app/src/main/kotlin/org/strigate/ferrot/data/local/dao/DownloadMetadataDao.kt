@@ -18,6 +18,9 @@ interface DownloadMetadataDao {
     @Query("SELECT downloadId FROM download_metadata WHERE source = :source AND videoId = :videoId")
     suspend fun getDownloadIdsBySourceAndVideoId(source: String, videoId: String): List<Long>
 
+    @Query("SELECT thumbnailFilePath FROM download_metadata WHERE thumbnailFilePath IS NOT NULL")
+    suspend fun getAllThumbnailFilePaths(): List<String>
+
     @Query("DELETE FROM download_metadata WHERE downloadId = :downloadId")
     suspend fun deleteByDownloadId(downloadId: Long): Int
 }

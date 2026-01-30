@@ -1,6 +1,7 @@
 package org.strigate.ferrot.domain.usecase
 
 import org.strigate.ferrot.domain.usecase.downloadmetadata.DeleteDownloadMetadataByDownloadIdUseCase
+import org.strigate.ferrot.domain.usecase.downloadmetadata.GetAllDownloadThumbnailFilePathsUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadIdsBySourceAndVideoIdUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.SaveDownloadMetadataUseCase
@@ -10,5 +11,6 @@ class DownloadMetadataUseCase @Inject constructor(
     val saveDownloadMetadataUseCase: SaveDownloadMetadataUseCase,
     val getDownloadMetadataByIdAsFlowUseCase: GetDownloadMetadataByIdAsFlowUseCase,
     val getDownloadIdsBySourceAndVideoIdUseCase: GetDownloadIdsBySourceAndVideoIdUseCase,
+    val getAllDownloadThumbnailFilePathsUseCase: GetAllDownloadThumbnailFilePathsUseCase,
     val deleteDownloadMetadataByDownloadIdUseCase: DeleteDownloadMetadataByDownloadIdUseCase,
 )
