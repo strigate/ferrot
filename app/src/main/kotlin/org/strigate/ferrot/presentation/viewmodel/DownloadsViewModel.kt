@@ -82,6 +82,8 @@ class DownloadsViewModel @Inject constructor(
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+            .trim()
+            .take(MAX_SEARCH_LENGTH)
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
@@ -105,5 +107,9 @@ class DownloadsViewModel @Inject constructor(
         downloadUseCase.requestDeleteDownloadsUseCase(
             downloadIds = downloadIds,
         )
+    }
+
+    companion object {
+        private const val MAX_SEARCH_LENGTH = 100
     }
 }
