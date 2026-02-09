@@ -627,10 +627,30 @@ private fun DownloadsList(
                                         onSelectionChange(selectedIds + item.id)
                                     },
                                     onPauseResume = {
-                                        onPauseResume(item)
+                                        if (selectedIds.isEmpty()) {
+                                            onPauseResume(item)
+                                        } else {
+                                            onSelectionChange(
+                                                if (isSelected) {
+                                                    selectedIds - item.id
+                                                } else {
+                                                    selectedIds + item.id
+                                                }
+                                            )
+                                        }
                                     },
                                     onOpen = {
-                                        onItemClick(item)
+                                        if (selectedIds.isEmpty()) {
+                                            onItemClick(item)
+                                        } else {
+                                            onSelectionChange(
+                                                if (isSelected) {
+                                                    selectedIds - item.id
+                                                } else {
+                                                    selectedIds + item.id
+                                                }
+                                            )
+                                        }
                                     },
                                 )
                             }
