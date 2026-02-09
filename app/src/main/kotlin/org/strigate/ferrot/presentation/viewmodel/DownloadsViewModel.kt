@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -36,6 +37,9 @@ class DownloadsViewModel @Inject constructor(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
@@ -51,10 +55,14 @@ class DownloadsViewModel @Inject constructor(
         return combine(
             downloadsWithMetadataFlow,
             availableUpdateFlow,
-        ) { downloadsWithMetadata, availableUpdate ->
-            val downloadItemsUiData = downloadsWithMetadata.map { downloadWithMetadata ->
-                downloadWithMetadata.toUiData()
-            }
+            _searchQuery,
+        ) { downloadsWithMetadata, availableUpdate, query ->
+            val filteredDownloads = downloadsWithMetadata
+                .map { it.toUiData() }
+                .filter {
+                    query.isBlank() || it.title.contains(query, ignoreCase = true)
+                }
+
             val availableUpdateUiData = availableUpdate?.let {
                 AvailableUpdateUiData(
                     localFilePath = it.localFilePath,
@@ -63,7 +71,7 @@ class DownloadsViewModel @Inject constructor(
             }
             DownloadsUiState.Data(
                 data = DownloadsUiData(
-                    downloads = downloadItemsUiData,
+                    downloads = filteredDownloads,
                     availableUpdate = availableUpdateUiData,
                 ),
             )
@@ -71,6 +79,10 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
         runCatching {

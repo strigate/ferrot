@@ -2,10 +2,6 @@ package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -28,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
@@ -45,7 +42,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,19 +60,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -89,6 +92,8 @@ import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.ferrot.presentation.theme.TextStyles
+import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
@@ -101,19 +106,32 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
-    val coroutineScope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val lazyListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    val snackbarHostState = remember {
-        SnackbarHostState()
+    val searchFocusRequester = remember { FocusRequester() }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var searchActive by rememberSaveable { mutableStateOf(false) }
+    var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var pendingBulkDeleteIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+
+    BackHandler(enabled = searchActive) {
+        searchActive = false
+        viewModel.updateSearchQuery("")
+        keyboardController?.hide()
     }
-    var selectedIds by rememberSaveable {
-        mutableStateOf(setOf<Long>())
-    }
-    var pendingBulkDeleteIds by remember {
-        mutableStateOf<Set<Long>>(emptySet())
+    LaunchedEffect(searchActive) {
+        if (searchActive) {
+            delay(357)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 
     val allIds = when (val state = uiState) {
@@ -196,27 +214,86 @@ fun DownloadsScreen(
                         }
                     },
                     title = {
-                        Text(
+                        Box(
                             modifier = Modifier
-                                .combinedClickable(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            lazyListState.animateScrollToItem(0)
-                                        }
-                                    }
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = TextStyle(
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Normal,
-                                lineHeight = 28.sp,
-                                letterSpacing = 0.sp,
-                            ),
-                            maxLines = 2,
-                            text = stringResource(R.string.app_name),
-                        )
+                                .fillMaxWidth()
+                                .height(TopAppBarDefaults.TopAppBarExpandedHeight),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            AnimatedVisibility(
+                                visible = !searchActive,
+                                enter = Transitions.searchEnter,
+                                exit = Transitions.searchExit,
+                            ) {
+                                Text(
+                                    modifier = Modifier
+                                        .combinedClickable {
+                                            coroutineScope.launch {
+                                                lazyListState.animateScrollToItem(0)
+                                            }
+                                        },
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = TextStyles.downloadsTitle(),
+                                    text = stringResource(R.string.app_name),
+                                    maxLines = 1,
+                                )
+                            }
+                            AnimatedVisibility(
+                                visible = searchActive,
+                                enter = Transitions.searchEnter,
+                                exit = Transitions.searchExit,
+                            ) {
+                                TextField(
+                                    value = searchQuery,
+                                    onValueChange = viewModel::updateSearchQuery,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(end = dimens.spacingSmall)
+                                        .focusRequester(searchFocusRequester),
+                                    singleLine = true,
+                                    placeholder = {
+                                        Text(
+                                            text = stringResource(R.string.hint_search),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Search,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        disabledContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        disabledIndicatorColor = Color.Transparent,
+                                    ),
+                                )
+                            }
+                        }
                     },
                     actions = {
+                        IconButton(
+                            onClick = {
+                                searchActive = !searchActive
+                                if (!searchActive) {
+                                    viewModel.updateSearchQuery("")
+                                    keyboardController?.hide()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (searchActive) {
+                                    Icons.Filled.Close
+                                } else {
+                                    Icons.Filled.Search
+                                },
+                                contentDescription = null,
+                            )
+                        }
                         var menuExpanded by remember { mutableStateOf(false) }
                         IconButton(
                             onClick = {
@@ -313,10 +390,13 @@ fun DownloadsScreen(
                                 items = downloads,
                                 selectedIds = selectedIds,
                                 bulkDeleteIds = pendingBulkDeleteIds,
-                                onSelectionChange = {
-                                    selectedIds = it
-                                },
+                                searchQuery = searchQuery,
+                                lazyListState = lazyListState,
+                                snackbarHostState = snackbarHostState,
                                 onItemClick = {
+                                    viewModel.updateSearchQuery("")
+                                    keyboardController?.hide()
+                                    searchActive = false
                                     navController.navigate(Screen.Download.route(it.id))
                                 },
                                 onPauseResume = { item ->
@@ -334,11 +414,13 @@ fun DownloadsScreen(
                                         }
                                     }
                                 },
-                                onDelete = { downloadIds ->
-                                    viewModel.deleteDownloads(downloadIds)
+                                onSelectionChange = {
+                                    selectedIds = it
                                 },
-                                snackbarHostState = snackbarHostState,
-                                lazyListState = lazyListState,
+                                onDelete = viewModel::deleteDownloads,
+                                onSnackbarShown = {
+                                    keyboardController?.hide()
+                                },
                             )
                         }
                     }
@@ -354,12 +436,14 @@ private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
     bulkDeleteIds: Set<Long>,
-    onSelectionChange: (Set<Long>) -> Unit,
+    searchQuery: String,
+    lazyListState: LazyListState,
+    snackbarHostState: SnackbarHostState,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
+    onSelectionChange: (Set<Long>) -> Unit,
     onDelete: (Set<Long>) -> Unit,
-    snackbarHostState: SnackbarHostState,
-    lazyListState: LazyListState,
+    onSnackbarShown: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
@@ -397,11 +481,14 @@ private fun DownloadsList(
     }
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
+
     LaunchedEffect(pendingSnackIds) {
         if (pendingSnackIds.isEmpty()) {
             return@LaunchedEffect
         }
         snackbarHostState.currentSnackbarData?.dismiss()
+        onSnackbarShown()
+
         val snackbarResult = snackbarHostState.showSnackbar(
             message = snackbarDeletedMessage,
             actionLabel = snackbarUndoActionLabel,
@@ -442,13 +529,26 @@ private fun DownloadsList(
             modifier = Modifier
                 .align(Alignment.Center),
             visible = visibleCount == 0,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = Transitions.emptyEnter,
+            exit = Transitions.emptyExit,
         ) {
-            DownloadsIntro(
-                modifier = Modifier
-                    .fillMaxSize(),
-            )
+            if (searchQuery.isNotBlank()) {
+                EmptyState(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    icon = Icons.Filled.Search,
+                    title = stringResource(
+                        R.string.search_no_results_title,
+                        searchQuery,
+                    ),
+                    body = stringResource(R.string.search_no_results_body),
+                )
+            } else {
+                DownloadsIntro(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                )
+            }
         }
         LazyColumn(
             modifier = Modifier
@@ -467,8 +567,8 @@ private fun DownloadsList(
                 val isVisible = !pendingDeleteIds.contains(item.id)
                 AnimatedVisibility(
                     visible = isVisible,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
+                    enter = Transitions.listItemEnter,
+                    exit = Transitions.listItemExit,
                 ) {
                     Column {
                         Box(
