@@ -1,5 +1,7 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,8 +39,10 @@ class DownloadsViewModel @Inject constructor(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    private val _searchQuery = MutableStateFlow(
+        TextFieldValue(text = "", selection = TextRange(0))
+    )
+    val searchQuery: StateFlow<TextFieldValue> = _searchQuery
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -57,10 +61,11 @@ class DownloadsViewModel @Inject constructor(
             availableUpdateFlow,
             _searchQuery,
         ) { downloadsWithMetadata, availableUpdate, query ->
+            val text = query.text
             val filteredDownloads = downloadsWithMetadata
                 .map { it.toUiData() }
                 .filter {
-                    query.isBlank() || it.title.contains(query, ignoreCase = true)
+                    text.isBlank() || it.title.contains(text, ignoreCase = true)
                 }
 
             val availableUpdateUiData = availableUpdate?.let {
@@ -80,10 +85,12 @@ class DownloadsViewModel @Inject constructor(
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
 
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-            .trim()
-            .take(MAX_SEARCH_LENGTH)
+    fun updateSearchQuery(value: TextFieldValue) {
+        val trimmed = value.text.take(MAX_SEARCH_LENGTH)
+        _searchQuery.value = TextFieldValue(
+            text = trimmed,
+            selection = TextRange(trimmed.length),
+        )
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
