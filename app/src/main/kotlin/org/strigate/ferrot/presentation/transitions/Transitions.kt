@@ -17,7 +17,6 @@ object Transitions {
     ) + fadeIn(
         animationSpec = tween(120),
     )
-
     val searchExit: ExitTransition = slideOutHorizontally(
         targetOffsetX = { it / 3 },
         animationSpec = tween(120),
@@ -25,15 +24,22 @@ object Transitions {
         animationSpec = tween(90),
     )
 
-    val emptyEnter: EnterTransition = fadeIn(
+    val titleExit: ExitTransition = slideOutHorizontally(
+        targetOffsetX = { -it / 3 },
+        animationSpec = tween(120),
+    ) + fadeOut(
+        animationSpec = tween(90),
+    )
+    val titleEnter: EnterTransition = slideInHorizontally(
+        initialOffsetX = { -it / 3 },
+        animationSpec = tween(180),
+    ) + fadeIn(
         animationSpec = tween(120),
     )
 
-    val emptyExit: ExitTransition = fadeOut(
-        animationSpec = tween(90),
-    )
+    val emptyEnter: EnterTransition = fadeIn(animationSpec = tween(120))
+    val emptyExit: ExitTransition = fadeOut(animationSpec = tween(90))
 
     val listItemEnter: EnterTransition = expandVertically() + fadeIn()
-
     val listItemExit: ExitTransition = shrinkVertically() + fadeOut()
 }

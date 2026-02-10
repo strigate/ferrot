@@ -70,6 +70,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -123,7 +124,7 @@ fun DownloadsScreen(
 
     BackHandler(enabled = searchActive) {
         searchActive = false
-        viewModel.updateSearchQuery("")
+        viewModel.updateSearchQuery(TextFieldValue(""))
         keyboardController?.hide()
     }
     LaunchedEffect(searchActive) {
@@ -222,8 +223,8 @@ fun DownloadsScreen(
                         ) {
                             AnimatedVisibility(
                                 visible = !searchActive,
-                                enter = Transitions.searchEnter,
-                                exit = Transitions.searchExit,
+                                enter = Transitions.titleEnter,
+                                exit = Transitions.titleExit,
                             ) {
                                 Text(
                                     modifier = Modifier
@@ -252,9 +253,7 @@ fun DownloadsScreen(
                                         .focusRequester(searchFocusRequester),
                                     singleLine = true,
                                     placeholder = {
-                                        Text(
-                                            text = stringResource(R.string.hint_search),
-                                        )
+                                        Text(text = stringResource(R.string.hint_search))
                                     },
                                     leadingIcon = {
                                         Icon(
@@ -280,7 +279,7 @@ fun DownloadsScreen(
                             onClick = {
                                 searchActive = !searchActive
                                 if (!searchActive) {
-                                    viewModel.updateSearchQuery("")
+                                    viewModel.updateSearchQuery(TextFieldValue(""))
                                     keyboardController?.hide()
                                 }
                             }
@@ -390,13 +389,11 @@ fun DownloadsScreen(
                                 items = downloads,
                                 selectedIds = selectedIds,
                                 bulkDeleteIds = pendingBulkDeleteIds,
-                                searchQuery = searchQuery,
+                                searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
                                 snackbarHostState = snackbarHostState,
                                 onItemClick = {
-                                    viewModel.updateSearchQuery("")
                                     keyboardController?.hide()
-                                    searchActive = false
                                     navController.navigate(Screen.Download.route(it.id))
                                 },
                                 onPauseResume = { item ->
