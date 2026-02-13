@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.0 - 2026-02-13
+### Added
+- Search support on the Downloads screen
+- Empty state when no downloads match the search query
+
+### Changed
+- Improved search interaction and input handling on the Downloads screen
+- Refined selection behavior when multi-select mode is active
+- Updated Compose and Activity Compose dependency versions
+
+### Fixed
+- Prevented issues caused by excessively long search queries
+
 ## 1.4.3 - 2026-01-27
 ### Fixed
 - Restored the available update banner on the downloads screen

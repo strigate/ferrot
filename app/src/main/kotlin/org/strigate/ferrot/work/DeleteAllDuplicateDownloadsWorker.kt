@@ -16,8 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_CLEANUP_DUPLICATE_DOWNLOADS
-import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_CLEANUP_DUPLICATE_DOWNLOADS
+import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_DUPLICATE_DOWNLOADS
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DELETE_DUPLICATE_DOWNLOADS
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
@@ -109,7 +109,7 @@ class DeleteAllDuplicateDownloadsWorker(
     }
 
     companion object {
-        fun enqueueDebouncedCleanup(context: Context) {
+        fun enqueueDebouncedReplace(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                 .setRequiresCharging(false)
@@ -124,7 +124,7 @@ class DeleteAllDuplicateDownloadsWorker(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
-                ONETIME_CLEANUP_DUPLICATE_DOWNLOADS,
+                ONETIME_DELETE_DUPLICATE_DOWNLOADS,
                 ExistingWorkPolicy.REPLACE,
                 oneTimeWorkRequest,
             )
@@ -132,12 +132,11 @@ class DeleteAllDuplicateDownloadsWorker(
 
         fun enqueuePeriodicKeep(
             context: Context,
-            targetHour: Int = 4,
+            targetHour: Int = 3,
             flexHours: Long = 1,
         ) {
             val zoneId = ZoneId.systemDefault()
             val now = ZonedDateTime.now(zoneId)
-
             val targetDateTime = now
                 .withHour(targetHour)
                 .withMinute(0)
@@ -160,14 +159,14 @@ class DeleteAllDuplicateDownloadsWorker(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC_CLEANUP_DUPLICATE_DOWNLOADS,
+                PERIODIC_DELETE_DUPLICATE_DOWNLOADS,
                 ExistingPeriodicWorkPolicy.KEEP,
                 periodicWorkRequest,
             )
         }
 
         fun cancelPeriodic(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_CLEANUP_DUPLICATE_DOWNLOADS)
+            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_DELETE_DUPLICATE_DOWNLOADS)
         }
     }
 }

@@ -18,6 +18,9 @@ interface DownloadVideoDao {
     @Query("SELECT downloadId FROM download_video WHERE sha256 = :sha256")
     suspend fun getDownloadIdsBySha256(sha256: String): List<Long>
 
+    @Query("SELECT filePath FROM download_video")
+    suspend fun getAllFilePaths(): List<String>
+
     @Query("DELETE FROM download_video WHERE downloadId = :downloadId")
     suspend fun deleteByDownloadId(downloadId: Long): Int
 }

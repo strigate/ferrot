@@ -101,7 +101,6 @@ abstract class ForegroundCoroutineWorker(
         if (progress != null || indeterminate) {
             builder.setProgress(100, progress?.coerceIn(0, 100) ?: 0, indeterminate)
         }
-
         val notification = builder.build()
         return ForegroundInfo(
             id.toInt(),

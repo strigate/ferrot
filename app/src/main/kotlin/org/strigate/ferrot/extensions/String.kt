@@ -19,17 +19,22 @@ fun String.extractFileExtension(): String? {
 }
 
 fun String.toSafeFileName(maxBytes: Int = 120): String {
-    val byteArray = toByteArray(Charsets.UTF_8)
+    val sanitized = this
+        .replace(Regex("""https?://"""), "")
+        .replace(Regex("""[\\/:*?"<>|]"""), "")
+        .replace(Regex("""[#%]"""), "")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
+
+    val byteArray = sanitized.toByteArray(Charsets.UTF_8)
     if (byteArray.size <= maxBytes) {
-        return this
+        return sanitized
     }
     var count = 0
     val stringBuilder = StringBuilder()
-    for (char in this) {
+    for (char in sanitized) {
         val size = char.toString().toByteArray(Charsets.UTF_8).size
-        if (count + size > maxBytes) {
-            break
-        }
+        if (count + size > maxBytes) break
         count += size
         stringBuilder.append(char)
     }

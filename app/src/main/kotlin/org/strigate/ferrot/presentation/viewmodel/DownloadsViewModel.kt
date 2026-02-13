@@ -1,10 +1,13 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -36,6 +39,11 @@ class DownloadsViewModel @Inject constructor(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
+    private val _searchQuery = MutableStateFlow(
+        TextFieldValue(text = "", selection = TextRange(0))
+    )
+    val searchQuery: StateFlow<TextFieldValue> = _searchQuery
+
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
@@ -51,10 +59,15 @@ class DownloadsViewModel @Inject constructor(
         return combine(
             downloadsWithMetadataFlow,
             availableUpdateFlow,
-        ) { downloadsWithMetadata, availableUpdate ->
-            val downloadItemsUiData = downloadsWithMetadata.map { downloadWithMetadata ->
-                downloadWithMetadata.toUiData()
-            }
+            _searchQuery,
+        ) { downloadsWithMetadata, availableUpdate, query ->
+            val text = query.text
+            val filteredDownloads = downloadsWithMetadata
+                .map { it.toUiData() }
+                .filter {
+                    text.isBlank() || it.title.contains(text, ignoreCase = true)
+                }
+
             val availableUpdateUiData = availableUpdate?.let {
                 AvailableUpdateUiData(
                     localFilePath = it.localFilePath,
@@ -63,7 +76,7 @@ class DownloadsViewModel @Inject constructor(
             }
             DownloadsUiState.Data(
                 data = DownloadsUiData(
-                    downloads = downloadItemsUiData,
+                    downloads = filteredDownloads,
                     availableUpdate = availableUpdateUiData,
                 ),
             )
@@ -71,6 +84,14 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
+
+    fun updateSearchQuery(value: TextFieldValue) {
+        val trimmed = value.text.take(MAX_SEARCH_LENGTH)
+        _searchQuery.value = TextFieldValue(
+            text = trimmed,
+            selection = TextRange(trimmed.length),
+        )
+    }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
         runCatching {
@@ -93,5 +114,9 @@ class DownloadsViewModel @Inject constructor(
         downloadUseCase.requestDeleteDownloadsUseCase(
             downloadIds = downloadIds,
         )
+    }
+
+    companion object {
+        private const val MAX_SEARCH_LENGTH = 100
     }
 }

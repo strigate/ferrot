@@ -28,6 +28,10 @@ class DownloadVideoRepositoryImpl @Inject constructor(
         return downloadVideoDao.getDownloadIdsBySha256(sha256)
     }
 
+    override suspend fun getAllFilePaths(): List<String> {
+        return downloadVideoDao.getAllFilePaths()
+    }
+
     override suspend fun deleteByDownloadId(downloadId: Long): Int {
         return downloadVideoDao.deleteByDownloadId(downloadId)
     }

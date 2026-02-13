@@ -30,6 +30,10 @@
 
     <string name="available_update_ready">Update %1$s is ready to install</string>
 
+    <string name="hint_search">Search</string>
+    <string name="search_no_results_title">No results for \"%1$s\"</string>
+    <string name="search_no_results_body">Try a different search term</string>
+
     <string name="download_url">URL</string>
     <string name="download_filename">Filename</string>
     <string name="download_duration">Duration</string>

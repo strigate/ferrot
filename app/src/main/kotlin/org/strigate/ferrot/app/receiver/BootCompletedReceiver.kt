@@ -43,7 +43,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
                     .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
                     .first()
                 if (automaticDuplicateDownloadDeletionSetting) {
-                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedCleanup(context)
+                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(context)
                 }
             }
         }
