@@ -4,9 +4,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.io.FileInputStream
 import java.util.Properties
 
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
-val googleServicesPropertiesFile = rootProject.file("google-services.properties")
+val googleServicesPropertiesFile: File = rootProject.file("google-services.properties")
 val googleServicesProperties = Properties()
 
 plugins {
