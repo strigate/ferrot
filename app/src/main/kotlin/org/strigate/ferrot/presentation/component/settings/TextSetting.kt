@@ -1,6 +1,6 @@
 package org.strigate.ferrot.presentation.component.settings
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,16 +23,21 @@ fun TextSetting(
     text: String,
     modifier: Modifier = Modifier,
     description: String? = null,
+    onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val clickableModifier = if (onClick != null) {
+    val clickableModifier = if (onClick != null || onLongClick != null) {
         Modifier
-            .clickable(
+            .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
-            ) {
-                onClick()
-            }
+                onClick = {
+                    onClick?.invoke()
+                },
+                onLongClick = {
+                    onLongClick?.invoke()
+                },
+            )
     } else Modifier
 
     Column(

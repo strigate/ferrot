@@ -4,9 +4,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.io.FileInputStream
 import java.util.Properties
 
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
-val googleServicesPropertiesFile = rootProject.file("google-services.properties")
+val googleServicesPropertiesFile: File = rootProject.file("google-services.properties")
 val googleServicesProperties = Properties()
 
 plugins {
@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.5.0"
-    const val VERSION_CODE = 21
+    const val BASE_VERSION = "1.5.1"
+    const val VERSION_CODE = 22
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
 }
