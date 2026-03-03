@@ -1,10 +1,7 @@
 package org.strigate.ferrot.app
 
-import android.content.Context
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import org.strigate.ferrot.app.Constants.Database.DATABASE_NAME
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
@@ -54,28 +51,9 @@ abstract class Database : RoomDatabase() {
     abstract fun downloadProgressDao(): DownloadProgressDao
     abstract fun downloadMetadataDao(): DownloadMetadataDao
     abstract fun downloadWithMetadataViewDao(): DownloadWithMetadataViewDao
-
-    companion object {
-        @Volatile
-        private var instance: Database? = null
-
-        fun getInstance(context: Context): Database {
-            return instance ?: synchronized(this) {
-                instance ?: buildDatabase(context).also { instance = it }
-            }
-        }
-
-        private fun buildDatabase(context: Context): Database {
-            val roomDatabaseBuilder = Room
-                .databaseBuilder(context, Database::class.java, DATABASE_NAME)
-                .applyMigrations()
-
-            return roomDatabaseBuilder.build()
-        }
-    }
 }
 
-private fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrations(): RoomDatabase.Builder<T> {
+internal fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrations(): RoomDatabase.Builder<T> {
     return addMigrations(
         MIGRATION_1_2,
         MIGRATION_2_3,
