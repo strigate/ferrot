@@ -23,20 +23,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.TextSetting
-import org.strigate.ferrot.presentation.event.AboutNavigationEvent
+import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
 
@@ -50,31 +48,28 @@ fun AboutScreen(
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
-
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
-    LaunchedEffect(navigationEvent) {
-        when (val event = navigationEvent) {
-            AboutNavigationEvent.OpenAppInfo -> {
-                val intent = Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                ).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when (event) {
+                AboutEvent.OpenAppInfo -> {
+                    val intent = Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    ).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
                 }
-                context.startActivity(intent)
-                viewModel.onNavigationEventConsumed()
-            }
 
-            is AboutNavigationEvent.OpenUrl -> {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, event.url.toUri())
-                )
-                viewModel.onNavigationEventConsumed()
+                is AboutEvent.OpenUrl -> {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, event.url.toUri())
+                    )
+                }
             }
-
-            null -> Unit
         }
     }
 
