@@ -21,10 +21,8 @@ import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
+import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import java.io.File
-import java.time.Duration.between
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 class DeleteAllOrphanDownloadFilesWorker(
@@ -137,20 +135,7 @@ class DeleteAllOrphanDownloadFilesWorker(
             targetHour: Int = 4,
             flexHours: Long = 1,
         ) {
-            val zoneId = ZoneId.systemDefault()
-            val now = ZonedDateTime.now(zoneId)
-            val targetDateTime = now
-                .withHour(targetHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
-
-            val firstRun = if (now.isBefore(targetDateTime)) {
-                targetDateTime
-            } else {
-                targetDateTime.plusDays(1)
-            }
-            val initialDelayMillis = between(now, firstRun).toMillis()
+            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
             val periodicWorkRequest =
                 PeriodicWorkRequestBuilder<DeleteAllOrphanDownloadFilesWorker>(
                     repeatInterval = 1,
