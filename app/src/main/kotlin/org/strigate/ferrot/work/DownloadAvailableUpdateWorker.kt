@@ -102,6 +102,7 @@ class DownloadAvailableUpdateWorker(
                 return markCheckSuccess()
             }
 
+            val expectedSizeBytes = apkAsset.optLong("size", -1L).takeIf { it > 0L }
             val apkFile = updatePathProvider.apkFileFor(latestTag)
             val expectedDigest = apkAsset.optString("digest")
 
@@ -120,10 +121,20 @@ class DownloadAvailableUpdateWorker(
                     }
 
                     apkFile.length() > 0L -> {
-                        Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
-                        saveAvailableUpdate(latestTag, apkFile.absolutePath)
-                        notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                        return markCheckSuccess()
+                        if (expectedSizeBytes != null && apkFile.length() != expectedSizeBytes) {
+                            val message =
+                                "Existing file size mismatch. expected=$expectedSizeBytes " +
+                                        "actual=${apkFile.length()}. Re-downloading"
+
+                            Log.w(LOG_TAG, message)
+                            apkFile.delete()
+                            clearAvailableUpdate()
+                        } else {
+                            Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
+                            saveAvailableUpdate(latestTag, apkFile.absolutePath)
+                            notifyAvailableUpdate(latestTag, apkFile.absolutePath)
+                            return markCheckSuccess()
+                        }
                     }
 
                     else -> {
@@ -135,9 +146,13 @@ class DownloadAvailableUpdateWorker(
             }
 
             val partFile = File(apkFile.parentFile, apkFile.name + ".part")
+            if (partFile.exists()) {
+                partFile.delete()
+            }
             Log.d(LOG_TAG, "Downloading update to ${partFile.absolutePath}")
 
             enableForeground(
+                notificationId = NOTIFICATION_ID,
                 notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
             )
             if (isAppInForeground()) {
@@ -145,7 +160,11 @@ class DownloadAvailableUpdateWorker(
             }
 
             try {
-                downloadFile(downloadUrl, partFile)
+                downloadFile(
+                    url = downloadUrl,
+                    outFile = partFile,
+                    expectedBytesFromRelease = expectedSizeBytes,
+                )
                 if (expectedDigest.startsWith("sha256:", true)) {
                     if (!validateSha256(partFile, expectedDigest)) {
                         partFile.delete()
@@ -222,7 +241,11 @@ class DownloadAvailableUpdateWorker(
         }
     }
 
-    private suspend fun downloadFile(url: String, outFile: File) = withContext(Dispatchers.IO) {
+    private suspend fun downloadFile(
+        url: String,
+        outFile: File,
+        expectedBytesFromRelease: Long?,
+    ) = withContext(Dispatchers.IO) {
         var httpUrlConnection: HttpURLConnection? = null
         try {
             httpUrlConnection = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -243,6 +266,42 @@ class DownloadAvailableUpdateWorker(
                 Log.w(LOG_TAG, "$message: $responseCode: $errorMessage")
                 throw IOException("$message: $responseCode")
             }
+            val totalBytes = expectedBytesFromRelease ?: httpUrlConnection
+                .contentLengthLong
+                .takeIf { it > 0L }
+
+            var downloadedBytes = 0L
+            var lastPublishedAtMillis = 0L
+
+            fun publishProgress(force: Boolean) {
+                val now = System.currentTimeMillis()
+                val progressPercent = if (totalBytes != null && totalBytes > 0L) {
+                    ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)
+                } else {
+                    -1
+                }
+                val shouldPublish = force || (now - lastPublishedAtMillis >= 1_000L)
+                if (!shouldPublish) {
+                    return
+                }
+                val contentText = if (totalBytes != null && totalBytes > 0L) {
+                    val percentText = progressPercent
+                        .takeIf { it >= 0 }?.let { " ($it%)" }.orEmpty()
+
+                    "${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}$percentText"
+                } else {
+                    formatBytes(downloadedBytes)
+                }
+                updateForeground(
+                    notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+                    progress = progressPercent.takeIf { it >= 0 },
+                    indeterminate = progressPercent < 0,
+                    contentText = contentText,
+                )
+                lastPublishedAtMillis = now
+            }
+
+            publishProgress(force = true)
             httpUrlConnection.inputStream.use { inputStream ->
                 FileOutputStream(outFile).use { fileOutputStream ->
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -250,13 +309,37 @@ class DownloadAvailableUpdateWorker(
                         val read = inputStream.read(buffer)
                         if (read == -1) break
                         fileOutputStream.write(buffer, 0, read)
+                        downloadedBytes += read
+                        val now = System.currentTimeMillis()
+                        if (now - lastPublishedAtMillis >= 1_000L) {
+                            publishProgress(force = false)
+                        }
                     }
                     fileOutputStream.flush()
                 }
             }
+            if (totalBytes != null && downloadedBytes != totalBytes) {
+                val message =
+                    "Downloaded bytes mismatch. expected=$totalBytes actual=$downloadedBytes"
+                Log.w(LOG_TAG, message)
+                throw IOException("Downloaded bytes mismatch")
+            }
+            publishProgress(force = true)
         } finally {
             httpUrlConnection?.disconnect()
         }
+    }
+
+    private fun formatBytes(byteCount: Long): String {
+        if (byteCount <= 0L) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        var size = byteCount.toDouble()
+        var index = 0
+        while (size >= 1024 && index < units.lastIndex) {
+            size /= 1024.0
+            index++
+        }
+        return String.format(Locale.getDefault(), "%.1f %s", size, units[index])
     }
 
     private fun pickApkAsset(assets: JSONArray?): JSONObject? {
@@ -364,6 +447,8 @@ class DownloadAvailableUpdateWorker(
     }
 
     companion object {
+        private const val NOTIFICATION_ID = 2001L
+
         fun enqueuePeriodicKeep(
             context: Context,
             targetHour: Int = 3,
