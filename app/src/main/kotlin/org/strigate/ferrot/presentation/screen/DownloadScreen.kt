@@ -69,6 +69,7 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -136,17 +137,21 @@ fun DownloadScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                DownloadEvent.NavigateBack ->
+                DownloadEvent.NavigateBack -> {
                     backDispatcher?.onBackPressed()
+                }
 
-                is DownloadEvent.Play ->
+                is DownloadEvent.Play -> {
                     PlayHelper.playFileIfExists(context, event.path)
+                }
 
-                is DownloadEvent.Share ->
+                is DownloadEvent.Share -> {
                     ShareHelper.shareFileIfExists(context, event.path)
+                }
 
-                is DownloadEvent.Save ->
+                is DownloadEvent.Save -> {
                     SaveHelper.saveToDownloads(context, event.path)
+                }
             }
         }
     }
@@ -198,6 +203,7 @@ fun DownloadScreen(
                             .padding(contentPadding)
                             .fillMaxSize(),
                         data = state.data,
+                        pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
@@ -229,6 +235,7 @@ fun DownloadScreen(
 private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
+    pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
     onEnsureDefaults: (List<Long>) -> Unit,
@@ -242,50 +249,39 @@ private fun DownloadPager(
     pageSpacing: Dp,
 ) {
     val dimens = LocalDimens.current
-    val downloads = data.downloads
-    if (downloads.isEmpty()) {
+    val downloadIds = data.downloadIds
+    if (downloadIds.isEmpty()) {
         DownloadError()
     } else {
-        val initialIndex = downloads
-            .indexOfFirst { it.id == data.id }
+        val initialIndex = downloadIds
+            .indexOfFirst { it == data.id }
             .coerceAtLeast(0)
 
         val pagerState = rememberPagerState(
             initialPage = initialIndex,
-            pageCount = { downloads.size },
+            pageCount = { downloadIds.size },
         )
-        val resolvedPage = remember(downloads, selectedId) {
-            downloads.indexOfFirst { it.id == selectedId }
+        val resolvedPage = remember(downloadIds, selectedId) {
+            downloadIds.indexOfFirst { it == selectedId }
         }
 
-        LaunchedEffect(downloads) {
-            onEnsureDefaults(downloads.map { it.id })
+        LaunchedEffect(downloadIds) {
+            onEnsureDefaults(downloadIds)
         }
         LaunchedEffect(resolvedPage) {
             if (resolvedPage >= 0 && pagerState.currentPage != resolvedPage) {
                 pagerState.scrollToPage(resolvedPage)
             }
         }
-        LaunchedEffect(pagerState, downloads) {
+        LaunchedEffect(pagerState, downloadIds) {
             snapshotFlow { pagerState.currentPage }
                 .map { pageIndex ->
-                    downloads.getOrNull(pageIndex)?.id
+                    downloadIds.getOrNull(pageIndex)
                 }
                 .filterNotNull()
                 .distinctUntilChanged()
                 .collect { downloadId ->
                     onDownloadPageSelected(downloadId)
-                    val currentDownload = downloads.firstOrNull { it.id == downloadId }
-                    val isAudioAvailable = currentDownload?.audio?.filePath?.isNotBlank() == true
-                    val isVideoAvailable = currentDownload?.video?.filePath?.isNotBlank() == true
-                    val correctedMediaType = when {
-                        isAudioAvailable && selectedMedia == DownloadMediaType.AUDIO -> DownloadMediaType.AUDIO
-                        isVideoAvailable && selectedMedia == DownloadMediaType.VIDEO -> DownloadMediaType.VIDEO
-                        isAudioAvailable -> DownloadMediaType.AUDIO
-                        isVideoAvailable -> DownloadMediaType.VIDEO
-                        else -> DownloadMediaType.VIDEO
-                    }
-                    onSelectedMedia(downloadId, correctedMediaType)
                 }
         }
 
@@ -295,9 +291,14 @@ private fun DownloadPager(
             state = pagerState,
             contentPadding = pagePadding,
             pageSpacing = pageSpacing,
-            key = { page -> downloads[page].id },
+            beyondViewportPageCount = 0,
+            key = { page -> downloadIds[page] },
         ) { page ->
-            val download = downloads[page]
+            val downloadId = downloadIds[page]
+            val pageData by remember(downloadId) {
+                pageDataForId(downloadId)
+            }.collectAsStateWithLifecycle(initialValue = null)
+
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
@@ -306,28 +307,30 @@ private fun DownloadPager(
                 tonalElevation = dimens.tonalElevationLow,
                 shadowElevation = dimens.shadowElevationLow,
             ) {
-                DownloadPageContent(
-                    data = download,
-                    selectedMedia = selectedMedia,
-                    onMediaChange = { mediaType ->
-                        onSelectedMedia(download.id, mediaType)
-                    },
-                    onEnsureValidSelection = { mediaType ->
-                        onSelectedMedia(download.id, mediaType)
-                    },
-                    onPlayClick = {
-                        onPlayClick(download.id)
-                    },
-                    onSaveClick = {
-                        onSaveClick(download.id)
-                    },
-                    onShareClick = {
-                        onShareClick(download.id)
-                    },
-                    onRetryClick = {
-                        onRetryClick(download.id)
-                    },
-                )
+                pageData?.let { download ->
+                    DownloadPageContent(
+                        data = download,
+                        selectedMedia = selectedMedia,
+                        onMediaChange = { mediaType ->
+                            onSelectedMedia(download.id, mediaType)
+                        },
+                        onEnsureValidSelection = { mediaType ->
+                            onSelectedMedia(download.id, mediaType)
+                        },
+                        onPlayClick = {
+                            onPlayClick(download.id)
+                        },
+                        onSaveClick = {
+                            onSaveClick(download.id)
+                        },
+                        onShareClick = {
+                            onShareClick(download.id)
+                        },
+                        onRetryClick = {
+                            onRetryClick(download.id)
+                        },
+                    )
+                } ?: LoadingState()
             }
         }
     }
@@ -346,9 +349,16 @@ private fun DownloadPageContent(
 ) {
     val dimens = LocalDimens.current
     with(data) {
-        LaunchedEffect(audio?.filePath, selectedMedia) {
-            if (selectedMedia == DownloadMediaType.AUDIO && audio?.filePath.isNullOrBlank()) {
-                onEnsureValidSelection(DownloadMediaType.VIDEO)
+        LaunchedEffect(video?.filePath, audio?.filePath, selectedMedia) {
+            val hasVideo = !video?.filePath.isNullOrBlank()
+            val hasAudio = !audio?.filePath.isNullOrBlank()
+            val fallback = when {
+                selectedMedia == DownloadMediaType.VIDEO && !hasVideo && hasAudio -> DownloadMediaType.AUDIO
+                selectedMedia == DownloadMediaType.AUDIO && !hasAudio && hasVideo -> DownloadMediaType.VIDEO
+                else -> null
+            }
+            if (fallback != null) {
+                onEnsureValidSelection(fallback)
             }
         }
         Column(
