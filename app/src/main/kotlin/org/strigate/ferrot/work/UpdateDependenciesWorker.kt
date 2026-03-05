@@ -19,11 +19,9 @@ import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import org.strigate.ferrot.util.isAppInForeground
 import org.strigate.ferrot.util.setExpeditedIfAllowed
-import java.time.Duration.between
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 class UpdateDependenciesWorker(
@@ -66,21 +64,20 @@ class UpdateDependenciesWorker(
     }
 
     private suspend fun markCheckSuccess(): Result {
-        runCatching {
-            stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
-        }.onFailure {
-            Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
-        }
-        return Result.success()
+        return saveLastCheckAndReturn(Result.success())
     }
 
     private suspend fun markCheckFailure(): Result {
+        return saveLastCheckAndReturn(Result.failure())
+    }
+
+    private suspend fun saveLastCheckAndReturn(result: Result): Result {
         runCatching {
             stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
             Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
         }
-        return Result.failure()
+        return result
     }
 
     companion object {
@@ -90,20 +87,7 @@ class UpdateDependenciesWorker(
             targetHour: Int = 4,
             flexHours: Long = 2,
         ) {
-            val defaultZoneId = ZoneId.systemDefault()
-            val now = ZonedDateTime.now(defaultZoneId)
-            val targetDateTime = now
-                .withHour(targetHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
-
-            val firstRun = if (now.isBefore(targetDateTime)) {
-                targetDateTime
-            } else {
-                targetDateTime.plusDays(1)
-            }
-            val initialDelayMillis = between(now, firstRun).toMillis()
+            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
 
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,14 +11,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.DownloadMediaType
+import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -31,12 +30,11 @@ import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDown
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.mapper.toPageUiData
-import org.strigate.ferrot.presentation.model.DownloadStatusUiData
+import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -57,6 +55,14 @@ class DownloadViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = DownloadUiState.Loading,
     )
+
+    private val downloadIds = downloadWithMetadataUseCase
+        .getDownloadIdsWithMetadataAsFlowUseCase()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+            initialValue = emptyList(),
+        )
 
     private val _selectedId = MutableStateFlow(initialId)
     val selectedId: StateFlow<Long> = _selectedId
@@ -83,60 +89,60 @@ class DownloadViewModel @Inject constructor(
         viewModelScope.launch {
             clearNotificationsByDownloadIdUseCase(initialId)
         }
+        viewModelScope.launch {
+            downloadIds.collect { ids ->
+                if (ids.isNotEmpty() && _selectedId.value !in ids) {
+                    _selectedId.value = ids.first()
+                }
+            }
+        }
     }
 
     private fun getUiState(id: Long = initialId): Flow<DownloadUiState> {
         return downloadWithMetadataUseCase
             .getDownloadIdsWithMetadataAsFlowUseCase()
-            .flatMapLatest { ids ->
-                if (ids.isEmpty()) {
-                    flowOf(
-                        DownloadUiState.Data(
-                            DownloadUiData(
-                                downloads = emptyList(),
-                                id = null,
-                            )
-                        )
-                    )
-                } else {
-                    val flows = ids.map { downloadId ->
-                        val downloadFlow = downloadUseCase
-                            .getDownloadByIdAsFlowUseCase(downloadId)
-                        val videoFlow = downloadVideoUseCase
-                            .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
-                        val audioFlow = downloadAudioUseCase
-                            .getDownloadAudioByDownloadIdAsFlowUseCase(downloadId)
-                        val metadataFlow = downloadMetadataUseCase
-                            .getDownloadMetadataByIdAsFlowUseCase(downloadId)
-                        val progressFlow = downloadProgressUseCase
-                            .getDownloadProgressByDownloadIdAsFlowUseCase(downloadId)
-
-                        combine(
-                            downloadFlow,
-                            videoFlow,
-                            audioFlow,
-                            metadataFlow,
-                            progressFlow,
-                        ) { base, video, audio, metadata, progress ->
-                            base?.toPageUiData(
-                                video = video,
-                                audio = audio,
-                                metadata = metadata,
-                                progress = progress,
-                            )
-                        }.filterNotNull()
-                    }
-                    combine(flows) { pagesArray ->
-                        val pagesList = pagesArray.map { it }
-                        DownloadUiState.Data(
-                            DownloadUiData(
-                                downloads = pagesList,
-                                id = id,
-                            )
-                        )
-                    }
+            .map { ids ->
+                val selectedOrDefaultId = when {
+                    ids.isEmpty() -> null
+                    id in ids -> id
+                    _selectedId.value in ids -> _selectedId.value
+                    else -> ids.firstOrNull()
                 }
+                DownloadUiState.Data(
+                    DownloadUiData(
+                        downloadIds = ids,
+                        id = selectedOrDefaultId,
+                    )
+                )
             }
+    }
+
+    fun getDownloadPageUiData(downloadId: Long): Flow<DownloadPageUiData?> {
+        val downloadFlow = downloadUseCase
+            .getDownloadByIdAsFlowUseCase(downloadId)
+        val videoFlow = downloadVideoUseCase
+            .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
+        val audioFlow = downloadAudioUseCase
+            .getDownloadAudioByDownloadIdAsFlowUseCase(downloadId)
+        val metadataFlow = downloadMetadataUseCase
+            .getDownloadMetadataByIdAsFlowUseCase(downloadId)
+        val progressFlow = downloadProgressUseCase
+            .getDownloadProgressByDownloadIdAsFlowUseCase(downloadId)
+
+        return combine(
+            downloadFlow,
+            videoFlow,
+            audioFlow,
+            metadataFlow,
+            progressFlow,
+        ) { base, video, audio, metadata, progress ->
+            base?.toPageUiData(
+                video = video,
+                audio = audio,
+                metadata = metadata,
+                progress = progress,
+            )
+        }
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOAD)
@@ -154,12 +160,8 @@ class DownloadViewModel @Inject constructor(
     }
 
     fun markSeenIfCompleted(downloadId: Long) = viewModelScope.launch {
-        val state = uiState.value
-        if (state !is DownloadUiState.Data) {
-            return@launch
-        }
-        val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return@launch
-        if (download.status == DownloadStatusUiData.COMPLETED && !download.seen) {
+        val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
+        if (download.status == DownloadStatus.COMPLETED && !download.seen) {
             downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
         }
     }
@@ -190,8 +192,7 @@ class DownloadViewModel @Inject constructor(
 
     fun deleteDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        val state = uiState.value as? DownloadUiState.Data ?: return@launch
-        val isLastDownload = state.data.downloads.count { it.id != downloadId } == 0
+        val isLastDownload = downloadIds.value.count { it != downloadId } == 0
         downloadUseCase.requestDeleteDownloadsUseCase(
             downloadIds = listOf(downloadId),
         )
@@ -223,12 +224,8 @@ class DownloadViewModel @Inject constructor(
         startDownloadUseCase(downloadId)
     }
 
-    private fun getSelectedMediaFilePath(downloadId: Long): String? {
-        val state = uiState.value
-        if (state !is DownloadUiState.Data) {
-            return null
-        }
-        val download = state.data.downloads.firstOrNull { it.id == downloadId } ?: return null
+    private suspend fun getSelectedMediaFilePath(downloadId: Long): String? {
+        val download = getDownloadPageUiData(downloadId).first() ?: return null
         val mediaType = selectedMedia.value
         return when (mediaType) {
             DownloadMediaType.VIDEO -> download.video?.filePath

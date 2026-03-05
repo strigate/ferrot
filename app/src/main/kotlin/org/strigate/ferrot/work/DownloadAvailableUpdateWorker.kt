@@ -32,6 +32,7 @@ import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import org.strigate.ferrot.util.isAppInForeground
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.io.File
@@ -40,9 +41,6 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
-import java.time.Duration.between
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -349,21 +347,20 @@ class DownloadAvailableUpdateWorker(
     }
 
     private suspend fun markCheckSuccess(): Result {
-        runCatching {
-            stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
-        }.onFailure {
-            Log.w(LOG_TAG, "Failed to save last check timestamp", it)
-        }
-        return Result.success()
+        return saveLastCheckAndReturn(Result.success())
     }
 
     private suspend fun markCheckRetry(): Result {
+        return saveLastCheckAndReturn(Result.retry())
+    }
+
+    private suspend fun saveLastCheckAndReturn(result: Result): Result {
         runCatching {
             stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
             Log.w(LOG_TAG, "Failed to save last check timestamp", it)
         }
-        return Result.retry()
+        return result
     }
 
     companion object {
@@ -372,20 +369,7 @@ class DownloadAvailableUpdateWorker(
             targetHour: Int = 3,
             flexHours: Long = 1,
         ) {
-            val defaultZoneId = ZoneId.systemDefault()
-            val now = ZonedDateTime.now(defaultZoneId)
-            val targetDateTime = now
-                .withHour(targetHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
-
-            val firstRun = if (now.isBefore(targetDateTime)) {
-                targetDateTime
-            } else {
-                targetDateTime.plusDays(1)
-            }
-            val initialDelayMillis = between(now, firstRun).toMillis()
+            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresCharging(false)

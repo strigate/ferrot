@@ -23,9 +23,7 @@ import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
-import java.time.Duration.between
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import java.util.concurrent.TimeUnit
 
 class DeleteAllDuplicateDownloadsWorker(
@@ -135,20 +133,7 @@ class DeleteAllDuplicateDownloadsWorker(
             targetHour: Int = 3,
             flexHours: Long = 1,
         ) {
-            val zoneId = ZoneId.systemDefault()
-            val now = ZonedDateTime.now(zoneId)
-            val targetDateTime = now
-                .withHour(targetHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
-
-            val firstRun = if (now.isBefore(targetDateTime)) {
-                targetDateTime
-            } else {
-                targetDateTime.plusDays(1)
-            }
-            val initialDelayMillis = between(now, firstRun).toMillis()
+            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
             val periodicWorkRequest = PeriodicWorkRequestBuilder<DeleteAllDuplicateDownloadsWorker>(
                 repeatInterval = 1,
                 repeatIntervalTimeUnit = TimeUnit.DAYS,

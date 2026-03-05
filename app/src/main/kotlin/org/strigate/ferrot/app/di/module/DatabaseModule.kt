@@ -1,12 +1,15 @@
 package org.strigate.ferrot.app.di.module
 
 import android.content.Context
+import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import org.strigate.ferrot.app.Constants.Database.DATABASE_NAME
 import org.strigate.ferrot.app.Database
+import org.strigate.ferrot.app.applyMigrations
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
@@ -21,10 +24,11 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(
-        @ApplicationContext context: Context,
-    ): Database {
-        return Database.getInstance(context)
+    fun provideDatabase(@ApplicationContext appContext: Context): Database {
+        return Room
+            .databaseBuilder(appContext, Database::class.java, DATABASE_NAME)
+            .applyMigrations()
+            .build()
     }
 
     @Provides
