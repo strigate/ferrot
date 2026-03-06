@@ -193,8 +193,15 @@ fun DownloadScreen(
         content = { contentPadding ->
             val dimens = LocalDimens.current
             when (val state = uiState) {
-                is DownloadUiState.Loading -> LoadingState()
-                is DownloadUiState.Error -> DownloadError()
+                is DownloadUiState.Loading -> {
+                    LoadingState(
+                        modifier = modifier
+                            .padding(contentPadding)
+                            .fillMaxSize(),
+                        alignment = Alignment.Center,
+                    )
+                }
+
                 is DownloadUiState.Data -> {
                     val peekPadding = dimens.spacingMediumAlt
                     val pageSpacing = dimens.spacingSmall
@@ -225,6 +232,8 @@ fun DownloadScreen(
                         pageSpacing = pageSpacing,
                     )
                 }
+
+                is DownloadUiState.Error -> DownloadError()
             }
         },
     )
@@ -330,7 +339,11 @@ private fun DownloadPager(
                             onRetryClick(download.id)
                         },
                     )
-                } ?: LoadingState()
+                } ?: LoadingState(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    alignment = Alignment.Center,
+                )
             }
         }
     }
@@ -761,7 +774,9 @@ private fun DownloadError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize(),
+        alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_download),
     )
 }

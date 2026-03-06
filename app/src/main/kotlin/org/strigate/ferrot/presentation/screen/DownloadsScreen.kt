@@ -363,8 +363,14 @@ fun DownloadsScreen(
                 .fillMaxSize(),
         ) {
             when (val state = uiState) {
-                is DownloadsUiState.Loading -> LoadingState()
-                is DownloadsUiState.Error -> DownloadsError()
+                is DownloadsUiState.Loading -> {
+                    LoadingState(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        alignment = Alignment.Center,
+                    )
+                }
+
                 is DownloadsUiState.Data -> {
                     with(state.data) {
                         Column(
@@ -422,6 +428,8 @@ fun DownloadsScreen(
                         }
                     }
                 }
+
+                is DownloadsUiState.Error -> DownloadsError()
             }
         }
     }
@@ -825,7 +833,9 @@ private fun DownloadsError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize(),
+        alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_downloads),
     )
 }
