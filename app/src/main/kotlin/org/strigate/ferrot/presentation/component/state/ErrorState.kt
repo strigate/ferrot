@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -22,13 +21,13 @@ import org.strigate.ferrot.presentation.theme.LocalDimens
 @Composable
 fun ErrorState(
     modifier: Modifier = Modifier,
+    alignment: Alignment,
     text: String? = null,
 ) {
     val dimens = LocalDimens.current
     Box(
-        modifier = modifier
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center,
+        modifier = modifier,
+        contentAlignment = alignment,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
