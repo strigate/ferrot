@@ -5,12 +5,14 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -46,7 +48,7 @@ class DownloadsViewModel @Inject constructor(
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = DownloadsUiState.Loading,
     )
 
@@ -80,7 +82,7 @@ class DownloadsViewModel @Inject constructor(
                     availableUpdate = availableUpdateUiData,
                 ),
             )
-        }
+        }.flowOn(Dispatchers.Default)
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
@@ -118,5 +120,6 @@ class DownloadsViewModel @Inject constructor(
 
     companion object {
         private const val MAX_SEARCH_LENGTH = 100
+        private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }

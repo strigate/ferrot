@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -44,17 +46,11 @@ class DownloadViewModel @Inject constructor(
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
-    private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
+    downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
-
-    val uiState = getUiState().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-        initialValue = DownloadUiState.Loading,
-    )
 
     private val downloadIds = downloadWithMetadataUseCase
         .getDownloadIdsWithMetadataAsFlowUseCase()
@@ -63,6 +59,12 @@ class DownloadViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = emptyList(),
         )
+
+    val uiState = getUiState().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = DownloadUiState.Loading,
+    )
 
     private val _selectedId = MutableStateFlow(initialId)
     val selectedId: StateFlow<Long> = _selectedId
@@ -99,8 +101,7 @@ class DownloadViewModel @Inject constructor(
     }
 
     private fun getUiState(id: Long = initialId): Flow<DownloadUiState> {
-        return downloadWithMetadataUseCase
-            .getDownloadIdsWithMetadataAsFlowUseCase()
+        return downloadIds
             .map { ids ->
                 val selectedOrDefaultId = when {
                     ids.isEmpty() -> null
@@ -115,6 +116,7 @@ class DownloadViewModel @Inject constructor(
                     )
                 )
             }
+            .flowOn(Dispatchers.Default)
     }
 
     fun getDownloadPageUiData(downloadId: Long): Flow<DownloadPageUiData?> {
@@ -142,7 +144,7 @@ class DownloadViewModel @Inject constructor(
                 metadata = metadata,
                 progress = progress,
             )
-        }
+        }.flowOn(Dispatchers.Default)
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOAD)
