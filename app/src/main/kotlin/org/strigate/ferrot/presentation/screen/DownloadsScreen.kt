@@ -452,6 +452,7 @@ private fun DownloadsList(
 ) {
     val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
+    val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
 
     val showScrollToBottom by remember {
         derivedStateOf {
@@ -466,6 +467,9 @@ private fun DownloadsList(
     }
     var pendingDeleteIds by rememberSaveable {
         mutableStateOf(setOf<Long>())
+    }
+    var previousItemIds by remember {
+        mutableStateOf<List<Long>>(emptyList())
     }
     val visibleCount by remember(items, pendingDeleteIds) {
         derivedStateOf {
@@ -483,6 +487,12 @@ private fun DownloadsList(
             pendingDeleteIds = pendingDeleteIds + bulkDeleteIds
             pendingSnackIds = pendingSnackIds + bulkDeleteIds
         }
+    }
+    LaunchedEffect(itemIds, searchQuery) {
+        if (hasNewItemAtTop(previousItemIds, itemIds, searchQuery)) {
+            lazyListState.scrollToItem(0)
+        }
+        previousItemIds = itemIds
     }
     val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
@@ -516,16 +526,6 @@ private fun DownloadsList(
             pendingDeleteIds = emptySet()
         }
     }
-    LaunchedEffect(items.map { it.id to it.status }) {
-        if (items.any { it.status == DownloadStatusUiData.QUEUED }) {
-            runCatching {
-                coroutineScope.launch {
-                    lazyListState.animateScrollToItem(0)
-                }
-            }
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -633,7 +633,21 @@ private fun DownloadsList(
                                     },
                                     onPauseResume = {
                                         if (selectedIds.isEmpty()) {
+                                            val shouldScrollToTop = when (item.status) {
+                                                DownloadStatusUiData.QUEUED,
+                                                DownloadStatusUiData.WAITING_FOR_NETWORK,
+                                                DownloadStatusUiData.WAITING_FOR_WIFI,
+                                                DownloadStatusUiData.DOWNLOADING,
+                                                DownloadStatusUiData.METADATA -> false
+
+                                                else -> true
+                                            }
                                             onPauseResume(item)
+                                            if (shouldScrollToTop) {
+                                                coroutineScope.launch {
+                                                    lazyListState.animateScrollToItem(0)
+                                                }
+                                            }
                                         } else {
                                             onSelectionChange(
                                                 if (isSelected) {
@@ -726,6 +740,25 @@ private fun DownloadsList(
             }
         }
     }
+}
+
+internal fun hasNewItemAtTop(
+    previousItemIds: List<Long>,
+    currentItemIds: List<Long>,
+    searchQuery: String,
+): Boolean {
+    if (searchQuery.isNotBlank()) {
+        return false
+    }
+    if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
+        return false
+    }
+    if (currentItemIds.size <= previousItemIds.size) {
+        return false
+    }
+    val currentTopId = currentItemIds.first()
+    val previousTopId = previousItemIds.first()
+    return currentTopId != previousTopId && currentTopId !in previousItemIds
 }
 
 @Composable
