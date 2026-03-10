@@ -207,7 +207,7 @@ class DownloadsViewModelTest {
     @Test
     fun stopDownload_stillStopsWorker_whenStatusUpdateFails() = runTest(testDispatcher) {
         `when`(updateDownloadStatusByIdUseCase.invoke(7L, DownloadStatus.STOPPED))
-            .thenThrow(RuntimeException("boom"))
+            .thenThrow(RuntimeException("update failed"))
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(null),
