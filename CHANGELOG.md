@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.3 - 2026-03-14
+### Added
+- Download progress reporting for app update downloads
+- Unit tests covering download, downloads, about, settings, and updates ViewModels
+
+### Changed
+- Update downloads now validate cached and completed APK sizes before reuse or install
+- Refined download selection behavior and downloads list auto-scroll handling
+- Optimized Downloads and Download ViewModel flow collection and dispatching
+- Made loading and error state alignment configurable
+- Updated Core KTX, DataStore Preferences, Compose BOM, and Activity Compose versions
+
 ## 1.5.2 - 2026-03-05
 ### Changed
 - Replaced singleton Room database setup with a Hilt-provided builder module

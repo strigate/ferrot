@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.5.2"
-    const val VERSION_CODE = 23
+    const val BASE_VERSION = "1.5.3"
+    const val VERSION_CODE = 24
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
 }
@@ -224,12 +224,17 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    // Testing
+    // Test
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.byte.buddy)
+    testImplementation(libs.byte.buddy.agent)
+    testImplementation(libs.mockito.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

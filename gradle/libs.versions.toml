@@ -1,13 +1,12 @@
 [versions]
-agp = "9.1.0"
-coreKtx = "1.17.0"
+coreKtx = "1.18.0"
 coreSplashscreen = "1.2.0"
 startupRuntime = "1.2.0"
-datastorePreferences = "1.2.0"
-material = "1.13.0"
+datastorePreferences = "1.2.1"
 lifecycle = "2.10.0"
-composeBom = "2026.02.01"
-activityCompose = "1.12.4"
+composeBom = "2026.03.00"
+material = "1.13.0"
+activityCompose = "1.13.0"
 navigationCompose = "2.9.7"
 work = "2.11.1"
 dagger = "2.59.2"
@@ -17,9 +16,13 @@ youtubeDlAndroid = "0.18.1"
 uuidCreator = "6.1.1"
 coil = "3.4.0"
 firebaseBom = "34.10.0"
-junit = "4.13.2"
-junitVersion = "1.3.0"
+junit4 = "4.13.2"
+androidxJunit = "1.3.0"
 espressoCore = "3.7.0"
+coroutinesTest = "1.10.2"
+mockito = "5.22.0"
+byteBuddy = "1.18.7"
+agp = "9.1.0"
 kotlin = "2.3.10"
 ksp = "2.3.4"
 
@@ -38,7 +41,6 @@ androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifec
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -73,12 +75,18 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 # Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
-# Testing
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+# Test
+junit = { group = "junit", name = "junit", version.ref = "junit4" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }
+byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
+# Debug
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

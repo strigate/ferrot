@@ -3,6 +3,7 @@ package org.strigate.ferrot.presentation.screen
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -78,8 +80,14 @@ fun SettingsScreen(
                     .padding(contentPadding),
             ) {
                 when (val state = uiState) {
-                    is SettingsUiState.Loading -> LoadingState()
-                    is SettingsUiState.Error -> SettingsError()
+                    is SettingsUiState.Loading -> {
+                        LoadingState(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            alignment = Alignment.Center,
+                        )
+                    }
+
                     is SettingsUiState.Data -> {
                         with(state.data) {
                             Column(
@@ -125,6 +133,8 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    is SettingsUiState.Error -> SettingsError()
                 }
             }
         },
@@ -136,7 +146,9 @@ private fun SettingsError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize(),
+        alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_settings),
     )
 }

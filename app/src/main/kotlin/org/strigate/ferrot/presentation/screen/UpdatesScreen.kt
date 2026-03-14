@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -76,8 +77,14 @@ fun UpdatesScreen(
                     .padding(contentPadding),
             ) {
                 when (val state = uiState) {
-                    is UpdatesUiState.Loading -> LoadingState()
-                    is UpdatesUiState.Error -> UpdatesError()
+                    is UpdatesUiState.Loading -> {
+                        LoadingState(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            alignment = Alignment.Center,
+                        )
+                    }
+
                     is UpdatesUiState.Data -> {
                         with(state.data) {
                             Column(
@@ -141,6 +148,8 @@ fun UpdatesScreen(
                             }
                         }
                     }
+
+                    is UpdatesUiState.Error -> UpdatesError()
                 }
             }
         },
@@ -152,7 +161,9 @@ private fun UpdatesError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxSize(),
+        alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_update_settings),
     )
 }
