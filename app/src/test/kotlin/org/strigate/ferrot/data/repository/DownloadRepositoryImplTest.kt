@@ -15,6 +15,8 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
@@ -46,57 +48,27 @@ class DownloadRepositoryImplTest {
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
-        var insertedEntity: DownloadEntity? = null
         val download = sampleDownload()
-        val repository = DownloadRepositoryImpl(
-            object : DownloadDao {
-                override suspend fun insert(downloadEntity: DownloadEntity): Long {
-                    insertedEntity = downloadEntity
-                    return 12L
-                }
-
-                override suspend fun getAll(): List<DownloadEntity> = error("Not used")
-
-                override suspend fun getById(id: Long): DownloadEntity = error("Not used")
-
-                override fun getByIdAsFlow(id: Long) = error("Not used")
-
-                override suspend fun updateStatusById(id: Long, status: EntityStatus): Int =
-                    error("Not used")
-
-                override suspend fun updateSeenById(id: Long, seen: Boolean): Int =
-                    error("Not used")
-
-                override suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int =
-                    error("Not used")
-
-                override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int =
-                    error("Not used")
-
-                override suspend fun updateCompletedAtById(
-                    id: Long,
-                    completedAtMillis: Long?,
-                ): Int = error("Not used")
-
-                override suspend fun deleteById(id: Long): Int = error("Not used")
-            },
-        )
+        var insertedEntity: DownloadEntity? = null
+        doAnswer { invocation ->
+            insertedEntity = invocation.getArgument(0)
+            12L
+        }.`when`(downloadDao).insert(anyObject())
+        val repository = DownloadRepositoryImpl(downloadDao)
 
         val result = repository.save(download)
 
         assertEquals(12L, result)
-        assertEquals(
-            DownloadEntity(
-                id = download.id,
-                uid = download.uid,
-                url = download.url,
-                status = EntityStatus.QUEUED,
-                seen = download.seen,
-                errorMessage = download.errorMessage,
-                completedAtMillis = download.completedAtMillis,
-            ),
-            insertedEntity,
-        )
+        assertEquals(download.id, insertedEntity?.id)
+        assertEquals(download.uid, insertedEntity?.uid)
+        assertEquals(download.url, insertedEntity?.url)
+        assertEquals(EntityStatus.QUEUED, insertedEntity?.status)
+        assertEquals(download.seen, insertedEntity?.seen)
+        assertEquals(download.errorMessage, insertedEntity?.errorMessage)
+        assertEquals(download.completedAtMillis, insertedEntity?.completedAtMillis)
+        assertNull(insertedEntity?.startedAtMillis)
+
+        verify(downloadDao).insert(insertedEntity ?: error("Entity not captured"))
     }
 
     @Test
@@ -126,12 +98,8 @@ class DownloadRepositoryImplTest {
 
     @Test
     fun getById_returnsMappedDomain_whenDaoReturnsEntity() = runTest(testDispatcher) {
-        `when`(downloadDao.getById(4L)).thenReturn(
-            sampleEntity(
-                id = 4L,
-                status = EntityStatus.FAILED,
-            )
-        )
+        `when`(downloadDao.getById(4L))
+            .thenReturn(sampleEntity(id = 4L, status = EntityStatus.FAILED))
 
         val repository = DownloadRepositoryImpl(downloadDao)
         val result = repository.getById(4L)
@@ -175,6 +143,7 @@ class DownloadRepositoryImplTest {
         `when`(downloadDao.updateStartedAtById(3L, 100L)).thenReturn(1)
         `when`(downloadDao.updateCompletedAtById(3L, 200L)).thenReturn(1)
         `when`(downloadDao.deleteById(3L)).thenReturn(1)
+
         val repository = DownloadRepositoryImpl(downloadDao)
 
         assertEquals(1, repository.updateStatusById(3L, DownloadStatus.STOPPED))
@@ -221,4 +190,7 @@ class DownloadRepositoryImplTest {
         startedAtMillis = 20L,
         completedAtMillis = completedAtMillis,
     )
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> anyObject(): T = Mockito.any<T>() ?: null as T
 }
