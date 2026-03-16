@@ -39,6 +39,7 @@ fun ExpandableSettingsSection(
     var expanded by remember { mutableStateOf(initialExpanded) }
     Surface(
         modifier = modifier,
+        color = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.medium,
         tonalElevation = 4.dp,
         shadowElevation = 1.dp,

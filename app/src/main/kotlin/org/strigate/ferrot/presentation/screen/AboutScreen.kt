@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -100,6 +101,7 @@ fun AboutScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(contentPadding),
+                color = MaterialTheme.colorScheme.surface,
             ) {
                 Column(
                     modifier = Modifier
