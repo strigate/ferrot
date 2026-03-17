@@ -97,7 +97,7 @@ class DownloadViewModel @Inject constructor(
                 val currentSelectedId = _selectedId.value
                 if (ids.isNotEmpty() && currentSelectedId !in ids) {
                     val previousIndex = previousIds.indexOf(currentSelectedId)
-                    _selectedId.value = if (previousIndex in ids.indices) {
+                    _selectedId.value = if (previousIndex >= 0 && previousIndex < ids.size) {
                         ids[previousIndex]
                     } else {
                         ids.last()

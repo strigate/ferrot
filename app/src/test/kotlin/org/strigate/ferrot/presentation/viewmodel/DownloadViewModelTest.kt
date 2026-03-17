@@ -227,10 +227,7 @@ class DownloadViewModelTest {
             waitForUiState(viewModel)
 
             assertEquals(30L, viewModel.selectedId.value)
-            assertEquals(
-                30L,
-                (viewModel.uiState.value as DownloadUiState.Data).data.id,
-            )
+            assertEquals(30L, (viewModel.uiState.value as DownloadUiState.Data).data.id)
 
             collector.cancel()
         }

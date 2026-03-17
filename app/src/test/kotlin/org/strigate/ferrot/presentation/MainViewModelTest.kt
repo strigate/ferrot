@@ -3,8 +3,6 @@ package org.strigate.ferrot.presentation
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -20,6 +18,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
+import org.mockito.Mockito
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -45,6 +45,9 @@ class MainViewModelTest {
     @Mock
     private lateinit var startDownloadUseCase: StartDownloadUseCase
 
+    @Mock
+    private lateinit var downloadRepository: DownloadRepository
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
@@ -62,7 +65,7 @@ class MainViewModelTest {
 
     @Test
     fun navigateTo_updatesNavigationEvent() {
-        val viewModel = createViewModel().first
+        val viewModel = createViewModel()
 
         viewModel.navigateTo(route = Screen.Settings.route, popUpToDownloads = true)
 
@@ -77,7 +80,7 @@ class MainViewModelTest {
 
     @Test
     fun navigateTo_defaultsPopUpToDownloadsToFalse() {
-        val viewModel = createViewModel().first
+        val viewModel = createViewModel()
 
         viewModel.navigateTo(route = Screen.About.route)
 
@@ -96,8 +99,9 @@ class MainViewModelTest {
             status = DownloadStatus.QUEUED,
             seen = false,
         )
-        val (viewModel, downloadRepository) = createViewModel()
-        downloadRepository.downloadsById[42L] = download
+        val viewModel = createViewModel()
+        `when`(downloadRepository.getById(42L))
+            .thenReturn(download)
 
         viewModel.navigateToDownload(42L)
         advanceUntilIdle()
@@ -114,7 +118,9 @@ class MainViewModelTest {
     @Test
     fun navigateToDownload_keepsNavigationEmpty_whenDownloadDoesNotExist() =
         runTest(testDispatcher) {
-            val viewModel = createViewModel().first
+            val viewModel = createViewModel()
+            `when`(downloadRepository.getById(99L))
+                .thenReturn(null)
 
             viewModel.navigateToDownload(99L)
             advanceUntilIdle()
@@ -125,36 +131,45 @@ class MainViewModelTest {
     @Test
     fun startDownload_savesQueuedUnseenDownloadAndStartsIt_whenSaveSucceeds() =
         runTest(testDispatcher) {
-            val (viewModel, downloadRepository) = createViewModel()
-            downloadRepository.nextSaveResult = 12L
+            val viewModel = createViewModel()
+            val savedDownloads = mutableListOf<Download>()
+            doAnswer { invocation ->
+                savedDownloads += invocation.getArgument<Download>(0)
+                12L
+            }.`when`(downloadRepository).save(anyObject())
 
             viewModel.startDownload("https://example.com/video")
             advanceUntilIdle()
 
-            val savedDownload = downloadRepository.savedDownloads.single()
+            val savedDownload = savedDownloads.single()
             assertEquals("https://example.com/video", savedDownload.url)
             assertEquals(DownloadStatus.QUEUED, savedDownload.status)
             assertFalse(savedDownload.seen)
             assertNotNull(savedDownload.uid)
             assertFalse(savedDownload.uid.isBlank())
+
             verify(startDownloadUseCase).invoke(12L)
         }
 
     @Test
     fun startDownload_doesNotStartIt_whenSaveFails() = runTest(testDispatcher) {
-        val (viewModel, downloadRepository) = createViewModel()
-        downloadRepository.nextSaveResult = -1L
+        val viewModel = createViewModel()
+        val savedDownloads = mutableListOf<Download>()
+        doAnswer { invocation ->
+            savedDownloads += invocation.getArgument<Download>(0)
+            -1L
+        }.`when`(downloadRepository).save(anyObject())
 
         viewModel.startDownload("https://example.com/video")
         advanceUntilIdle()
 
-        assertEquals("https://example.com/video", downloadRepository.savedDownloads.single().url)
+        assertEquals("https://example.com/video", savedDownloads.single().url)
         verifyNoInteractions(startDownloadUseCase)
     }
 
     @Test
     fun resetNavigate_clearsNavigationEvent() {
-        val viewModel = createViewModel().first
+        val viewModel = createViewModel()
 
         viewModel.navigateTo(Screen.About.route)
         viewModel.resetNavigate()
@@ -162,46 +177,21 @@ class MainViewModelTest {
         assertNull(viewModel.navigateRoute.value)
     }
 
-    private fun createViewModel(): Pair<MainViewModel, FakeDownloadRepository> {
-        val downloadRepository = FakeDownloadRepository()
+    private fun createViewModel(): MainViewModel {
         val saveDownloadUseCase = SaveDownloadUseCase(downloadRepository)
         val getDownloadByIdUseCase = GetDownloadByIdUseCase(downloadRepository)
 
-        `when`(downloadUseCase.saveDownloadUseCase).thenReturn(saveDownloadUseCase)
-        `when`(downloadUseCase.getDownloadByIdUseCase).thenReturn(getDownloadByIdUseCase)
+        `when`(downloadUseCase.saveDownloadUseCase)
+            .thenReturn(saveDownloadUseCase)
+        `when`(downloadUseCase.getDownloadByIdUseCase)
+            .thenReturn(getDownloadByIdUseCase)
 
         return MainViewModel(
             downloadUseCase = downloadUseCase,
             startDownloadUseCase = startDownloadUseCase,
-        ) to downloadRepository
+        )
     }
 
-    private class FakeDownloadRepository : DownloadRepository {
-        val downloadsById = linkedMapOf<Long, Download>()
-        val savedDownloads = mutableListOf<Download>()
-        var nextSaveResult: Long = 1L
-
-        override suspend fun save(download: Download): Long {
-            savedDownloads += download
-            return nextSaveResult
-        }
-
-        override suspend fun getAll(): List<Download> = downloadsById.values.toList()
-
-        override suspend fun getById(id: Long): Download? = downloadsById[id]
-
-        override fun getByIdAsFlow(id: Long): Flow<Download?> = flowOf(downloadsById[id])
-
-        override suspend fun updateStatusById(id: Long, status: DownloadStatus): Int = 0
-
-        override suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int = 0
-
-        override suspend fun updateSeenById(id: Long, seen: Boolean): Int = 0
-
-        override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int = 0
-
-        override suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int = 0
-
-        override suspend fun deleteById(id: Long): Int = 0
-    }
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> anyObject(): T = Mockito.any<T>() ?: null as T
 }
