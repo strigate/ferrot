@@ -398,9 +398,9 @@ fun DownloadsScreen(
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
                                 snackbarHostState = snackbarHostState,
-                                onItemClick = {
+                                onItemClick = { item ->
                                     keyboardController?.hide()
-                                    navController.navigate(Screen.Download.route(it.id))
+                                    navController.navigate(Screen.Download.route(item.id))
                                 },
                                 onPauseResume = { item ->
                                     when (item.status) {
@@ -611,11 +611,8 @@ private fun DownloadsList(
                                 DownloadItem(
                                     item = item,
                                     isSelected = isSelected,
-                                    enabled = !deleteInProgress,
+                                    longClickEnabled = !deleteInProgress,
                                     onClick = {
-                                        if (deleteInProgress) {
-                                            return@DownloadItem
-                                        }
                                         if (selectedIds.isNotEmpty()) {
                                             onSelectionChange(
                                                 if (isSelected) {
@@ -765,7 +762,7 @@ internal fun hasNewItemAtTop(
 private fun DownloadItem(
     item: DownloadItemUiData,
     isSelected: Boolean,
-    enabled: Boolean,
+    longClickEnabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
@@ -784,9 +781,13 @@ private fun DownloadItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    enabled = enabled,
+                    enabled = true,
                     onClick = onClick,
-                    onLongClick = onLongClick,
+                    onLongClick = if (longClickEnabled) {
+                        onLongClick
+                    } else {
+                        null
+                    },
                 )
                 .padding(
                     vertical = dimens.spacingSmall,
