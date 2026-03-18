@@ -420,6 +420,7 @@ fun DownloadsScreen(
                             DownloadsList(
                                 items = downloads,
                                 selectedIds = selectedIds,
+                                pendingDeleteIds = pendingDeleteIds,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
                                 onItemClick = { item ->
@@ -464,6 +465,7 @@ fun DownloadsScreen(
 private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
+    pendingDeleteIds: Set<Long>,
     searchQuery: String,
     lazyListState: LazyListState,
     onItemClick: (DownloadItemUiData) -> Unit,
@@ -485,16 +487,20 @@ private fun DownloadsList(
     var previousItemIds by remember {
         mutableStateOf<List<Long>>(emptyList())
     }
+    var previousPendingDeleteIds by remember {
+        mutableStateOf<Set<Long>>(emptySet())
+    }
     val visibleCount by remember(items) {
         derivedStateOf {
             items.size
         }
     }
-    LaunchedEffect(itemIds, searchQuery) {
-        if (hasNewItemAtTop(previousItemIds, itemIds, searchQuery)) {
+    LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
+        if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
+        previousPendingDeleteIds = pendingDeleteIds
     }
     Box(
         modifier = Modifier
@@ -627,7 +633,7 @@ private fun DownloadsListRow(
                 DownloadItem(
                     item = item,
                     isSelected = isSelected,
-                    longClickEnabled = true,
+                    longClickEnabled = selectedIds.isEmpty(),
                     onClick = {
                         if (selectedIds.isNotEmpty()) {
                             onSelectionChange(toggleSelection(selectedIds, item.id))
@@ -730,6 +736,7 @@ private fun ScrollToBottomButton(
 internal fun hasNewItemAtTop(
     previousItemIds: List<Long>,
     currentItemIds: List<Long>,
+    previousPendingDeleteIds: Set<Long>,
     searchQuery: String,
 ): Boolean {
     if (searchQuery.isNotBlank()) {
@@ -738,12 +745,8 @@ internal fun hasNewItemAtTop(
     if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
         return false
     }
-    if (currentItemIds.size <= previousItemIds.size) {
-        return false
-    }
-    val currentTopId = currentItemIds.first()
-    val previousTopId = previousItemIds.first()
-    return currentTopId != previousTopId && currentTopId !in previousItemIds
+    val previousIdsSet = previousItemIds.toSet()
+    return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
 }
 
 @Composable
