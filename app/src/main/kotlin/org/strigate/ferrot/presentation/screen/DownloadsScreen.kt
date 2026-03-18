@@ -99,6 +99,8 @@ import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
 
+private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
@@ -120,7 +122,9 @@ fun DownloadsScreen(
 
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    val snackbarPendingDeleteMessage = stringResource(R.string.snackbar_delete_deleted)
+
+    val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
+    val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
 
     BackHandler(enabled = searchActive) {
         searchActive = false
@@ -129,7 +133,7 @@ fun DownloadsScreen(
     }
     LaunchedEffect(searchActive) {
         if (searchActive) {
-            delay(357)
+            delay(SEARCH_FOCUS_DELAY_MILLIS)
             searchFocusRequester.requestFocus()
             keyboardController?.show()
         }
@@ -160,6 +164,12 @@ fun DownloadsScreen(
         if (pendingDeleteIds.isEmpty()) {
             snackbarHostState.currentSnackbarData?.dismiss()
             return@LaunchedEffect
+        }
+        val deletedCount = pendingDeleteIds.size
+        val snackbarPendingDeleteMessage = if (deletedCount > 1) {
+            "$deletedCount $snackbarBulkDeleteMessage"
+        } else {
+            snackbarSingleDeleteMessage
         }
         val snackbarResult = snackbarHostState.showSnackbar(
             message = snackbarPendingDeleteMessage,
