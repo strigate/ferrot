@@ -114,26 +114,6 @@ fun DownloadScreen(
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
-
-    if (showConfirmDeleteDialog.value) {
-        ConfirmDialog(
-            title = stringResource(R.string.confirm_dialog_delete_download_title),
-            message = stringResource(R.string.confirm_dialog_delete_download_description),
-            positiveButtonText = stringResource(R.string.yes),
-            onPositiveClick = {
-                viewModel.deleteDownload()
-                showConfirmDeleteDialog.value = false
-            },
-            negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = {
-                showConfirmDeleteDialog.value = false
-            },
-            onDismissRequest = {
-                showConfirmDeleteDialog.value = false
-            },
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -154,6 +134,25 @@ fun DownloadScreen(
                 }
             }
         }
+    }
+
+    if (showConfirmDeleteDialog.value) {
+        ConfirmDialog(
+            title = stringResource(R.string.confirm_dialog_delete_download_title),
+            message = stringResource(R.string.confirm_dialog_delete_download_description),
+            positiveButtonText = stringResource(R.string.yes),
+            onPositiveClick = {
+                viewModel.deleteDownload()
+                showConfirmDeleteDialog.value = false
+            },
+            negativeButtonText = stringResource(R.string.no),
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
+        )
     }
 
     Scaffold(

@@ -48,7 +48,12 @@ class DownloadWithMetadataRepositoryImplTest {
             flowOf(
                 listOf(
                     sampleView(id = 1L, status = EntityStatus.DOWNLOADING),
-                    sampleView(id = 2L, status = EntityStatus.COMPLETED, completedAtMillis = 88L),
+                    sampleView(
+                        id = 2L,
+                        status = EntityStatus.COMPLETED,
+                        completedAtMillis = 88L,
+                        pendingDelete = true,
+                    ),
                 ),
             ),
         )
@@ -58,7 +63,12 @@ class DownloadWithMetadataRepositoryImplTest {
         assertEquals(
             listOf(
                 sampleDomain(id = 1L, status = DownloadStatus.DOWNLOADING),
-                sampleDomain(id = 2L, status = DownloadStatus.COMPLETED, completedAtMillis = 88L),
+                sampleDomain(
+                    id = 2L,
+                    status = DownloadStatus.COMPLETED,
+                    completedAtMillis = 88L,
+                    pendingDelete = true,
+                ),
             ),
             result,
         )
@@ -68,6 +78,7 @@ class DownloadWithMetadataRepositoryImplTest {
         id: Long,
         status: EntityStatus,
         completedAtMillis: Long? = null,
+        pendingDelete: Boolean = false,
     ) = DownloadWithMetadataView(
         id = id,
         url = "https://example.com/$id",
@@ -75,6 +86,7 @@ class DownloadWithMetadataRepositoryImplTest {
         thumbnailFilePath = "/tmp/$id.jpg",
         status = status,
         seen = id % 2L == 0L,
+        pendingDelete = pendingDelete,
         progressPercent = 35F,
         etaSeconds = 12L,
         bytesDownloaded = 1024L,
@@ -88,6 +100,7 @@ class DownloadWithMetadataRepositoryImplTest {
         id: Long,
         status: DownloadStatus,
         completedAtMillis: Long? = null,
+        pendingDelete: Boolean = false,
     ) = DownloadWithMetadata(
         id = id,
         url = "https://example.com/$id",
@@ -95,6 +108,7 @@ class DownloadWithMetadataRepositoryImplTest {
         thumbnailFilePath = "/tmp/$id.jpg",
         status = status,
         seen = id % 2L == 0L,
+        pendingDelete = pendingDelete,
         progressPercent = 35F,
         etaSeconds = 12L,
         bytesDownloaded = 1024L,

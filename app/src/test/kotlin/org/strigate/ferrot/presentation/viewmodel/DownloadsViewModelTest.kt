@@ -35,7 +35,9 @@ import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.GetAvailableUpdateAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
+import org.strigate.ferrot.domain.usecase.download.MarkDownloadsPendingDeleteUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusByIdUseCase
@@ -83,7 +85,13 @@ class DownloadsViewModelTest {
     private lateinit var updateDownloadProgressUseCase: UpdateDownloadProgressUseCase
 
     @Mock
-    private lateinit var requestDeleteDownloadsUseCase: RequestDeleteDownloadsUseCase
+    private lateinit var requestDeletePendingDownloadsDelayedUseCase: RequestDeletePendingDownloadsDelayedUseCase
+
+    @Mock
+    private lateinit var requestDeletePendingDownloadsImmediateUseCase: RequestDeletePendingDownloadsImmediateUseCase
+
+    @Mock
+    private lateinit var markDownloadsPendingDeleteUseCase: MarkDownloadsPendingDeleteUseCase
 
     @Before
     fun setUp() {
@@ -129,9 +137,40 @@ class DownloadsViewModelTest {
         assertEquals("Download 1", state.data.downloads[0].title)
         assertEquals("v1.2.3", state.data.availableUpdate?.tag)
         assertEquals("/tmp/update.apk", state.data.availableUpdate?.localFilePath)
+        assertTrue(state.data.pendingDeleteIds.isEmpty())
 
         collector.cancel()
     }
+
+    @Test
+    fun uiState_hidesPendingDeleteDownloads_andExposesPendingDeleteFlag() =
+        runTest(testDispatcher) {
+            val downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Visible Download"),
+                    createDownload(id = 2L, title = "Pending Delete", pendingDelete = true),
+                )
+            )
+            val updateFlow = MutableStateFlow<AvailableUpdate?>(null)
+            val viewModel = createViewModel(
+                downloadsFlow = downloadsFlow,
+                updateFlow = updateFlow,
+            )
+
+            val collector = backgroundScope.launch {
+                viewModel.uiState.collect()
+            }
+            waitForUiState(viewModel) { state ->
+                val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+                data.data.downloads.size == 1 && data.data.pendingDeleteIds.isNotEmpty()
+            }
+
+            val state = viewModel.uiState.value as DownloadsUiState.Data
+            assertEquals(listOf(1L), state.data.downloads.map { it.id })
+            assertEquals(setOf(2L), state.data.pendingDeleteIds)
+
+            collector.cancel()
+        }
 
     @Test
     fun updateSearchQuery_trimsInputAndFiltersDownloads() = runTest(testDispatcher) {
@@ -240,17 +279,48 @@ class DownloadsViewModelTest {
     }
 
     @Test
-    fun deleteDownloads_requestsDeletionForGivenIds() = runTest(testDispatcher) {
+    fun markDownloadsPendingDelete_marksIds_andRequestsDelayedDeleteWorker() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                downloadsFlow = MutableStateFlow(emptyList()),
+                updateFlow = MutableStateFlow(null),
+            )
+            val ids = setOf(7L)
+
+            viewModel.markDownloadsPendingDelete(ids)
+            advanceUntilIdle()
+
+            verify(markDownloadsPendingDeleteUseCase).invoke(ids, true)
+            verify(requestDeletePendingDownloadsDelayedUseCase).invoke()
+        }
+
+    @Test
+    fun markDownloadsPendingDelete_false_doesNotRequestDelayedDeleteWorker() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                downloadsFlow = MutableStateFlow(emptyList()),
+                updateFlow = MutableStateFlow(null),
+            )
+            val ids = setOf(7L)
+
+            viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
+            advanceUntilIdle()
+
+            verify(markDownloadsPendingDeleteUseCase).invoke(ids, false)
+            verify(requestDeletePendingDownloadsDelayedUseCase, never()).invoke()
+        }
+
+    @Test
+    fun requestDeletePendingDownloadsImmediate_requestsImmediateWorker() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(null),
         )
-        val ids = setOf(3L, 5L)
 
-        viewModel.deleteDownloads(ids)
+        viewModel.requestDeletePendingDownloadsImmediate()
         advanceUntilIdle()
 
-        verify(downloadUseCase.requestDeleteDownloadsUseCase).invoke(ids)
+        verify(requestDeletePendingDownloadsImmediateUseCase).invoke()
     }
 
     private fun createViewModel(
@@ -267,8 +337,12 @@ class DownloadsViewModelTest {
             .thenReturn(getAvailableUpdateAsFlowUseCase)
         `when`(downloadUseCase.updateDownloadStatusByIdUseCase)
             .thenReturn(updateDownloadStatusByIdUseCase)
-        `when`(downloadUseCase.requestDeleteDownloadsUseCase)
-            .thenReturn(requestDeleteDownloadsUseCase)
+        `when`(downloadUseCase.requestDeletePendingDownloadsDelayedUseCase)
+            .thenReturn(requestDeletePendingDownloadsDelayedUseCase)
+        `when`(downloadUseCase.requestDeletePendingDownloadsImmediateUseCase)
+            .thenReturn(requestDeletePendingDownloadsImmediateUseCase)
+        `when`(downloadUseCase.markDownloadsPendingDeleteUseCase)
+            .thenReturn(markDownloadsPendingDeleteUseCase)
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
 
@@ -297,6 +371,7 @@ class DownloadsViewModelTest {
     private fun createDownload(
         id: Long,
         title: String,
+        pendingDelete: Boolean = false,
     ) = DownloadWithMetadata(
         id = id,
         url = "https://example.com/$id",
@@ -304,6 +379,7 @@ class DownloadsViewModelTest {
         thumbnailFilePath = null,
         status = DownloadStatus.DOWNLOADING,
         seen = false,
+        pendingDelete = pendingDelete,
         progressPercent = 50f,
         etaSeconds = 10L,
         bytesDownloaded = 500L,

@@ -7,6 +7,7 @@ data class DownloadWithMetadata(
     val thumbnailFilePath: String?,
     val status: DownloadStatus,
     val seen: Boolean,
+    val pendingDelete: Boolean = false,
     val progressPercent: Float,
     val etaSeconds: Long?,
     val bytesDownloaded: Long,

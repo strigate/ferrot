@@ -64,7 +64,13 @@ class DownloadsViewModel @Inject constructor(
             _searchQuery,
         ) { downloadsWithMetadata, availableUpdate, query ->
             val text = query.text
+            val pendingDeleteIds = downloadsWithMetadata
+                .asSequence()
+                .filter { it.pendingDelete }
+                .map { it.id }
+                .toSet()
             val filteredDownloads = downloadsWithMetadata
+                .filter { !it.pendingDelete }
                 .map { it.toUiData() }
                 .filter {
                     text.isBlank() || it.title.contains(text, ignoreCase = true)
@@ -80,6 +86,7 @@ class DownloadsViewModel @Inject constructor(
                 data = DownloadsUiData(
                     downloads = filteredDownloads,
                     availableUpdate = availableUpdateUiData,
+                    pendingDeleteIds = pendingDeleteIds,
                 ),
             )
         }.flowOn(Dispatchers.Default)
@@ -112,10 +119,19 @@ class DownloadsViewModel @Inject constructor(
         startDownloadUseCase(downloadId)
     }
 
-    fun deleteDownloads(downloadIds: Set<Long>) = viewModelScope.launch {
-        downloadUseCase.requestDeleteDownloadsUseCase(
-            downloadIds = downloadIds,
-        )
+    fun markDownloadsPendingDelete(downloadIds: Set<Long>, pendingDelete: Boolean = true) {
+        viewModelScope.launch {
+            downloadUseCase.markDownloadsPendingDeleteUseCase(downloadIds, pendingDelete)
+            if (pendingDelete && downloadIds.isNotEmpty()) {
+                downloadUseCase.requestDeletePendingDownloadsDelayedUseCase()
+            }
+        }
+    }
+
+    fun requestDeletePendingDownloadsImmediate() {
+        viewModelScope.launch {
+            downloadUseCase.requestDeletePendingDownloadsImmediateUseCase()
+        }
     }
 
     companion object {
