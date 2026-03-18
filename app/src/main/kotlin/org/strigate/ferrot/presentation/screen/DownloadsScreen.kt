@@ -2,6 +2,7 @@ package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -485,6 +487,7 @@ private fun DownloadsList(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
+    val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
 
     val showScrollToBottom by remember {
         derivedStateOf {
@@ -568,8 +571,13 @@ private fun DownloadsList(
                         }
                     },
                     onSelectionChange = onSelectionChange,
-                    onSwipeDelete = { itemId ->
+                    isPendingDismiss = animatingOutIds[item.id] == true,
+                    onSwipeActionPerformed = { itemId ->
+                        animatingOutIds[itemId] = true
                         onSelectionChange(selectedIds - itemId)
+                    },
+                    onDismissAnimationFinished = { itemId ->
+                        animatingOutIds.remove(itemId)
                         onMarkPendingDelete(setOf(itemId))
                     },
                 )
@@ -597,84 +605,107 @@ private fun DownloadsList(
 private fun DownloadsListRow(
     item: DownloadItemUiData,
     selectedIds: Set<Long>,
+    isPendingDismiss: Boolean,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
-    onSwipeDelete: (Long) -> Unit,
+    onSwipeActionPerformed: (Long) -> Unit,
+    onDismissAnimationFinished: (Long) -> Unit,
 ) {
     val dimens = LocalDimens.current
     val isSelected = selectedIds.contains(item.id)
     val dismissState = rememberSwipeToDismissBoxState()
     var rowWidthPx by remember { mutableFloatStateOf(0f) }
+    val visibilityState = remember(item.id) { MutableTransitionState<Boolean>(true) }
 
-    Column {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    rowWidthPx = coordinates.size.width.toFloat()
-                },
-        ) {
-            SwipeToDismissBox(
-                state = dismissState,
-                enableDismissFromStartToEnd = false,
-                enableDismissFromEndToStart = selectedIds.isEmpty(),
-                backgroundContent = {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = MaterialTheme.shapes.medium,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.CenterEnd,
-                        ) {
-                            Icon(
-                                modifier = Modifier
-                                    .padding(end = dimens.spacingMedium),
-                                imageVector = Icons.Filled.Delete,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                contentDescription = null,
-                            )
-                        }
-                    }
-                },
-            ) {
-                DownloadItem(
-                    item = item,
-                    isSelected = isSelected,
-                    longClickEnabled = selectedIds.isEmpty(),
-                    onClick = {
-                        if (selectedIds.isNotEmpty()) {
-                            onSelectionChange(toggleSelection(selectedIds, item.id))
-                        } else {
-                            onItemClick(item)
-                        }
-                    },
-                    onLongClick = {
-                        onSelectionChange(selectedIds + item.id)
-                    },
-                    onPauseResume = {
-                        onPauseResume(item)
-                    },
-                    onOpen = {
-                        if (selectedIds.isNotEmpty()) {
-                            onSelectionChange(toggleSelection(selectedIds, item.id))
-                        } else {
-                            onItemClick(item)
-                        }
-                    },
-                )
+    LaunchedEffect(isPendingDismiss) {
+        visibilityState.targetState = !isPendingDismiss
+        if (!isPendingDismiss) {
+            runCatching {
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
         }
-        Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
     }
-
-    LaunchedEffect(Unit) {
-        runCatching {
-            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+    LaunchedEffect(
+        item.id,
+        isPendingDismiss,
+        visibilityState.currentState,
+        visibilityState.targetState,
+    ) {
+        if (isPendingDismiss && !visibilityState.currentState && !visibilityState.targetState) {
+            onDismissAnimationFinished(item.id)
         }
     }
+
+    AnimatedVisibility(
+        visibleState = visibilityState,
+        enter = Transitions.listItemEnter,
+        exit = Transitions.listItemExit,
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coordinates ->
+                        rowWidthPx = coordinates.size.width.toFloat()
+                    },
+            ) {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    enableDismissFromEndToStart = selectedIds.isEmpty(),
+                    backgroundContent = {
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = MaterialTheme.shapes.medium,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .padding(end = dimens.spacingMedium),
+                                    imageVector = Icons.Filled.Delete,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                    },
+                ) {
+                    DownloadItem(
+                        item = item,
+                        isSelected = isSelected,
+                        longClickEnabled = selectedIds.isEmpty(),
+                        onClick = {
+                            if (selectedIds.isNotEmpty()) {
+                                onSelectionChange(toggleSelection(selectedIds, item.id))
+                            } else {
+                                onItemClick(item)
+                            }
+                        },
+                        onLongClick = {
+                            onSelectionChange(selectedIds + item.id)
+                        },
+                        onPauseResume = {
+                            onPauseResume(item)
+                        },
+                        onOpen = {
+                            if (selectedIds.isNotEmpty()) {
+                                onSelectionChange(toggleSelection(selectedIds, item.id))
+                            } else {
+                                onItemClick(item)
+                            }
+                        },
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
+        }
+    }
+
     LaunchedEffect(dismissState) {
         snapshotFlow {
             Pair(
@@ -688,7 +719,7 @@ private fun DownloadsListRow(
                         rowWidthPx > 0f &&
                         abs(offsetPx) >= (rowWidthPx - 1f)
                 if (fullyAtEnd) {
-                    onSwipeDelete(item.id)
+                    onSwipeActionPerformed(item.id)
                 }
             }
     }
