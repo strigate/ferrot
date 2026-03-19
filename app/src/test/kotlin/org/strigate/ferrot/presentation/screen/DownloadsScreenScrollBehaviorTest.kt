@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,5 +76,16 @@ class DownloadsScreenScrollBehaviorTest {
         )
 
         assertFalse(shouldScroll)
+    }
+
+    @Test
+    fun getRestoredItemIds_returnsOnlyDownloadsThatWerePendingDeleteAndAreVisibleAgain() {
+        val restoredIds = getRestoredItemIds(
+            previousPendingDeleteIds = setOf(2L, 3L, 4L),
+            currentItemIds = listOf(1L, 2L, 4L, 5L),
+            currentPendingDeleteIds = setOf(4L),
+        )
+
+        assertEquals(setOf(2L), restoredIds)
     }
 }
