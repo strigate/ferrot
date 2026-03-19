@@ -503,6 +503,11 @@ private fun DownloadsList(
     var previousPendingDeleteIds by remember {
         mutableStateOf<Set<Long>>(emptySet())
     }
+    val restoringItemIds = getRestoredItemIds(
+        previousPendingDeleteIds = previousPendingDeleteIds,
+        currentItemIds = itemIds,
+        currentPendingDeleteIds = pendingDeleteIds,
+    )
     val visibleCount by remember(items) {
         derivedStateOf {
             items.size
@@ -556,6 +561,7 @@ private fun DownloadsList(
                 DownloadsListRow(
                     item = item,
                     selectedIds = selectedIds,
+                    isRestoring = item.id in restoringItemIds,
                     onItemClick = onItemClick,
                     onPauseResume = { clickedItem ->
                         if (selectedIds.isNotEmpty()) {
@@ -606,6 +612,7 @@ private fun DownloadsListRow(
     item: DownloadItemUiData,
     selectedIds: Set<Long>,
     isPendingDismiss: Boolean,
+    isRestoring: Boolean,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
@@ -613,13 +620,19 @@ private fun DownloadsListRow(
     onDismissAnimationFinished: (Long) -> Unit,
 ) {
     val dimens = LocalDimens.current
+
     val isSelected = selectedIds.contains(item.id)
     val dismissState = rememberSwipeToDismissBoxState()
     var rowWidthPx by remember { mutableFloatStateOf(0f) }
-    val visibilityState = remember(item.id) { MutableTransitionState<Boolean>(true) }
+    val visibilityState = remember(item.id) {
+        MutableTransitionState(!isRestoring)
+    }
 
-    LaunchedEffect(isPendingDismiss) {
+    LaunchedEffect(isPendingDismiss, isRestoring) {
         visibilityState.targetState = !isPendingDismiss
+        if (isRestoring) {
+            visibilityState.targetState = true
+        }
         if (!isPendingDismiss) {
             runCatching {
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
@@ -788,6 +801,19 @@ internal fun hasNewItemAtTop(
     }
     val previousIdsSet = previousItemIds.toSet()
     return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
+}
+
+internal fun getRestoredItemIds(
+    previousPendingDeleteIds: Set<Long>,
+    currentItemIds: List<Long>,
+    currentPendingDeleteIds: Set<Long>,
+): Set<Long> {
+    if (previousPendingDeleteIds.isEmpty()) {
+        return emptySet()
+    }
+    return previousPendingDeleteIds
+        .intersect(currentItemIds.toSet())
+        .minus(currentPendingDeleteIds)
 }
 
 @Composable
