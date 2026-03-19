@@ -53,7 +53,6 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="percent_0">0%</string>
-    <string name="percent_100">100%</string>
     <string name="share_to">Share to…</string>
     <string name="select_all">Select all</string>
     <string name="never">Never</string>
@@ -66,9 +65,8 @@
     <string name="download_complete">Download complete</string>
     <string name="download_failed">Download failed</string>
 
-    <string name="snackbar_bulk_delete_deleted">downloads deleted</string>
-    <string name="snackbar_bulk_delete_undo">Undo</string>
-    <string name="snackbar_delete_deleted">Download deleted</string>
+    <string name="snackbar_bulk_delete_bulk_delete">downloads deleted</string>
+    <string name="snackbar_delete_single_delete">Download deleted</string>
     <string name="snackbar_delete_undo">Undo</string>
     <string name="bulk_selected">selected</string>
 

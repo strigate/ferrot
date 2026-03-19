@@ -10,6 +10,7 @@ internal fun DownloadWithMetadataView.toDomain() = DownloadWithMetadata(
     thumbnailFilePath = thumbnailFilePath,
     status = status.toDomain(),
     seen = seen,
+    pendingDelete = pendingDelete,
     progressPercent = progressPercent,
     etaSeconds = etaSeconds,
     bytesDownloaded = bytesDownloaded,

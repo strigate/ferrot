@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -53,7 +54,14 @@ class DownloadViewModel @Inject constructor(
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
 
     private val downloadIds = downloadWithMetadataUseCase
-        .getDownloadIdsWithMetadataAsFlowUseCase()
+        .getDownloadsWithMetadataAsFlowUseCase()
+        .map { downloads ->
+            downloads
+                .asSequence()
+                .filter { !it.pendingDelete }
+                .map { it.id }
+                .toList()
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),

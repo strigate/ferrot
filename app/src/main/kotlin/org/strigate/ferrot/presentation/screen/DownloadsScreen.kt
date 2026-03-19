@@ -2,6 +2,7 @@ package org.strigate.ferrot.presentation.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -99,6 +101,8 @@ import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
 
+private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
@@ -120,7 +124,9 @@ fun DownloadsScreen(
 
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    var pendingBulkDeleteIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+
+    val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
+    val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
 
     BackHandler(enabled = searchActive) {
         searchActive = false
@@ -129,7 +135,7 @@ fun DownloadsScreen(
     }
     LaunchedEffect(searchActive) {
         if (searchActive) {
-            delay(357)
+            delay(SEARCH_FOCUS_DELAY_MILLIS)
             searchFocusRequester.requestFocus()
             keyboardController?.show()
         }
@@ -142,12 +148,44 @@ fun DownloadsScreen(
     val hasDownloads = allIds.isNotEmpty()
     val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
     val selectionMode = selectedIds.isNotEmpty()
+    val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
+    val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
         selectedIds = emptySet()
     }
     LaunchedEffect(Unit) {
         viewModel.logShown()
+    }
+    LifecycleEffect {
+        on(Lifecycle.Event.ON_START) {
+            viewModel.requestDeletePendingDownloadsImmediate()
+        }
+    }
+    LaunchedEffect(pendingDeleteIds) {
+        if (pendingDeleteIds.isEmpty()) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            return@LaunchedEffect
+        }
+        val deletedCount = pendingDeleteIds.size
+        val snackbarPendingDeleteMessage = if (deletedCount > 1) {
+            "$deletedCount $snackbarBulkDeleteMessage"
+        } else {
+            snackbarSingleDeleteMessage
+        }
+        val snackbarResult = snackbarHostState.showSnackbar(
+            message = snackbarPendingDeleteMessage,
+            actionLabel = snackbarUndoActionLabel,
+            duration = SnackbarDuration.Indefinite,
+            withDismissAction = true,
+        )
+        if (snackbarResult == SnackbarResult.ActionPerformed) {
+            viewModel.markDownloadsPendingDelete(pendingDeleteIds, pendingDelete = false)
+            return@LaunchedEffect
+        }
+        if (pendingDeleteIds.isNotEmpty()) {
+            viewModel.requestDeletePendingDownloadsImmediate()
+        }
     }
 
     Scaffold(
@@ -188,7 +226,7 @@ fun DownloadsScreen(
                         }
                         IconButton(
                             onClick = {
-                                pendingBulkDeleteIds = selectedIds
+                                viewModel.markDownloadsPendingDelete(selectedIds)
                                 selectedIds = emptySet()
                             },
                         ) {
@@ -394,11 +432,13 @@ fun DownloadsScreen(
                             DownloadsList(
                                 items = downloads,
                                 selectedIds = selectedIds,
-                                bulkDeleteIds = pendingBulkDeleteIds,
+                                pendingDeleteIds = pendingDeleteIds,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
-                                snackbarHostState = snackbarHostState,
                                 onItemClick = { item ->
+                                    if (pendingDeleteIds.isNotEmpty()) {
+                                        viewModel.requestDeletePendingDownloadsImmediate()
+                                    }
                                     keyboardController?.hide()
                                     navController.navigate(Screen.Download.route(item.id))
                                 },
@@ -420,10 +460,7 @@ fun DownloadsScreen(
                                 onSelectionChange = {
                                     selectedIds = it
                                 },
-                                onDelete = viewModel::deleteDownloads,
-                                onSnackbarShown = {
-                                    keyboardController?.hide()
-                                },
+                                onMarkPendingDelete = viewModel::markDownloadsPendingDelete,
                             )
                         }
                     }
@@ -440,19 +477,17 @@ fun DownloadsScreen(
 private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
-    bulkDeleteIds: Set<Long>,
+    pendingDeleteIds: Set<Long>,
     searchQuery: String,
     lazyListState: LazyListState,
-    snackbarHostState: SnackbarHostState,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
-    onDelete: (Set<Long>) -> Unit,
-    onSnackbarShown: () -> Unit,
+    onMarkPendingDelete: (Set<Long>) -> Unit,
 ) {
-    val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
     val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
+    val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
 
     val showScrollToBottom by remember {
         derivedStateOf {
@@ -462,69 +497,23 @@ private fun DownloadsList(
             !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
         }
     }
-    var pendingSnackIds by remember {
-        mutableStateOf<Set<Long>>(emptySet())
-    }
-    var pendingDeleteIds by rememberSaveable {
-        mutableStateOf(setOf<Long>())
-    }
     var previousItemIds by remember {
         mutableStateOf<List<Long>>(emptyList())
     }
-    val visibleCount by remember(items, pendingDeleteIds) {
+    var previousPendingDeleteIds by remember {
+        mutableStateOf<Set<Long>>(emptySet())
+    }
+    val visibleCount by remember(items) {
         derivedStateOf {
-            items.count { it.id !in pendingDeleteIds }
+            items.size
         }
     }
-    val deleteInProgress by remember {
-        derivedStateOf {
-            pendingSnackIds.isNotEmpty()
-        }
-    }
-
-    LaunchedEffect(bulkDeleteIds) {
-        if (bulkDeleteIds.isNotEmpty()) {
-            pendingDeleteIds = pendingDeleteIds + bulkDeleteIds
-            pendingSnackIds = pendingSnackIds + bulkDeleteIds
-        }
-    }
-    LaunchedEffect(itemIds, searchQuery) {
-        if (hasNewItemAtTop(previousItemIds, itemIds, searchQuery)) {
+    LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
+        if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
-    }
-    val snackbarDeletedMessage = stringResource(R.string.snackbar_delete_deleted)
-    val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
-
-    LaunchedEffect(pendingSnackIds) {
-        if (pendingSnackIds.isEmpty()) {
-            return@LaunchedEffect
-        }
-        snackbarHostState.currentSnackbarData?.dismiss()
-        onSnackbarShown()
-
-        val snackbarResult = snackbarHostState.showSnackbar(
-            message = snackbarDeletedMessage,
-            actionLabel = snackbarUndoActionLabel,
-            duration = SnackbarDuration.Short,
-            withDismissAction = true,
-        )
-        if (snackbarResult == SnackbarResult.ActionPerformed) {
-            pendingDeleteIds = pendingDeleteIds - pendingSnackIds
-        } else {
-            onDelete(pendingSnackIds)
-        }
-        pendingSnackIds = emptySet()
-    }
-    LifecycleEffect {
-        on(Lifecycle.Event.ON_STOP) {
-            if (pendingSnackIds.isNotEmpty()) {
-                onDelete(pendingSnackIds)
-            }
-            pendingSnackIds = emptySet()
-            pendingDeleteIds = emptySet()
-        }
+        previousPendingDeleteIds = pendingDeleteIds
     }
     Box(
         modifier = Modifier
@@ -564,177 +553,223 @@ private fun DownloadsList(
                 items = items,
                 key = { it.id },
             ) { item ->
-                val isSelected = selectedIds.contains(item.id)
-                val dismissState = rememberSwipeToDismissBoxState()
-                var rowWidthPx by remember {
-                    mutableFloatStateOf(0f)
-                }
-                val isVisible = !pendingDeleteIds.contains(item.id)
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = Transitions.listItemEnter,
-                    exit = Transitions.listItemExit,
-                ) {
-                    Column {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onGloballyPositioned { coordinates ->
-                                    rowWidthPx = coordinates.size.width.toFloat()
-                                },
-                        ) {
-                            SwipeToDismissBox(
-                                state = dismissState,
-                                enableDismissFromStartToEnd = false,
-                                enableDismissFromEndToStart = selectedIds.isEmpty(),
-                                backgroundContent = {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.errorContainer,
-                                        shape = MaterialTheme.shapes.medium,
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize(),
-                                            contentAlignment = Alignment.CenterEnd,
-                                        ) {
-                                            Icon(
-                                                modifier = Modifier
-                                                    .padding(end = dimens.spacingMedium),
-                                                imageVector = Icons.Filled.Delete,
-                                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                                contentDescription = null,
-                                            )
-                                        }
-                                    }
-                                },
-                            ) {
-                                DownloadItem(
-                                    item = item,
-                                    isSelected = isSelected,
-                                    longClickEnabled = !deleteInProgress,
-                                    onClick = {
-                                        if (selectedIds.isNotEmpty()) {
-                                            onSelectionChange(
-                                                if (isSelected) {
-                                                    selectedIds - item.id
-                                                } else {
-                                                    selectedIds + item.id
-                                                }
-                                            )
-                                        } else {
-                                            onItemClick(item)
-                                        }
-                                    },
-                                    onLongClick = {
-                                        onSelectionChange(selectedIds + item.id)
-                                    },
-                                    onPauseResume = {
-                                        if (selectedIds.isEmpty()) {
-                                            val shouldScrollToTop = when (item.status) {
-                                                DownloadStatusUiData.QUEUED,
-                                                DownloadStatusUiData.WAITING_FOR_NETWORK,
-                                                DownloadStatusUiData.WAITING_FOR_WIFI,
-                                                DownloadStatusUiData.DOWNLOADING,
-                                                DownloadStatusUiData.METADATA -> false
-
-                                                else -> true
-                                            }
-                                            onPauseResume(item)
-                                            if (shouldScrollToTop) {
-                                                coroutineScope.launch {
-                                                    lazyListState.animateScrollToItem(0)
-                                                }
-                                            }
-                                        } else {
-                                            onSelectionChange(
-                                                if (isSelected) {
-                                                    selectedIds - item.id
-                                                } else {
-                                                    selectedIds + item.id
-                                                }
-                                            )
-                                        }
-                                    },
-                                    onOpen = {
-                                        if (selectedIds.isEmpty()) {
-                                            onItemClick(item)
-                                        } else {
-                                            onSelectionChange(
-                                                if (isSelected) {
-                                                    selectedIds - item.id
-                                                } else {
-                                                    selectedIds + item.id
-                                                }
-                                            )
-                                        }
-                                    },
-                                )
+                DownloadsListRow(
+                    item = item,
+                    selectedIds = selectedIds,
+                    onItemClick = onItemClick,
+                    onPauseResume = { clickedItem ->
+                        if (selectedIds.isNotEmpty()) {
+                            onSelectionChange(toggleSelection(selectedIds, clickedItem.id))
+                            return@DownloadsListRow
+                        }
+                        val shouldScrollToTop = shouldScrollToTopOnPauseResume(clickedItem.status)
+                        onPauseResume(clickedItem)
+                        if (shouldScrollToTop) {
+                            coroutineScope.launch {
+                                lazyListState.animateScrollToItem(0)
                             }
                         }
-                        Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
-                    }
-                }
-
-                LaunchedEffect(isVisible) {
-                    if (isVisible) {
-                        runCatching {
-                            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-                        }
-                    }
-                }
-                LaunchedEffect(dismissState) {
-                    snapshotFlow {
-                        Pair(
-                            dismissState.currentValue,
-                            runCatching { dismissState.requireOffset() }.getOrDefault(0f),
-                        )
-                    }
-                        .distinctUntilChanged()
-                        .collectLatest { (value, offsetPx) ->
-                            val fullyAtEnd = value == SwipeToDismissBoxValue.EndToStart &&
-                                    rowWidthPx > 0f &&
-                                    abs(offsetPx) >= (rowWidthPx - 1f)
-
-                            if (fullyAtEnd) {
-                                onSelectionChange(selectedIds - item.id)
-                                pendingDeleteIds = pendingDeleteIds + item.id
-                                pendingSnackIds = pendingSnackIds + item.id
-                            }
-                        }
-                }
+                    },
+                    onSelectionChange = onSelectionChange,
+                    isPendingDismiss = animatingOutIds[item.id] == true,
+                    onSwipeActionPerformed = { itemId ->
+                        animatingOutIds[itemId] = true
+                        onSelectionChange(selectedIds - itemId)
+                    },
+                    onDismissAnimationFinished = { itemId ->
+                        animatingOutIds.remove(itemId)
+                        onMarkPendingDelete(setOf(itemId))
+                    },
+                )
             }
         }
         if (showScrollToBottom) {
-            IconButton(
+            ScrollToBottomButton(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(dimens.spacingMedium),
+                    .align(Alignment.BottomEnd),
                 onClick = {
                     coroutineScope.launch {
-                        lazyListState.animateScrollToItem(
-                            index = items.lastIndex,
-                        )
+                        val targetIndex = items.lastIndex
+                        if (targetIndex >= 0) {
+                            lazyListState.animateScrollToItem(index = targetIndex)
+                        }
                     }
                 },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DownloadsListRow(
+    item: DownloadItemUiData,
+    selectedIds: Set<Long>,
+    isPendingDismiss: Boolean,
+    onItemClick: (DownloadItemUiData) -> Unit,
+    onPauseResume: (DownloadItemUiData) -> Unit,
+    onSelectionChange: (Set<Long>) -> Unit,
+    onSwipeActionPerformed: (Long) -> Unit,
+    onDismissAnimationFinished: (Long) -> Unit,
+) {
+    val dimens = LocalDimens.current
+    val isSelected = selectedIds.contains(item.id)
+    val dismissState = rememberSwipeToDismissBoxState()
+    var rowWidthPx by remember { mutableFloatStateOf(0f) }
+    val visibilityState = remember(item.id) { MutableTransitionState<Boolean>(true) }
+
+    LaunchedEffect(isPendingDismiss) {
+        visibilityState.targetState = !isPendingDismiss
+        if (!isPendingDismiss) {
+            runCatching {
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+        }
+    }
+    LaunchedEffect(
+        item.id,
+        isPendingDismiss,
+        visibilityState.currentState,
+        visibilityState.targetState,
+    ) {
+        if (isPendingDismiss && !visibilityState.currentState && !visibilityState.targetState) {
+            onDismissAnimationFinished(item.id)
+        }
+    }
+
+    AnimatedVisibility(
+        visibleState = visibilityState,
+        enter = Transitions.listItemEnter,
+        exit = Transitions.listItemExit,
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coordinates ->
+                        rowWidthPx = coordinates.size.width.toFloat()
+                    },
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(dimens.overlayButton)
-                        .background(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(dimens.overlayButton / 2),
-                        ),
-                    contentAlignment = Alignment.Center,
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = false,
+                    enableDismissFromEndToStart = selectedIds.isEmpty(),
+                    backgroundContent = {
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = MaterialTheme.shapes.medium,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .padding(end = dimens.spacingMedium),
+                                    imageVector = Icons.Filled.Delete,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                    },
                 ) {
-                    Icon(
-                        modifier = Modifier
-                            .size(dimens.iconXSmall),
-                        imageVector = Icons.Default.ArrowDownward,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        contentDescription = null,
+                    DownloadItem(
+                        item = item,
+                        isSelected = isSelected,
+                        longClickEnabled = selectedIds.isEmpty(),
+                        onClick = {
+                            if (selectedIds.isNotEmpty()) {
+                                onSelectionChange(toggleSelection(selectedIds, item.id))
+                            } else {
+                                onItemClick(item)
+                            }
+                        },
+                        onLongClick = {
+                            onSelectionChange(selectedIds + item.id)
+                        },
+                        onPauseResume = {
+                            onPauseResume(item)
+                        },
+                        onOpen = {
+                            if (selectedIds.isNotEmpty()) {
+                                onSelectionChange(toggleSelection(selectedIds, item.id))
+                            } else {
+                                onItemClick(item)
+                            }
+                        },
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
+        }
+    }
+
+    LaunchedEffect(dismissState) {
+        snapshotFlow {
+            Pair(
+                dismissState.currentValue,
+                runCatching { dismissState.requireOffset() }.getOrDefault(0f),
+            )
+        }
+            .distinctUntilChanged()
+            .collectLatest { (value, offsetPx) ->
+                val fullyAtEnd = value == SwipeToDismissBoxValue.EndToStart &&
+                        rowWidthPx > 0f &&
+                        abs(offsetPx) >= (rowWidthPx - 1f)
+                if (fullyAtEnd) {
+                    onSwipeActionPerformed(item.id)
+                }
+            }
+    }
+}
+
+private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = when (status) {
+    DownloadStatusUiData.QUEUED,
+    DownloadStatusUiData.WAITING_FOR_NETWORK,
+    DownloadStatusUiData.WAITING_FOR_WIFI,
+    DownloadStatusUiData.DOWNLOADING,
+    DownloadStatusUiData.METADATA -> false
+
+    else -> true
+}
+
+private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> =
+    if (itemId in selectedIds) {
+        selectedIds - itemId
+    } else {
+        selectedIds + itemId
+    }
+
+@Composable
+private fun ScrollToBottomButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val dimens = LocalDimens.current
+    IconButton(
+        modifier = Modifier
+            .then(modifier)
+            .padding(dimens.spacingMedium),
+        onClick = onClick,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(dimens.overlayButton)
+                .background(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(dimens.overlayButton / 2),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                modifier = Modifier
+                    .size(dimens.iconXSmall),
+                imageVector = Icons.Default.ArrowDownward,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                contentDescription = null,
+            )
         }
     }
 }
@@ -742,6 +777,7 @@ private fun DownloadsList(
 internal fun hasNewItemAtTop(
     previousItemIds: List<Long>,
     currentItemIds: List<Long>,
+    previousPendingDeleteIds: Set<Long>,
     searchQuery: String,
 ): Boolean {
     if (searchQuery.isNotBlank()) {
@@ -750,12 +786,8 @@ internal fun hasNewItemAtTop(
     if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
         return false
     }
-    if (currentItemIds.size <= previousItemIds.size) {
-        return false
-    }
-    val currentTopId = currentItemIds.first()
-    val previousTopId = previousItemIds.first()
-    return currentTopId != previousTopId && currentTopId !in previousItemIds
+    val previousIdsSet = previousItemIds.toSet()
+    return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
 }
 
 @Composable
