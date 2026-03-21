@@ -184,6 +184,12 @@ class DownloadViewModel @Inject constructor(
         }
     }
 
+    fun markUnseenAndNavigateBack(id: Long? = null) = viewModelScope.launch {
+        val downloadId = id ?: _selectedId.value
+        downloadUseCase.updateDownloadsSeenUseCase(setOf(downloadId), seen = false)
+        _events.emit(DownloadEvent.NavigateBack)
+    }
+
     fun setSelectedMedia(type: DownloadMediaType, forDownloadId: Long? = null) {
         val downloadId = forDownloadId ?: _selectedId.value
         _selectedMediaById.value = _selectedMediaById

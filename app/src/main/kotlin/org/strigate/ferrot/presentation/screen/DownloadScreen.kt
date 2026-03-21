@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -176,6 +177,16 @@ fun DownloadScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            viewModel.markUnseenAndNavigateBack()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.VisibilityOff,
+                            contentDescription = stringResource(R.string.content_description_mark_unseen),
+                        )
+                    }
                     IconButton(
                         onClick = {
                             showConfirmDeleteDialog.value = true
