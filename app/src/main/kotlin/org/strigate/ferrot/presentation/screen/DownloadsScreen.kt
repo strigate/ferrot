@@ -59,6 +59,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -126,6 +127,8 @@ fun DownloadsScreen(
 
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var dismissingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
 
     val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
     val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
@@ -151,10 +154,14 @@ fun DownloadsScreen(
     val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
     val selectionMode = selectedIds.isNotEmpty()
     val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
+    val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
+
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.id in selectedIds && !it.seen }
     }
+    val latestSnackbarUndoDeleteIds by rememberUpdatedState(snackbarUndoDeleteIds)
+
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
@@ -169,11 +176,19 @@ fun DownloadsScreen(
         }
     }
     LaunchedEffect(pendingDeleteIds) {
-        if (pendingDeleteIds.isEmpty()) {
+        snackbarUndoDeleteIds = if (pendingDeleteIds.isEmpty()) {
+            emptySet()
+        } else {
+            snackbarUndoDeleteIds + pendingDeleteIds
+        }
+    }
+    LaunchedEffect(hasPendingDeletes) {
+        if (!hasPendingDeletes) {
             snackbarHostState.currentSnackbarData?.dismiss()
             return@LaunchedEffect
         }
-        val deletedCount = pendingDeleteIds.size
+        val snackbarDeleteIds = snackbarUndoDeleteIds.ifEmpty { pendingDeleteIds.toSet() }
+        val deletedCount = snackbarDeleteIds.size
         val snackbarPendingDeleteMessage = if (deletedCount > 1) {
             "$deletedCount $snackbarBulkDeleteMessage"
         } else {
@@ -186,10 +201,13 @@ fun DownloadsScreen(
             withDismissAction = true,
         )
         if (snackbarResult == SnackbarResult.ActionPerformed) {
-            viewModel.markDownloadsPendingDelete(pendingDeleteIds, pendingDelete = false)
+            viewModel.markDownloadsPendingDelete(
+                latestSnackbarUndoDeleteIds.ifEmpty { snackbarDeleteIds },
+                pendingDelete = false,
+            )
             return@LaunchedEffect
         }
-        if (pendingDeleteIds.isNotEmpty()) {
+        if (snackbarDeleteIds.isNotEmpty()) {
             viewModel.requestDeletePendingDownloadsImmediate()
         }
     }
@@ -250,7 +268,7 @@ fun DownloadsScreen(
                         }
                         IconButton(
                             onClick = {
-                                viewModel.markDownloadsPendingDelete(selectedIds)
+                                dismissingIds = dismissingIds + selectedIds
                                 selectedIds = emptySet()
                             },
                         ) {
@@ -456,6 +474,7 @@ fun DownloadsScreen(
                             DownloadsList(
                                 items = downloads,
                                 selectedIds = selectedIds,
+                                dismissingIds = dismissingIds,
                                 pendingDeleteIds = pendingDeleteIds,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
@@ -484,6 +503,10 @@ fun DownloadsScreen(
                                 onSelectionChange = {
                                     selectedIds = it
                                 },
+                                onBulkDismissAnimationFinished = { itemId ->
+                                    dismissingIds = dismissingIds - itemId
+                                    viewModel.markDownloadsPendingDelete(setOf(itemId))
+                                },
                                 onMarkPendingDelete = viewModel::markDownloadsPendingDelete,
                             )
                         }
@@ -501,12 +524,14 @@ fun DownloadsScreen(
 private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
+    dismissingIds: Set<Long>,
     pendingDeleteIds: Set<Long>,
     searchQuery: String,
     lazyListState: LazyListState,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
+    onBulkDismissAnimationFinished: (Long) -> Unit,
     onMarkPendingDelete: (Set<Long>) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -601,14 +626,18 @@ private fun DownloadsList(
                         }
                     },
                     onSelectionChange = onSelectionChange,
-                    isPendingDismiss = animatingOutIds[item.id] == true,
+                    isPendingDismiss = animatingOutIds[item.id] == true || item.id in dismissingIds,
                     onSwipeActionPerformed = { itemId ->
                         animatingOutIds[itemId] = true
                         onSelectionChange(selectedIds - itemId)
                     },
                     onDismissAnimationFinished = { itemId ->
-                        animatingOutIds.remove(itemId)
-                        onMarkPendingDelete(setOf(itemId))
+                        if (animatingOutIds.remove(itemId) == true) {
+                            onMarkPendingDelete(setOf(itemId))
+                        }
+                        if (itemId in dismissingIds) {
+                            onBulkDismissAnimationFinished(itemId)
+                        }
                     },
                 )
             }
