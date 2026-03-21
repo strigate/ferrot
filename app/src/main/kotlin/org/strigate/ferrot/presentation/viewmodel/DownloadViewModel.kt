@@ -180,7 +180,7 @@ class DownloadViewModel @Inject constructor(
     fun markSeenIfCompleted(downloadId: Long) = viewModelScope.launch {
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
         if (download.status == DownloadStatus.COMPLETED && !download.seen) {
-            downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
+            downloadUseCase.updateDownloadsSeenUseCase(setOf(downloadId))
         }
     }
 

@@ -127,7 +127,7 @@ class DownloadWorker(
                 resetProgressAndCleanup()
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
                 downloadUseCase.updateDownloadStartedAtUseCase(
-                    id = downloadId,
+                    downloadId = downloadId,
                     startedAtMillis = System.currentTimeMillis(),
                 )
 
@@ -137,7 +137,7 @@ class DownloadWorker(
                 }
 
                 Log.d(LOG_TAG, "$tag Downloading metadata")
-                downloadUseCase.updateDownloadStatusByIdUseCase(downloadId, DownloadStatus.METADATA)
+                downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     runCatching {
                         youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
@@ -211,8 +211,8 @@ class DownloadWorker(
                     wasDownloadDeleted = true
                     throw CancellationException()
                 }
-                downloadUseCase.updateDownloadStatusByIdUseCase(
-                    id = downloadId,
+                downloadUseCase.updateDownloadStatusUseCase(
+                    downloadId = downloadId,
                     status = DownloadStatus.DOWNLOADING,
                 )
 
@@ -370,13 +370,13 @@ class DownloadWorker(
                 )
 
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
-                downloadUseCase.updateDownloadStatusByIdUseCase(
+                downloadUseCase.updateDownloadStatusUseCase(
                     status = DownloadStatus.COMPLETED,
-                    id = downloadId,
+                    downloadId = downloadId,
                 )
                 downloadUseCase.updateDownloadCompletedAtUseCase(
                     completedAtMillis = System.currentTimeMillis(),
-                    id = downloadId,
+                    downloadId = downloadId,
                 )
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_COMPLETED)
 
@@ -449,7 +449,7 @@ class DownloadWorker(
             runCatching {
                 downloadUseCase.updateDownloadErrorMessageUseCase(
                     errorMessage = throwable.parseErrorMessage(),
-                    id = downloadId,
+                    downloadId = downloadId,
                 )
             }
         }
@@ -478,7 +478,7 @@ class DownloadWorker(
                 if (!shouldPreserve && status != DownloadStatus.COMPLETED && status != DownloadStatus.FAILED) {
                     resetProgressAndCleanup()
                     runCatching {
-                        downloadUseCase.updateDownloadStatusByIdUseCase(
+                        downloadUseCase.updateDownloadStatusUseCase(
                             downloadId,
                             DownloadStatus.STOPPED,
                         )
@@ -496,7 +496,7 @@ class DownloadWorker(
                 resetProgressAndCleanup()
                 runCatching {
                     analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_FAILED)
-                    downloadUseCase.updateDownloadStatusByIdUseCase(
+                    downloadUseCase.updateDownloadStatusUseCase(
                         downloadId,
                         DownloadStatus.FAILED,
                     )

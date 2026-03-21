@@ -25,8 +25,8 @@ interface DownloadDao {
     @Query("UPDATE download SET status = :status WHERE id = :id")
     suspend fun updateStatusById(id: Long, status: DownloadStatus): Int
 
-    @Query("UPDATE download SET seen = :seen WHERE id = :id")
-    suspend fun updateSeenById(id: Long, seen: Boolean): Int
+    @Query("UPDATE download SET seen = :seen WHERE id IN (:ids)")
+    suspend fun updateSeenByIds(ids: Collection<Long>, seen: Boolean): Int
 
     @Query("UPDATE download SET pendingDelete = :pendingDelete WHERE id IN (:ids)")
     suspend fun updatePendingDeleteByIds(ids: Collection<Long>, pendingDelete: Boolean): Int

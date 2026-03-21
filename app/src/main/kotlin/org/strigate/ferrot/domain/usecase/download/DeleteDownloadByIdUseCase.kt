@@ -6,7 +6,7 @@ import javax.inject.Inject
 class DeleteDownloadByIdUseCase @Inject constructor(
     private val downloadRepository: DownloadRepository,
 ) {
-    suspend operator fun invoke(id: Long): Boolean {
-        return downloadRepository.deleteById(id) >= 1
+    suspend operator fun invoke(downloadId: Long): Boolean {
+        return downloadRepository.deleteById(downloadId) >= 1
     }
 }

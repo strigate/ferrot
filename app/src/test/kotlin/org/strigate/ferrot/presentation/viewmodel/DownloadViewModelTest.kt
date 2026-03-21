@@ -50,7 +50,7 @@ import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
-import org.strigate.ferrot.domain.usecase.download.UpdateDownloadSeenByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadaudio.GetDownloadAudioByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.GetDownloadProgressByDownloadIdAsFlowUseCase
@@ -105,7 +105,7 @@ class DownloadViewModelTest {
     private lateinit var getDownloadByIdUseCase: GetDownloadByIdUseCase
 
     @Mock
-    private lateinit var updateDownloadSeenByIdUseCase: UpdateDownloadSeenByIdUseCase
+    private lateinit var updateDownloadsSeenUseCase: UpdateDownloadsSeenUseCase
 
     @Mock
     private lateinit var requestDeleteDownloadsUseCase: RequestDeleteDownloadsUseCase
@@ -376,7 +376,7 @@ class DownloadViewModelTest {
         viewModel.markSeenIfCompleted(7L)
         advanceUntilIdle()
 
-        verify(updateDownloadSeenByIdUseCase).invoke(7L)
+        verify(updateDownloadsSeenUseCase).invoke(setOf(7L))
     }
 
     @Test
@@ -394,9 +394,9 @@ class DownloadViewModelTest {
             viewModel.markSeenIfCompleted(9L)
             advanceUntilIdle()
 
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(7L)
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(8L)
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(9L)
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(7L))
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(8L))
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(9L))
         }
 
     @Test
@@ -742,8 +742,8 @@ class DownloadViewModelTest {
             .thenReturn(getDownloadByIdAsFlowUseCase)
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
-        `when`(downloadUseCase.updateDownloadSeenByIdUseCase)
-            .thenReturn(updateDownloadSeenByIdUseCase)
+        `when`(downloadUseCase.updateDownloadsSeenUseCase)
+            .thenReturn(updateDownloadsSeenUseCase)
         `when`(downloadUseCase.requestDeleteDownloadsUseCase)
             .thenReturn(requestDeleteDownloadsUseCase)
 
