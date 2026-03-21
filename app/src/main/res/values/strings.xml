@@ -123,6 +123,10 @@
     <string name="content_description_resume_download">Resume download</string>
     <string name="content_description_open_download">Open download</string>
     <string name="content_description_save_to_device">Save to device</string>
+    <string name="content_description_select_all">Select all</string>
+    <string name="content_description_mark_seen">Mark as seen</string>
+    <string name="content_description_mark_unseen">Mark as unseen</string>
+    <string name="content_description_delete">Delete</string>
     <string name="content_description_delete_download">Delete download</string>
     <string name="content_description_share_download">Share download</string>
     <string name="content_description_copy_to_clipboard">Copy to clipboard</string>

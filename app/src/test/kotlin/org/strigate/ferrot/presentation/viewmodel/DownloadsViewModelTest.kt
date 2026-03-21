@@ -35,12 +35,13 @@ import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.GetAvailableUpdateAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.download.MarkDownloadsPendingDeleteUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
-import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.presentation.state.DownloadsUiState
@@ -79,7 +80,7 @@ class DownloadsViewModelTest {
     private lateinit var getAvailableUpdateAsFlowUseCase: GetAvailableUpdateAsFlowUseCase
 
     @Mock
-    private lateinit var updateDownloadStatusByIdUseCase: UpdateDownloadStatusByIdUseCase
+    private lateinit var updateDownloadStatusUseCase: UpdateDownloadStatusUseCase
 
     @Mock
     private lateinit var updateDownloadProgressUseCase: UpdateDownloadProgressUseCase
@@ -91,7 +92,10 @@ class DownloadsViewModelTest {
     private lateinit var requestDeletePendingDownloadsImmediateUseCase: RequestDeletePendingDownloadsImmediateUseCase
 
     @Mock
-    private lateinit var markDownloadsPendingDeleteUseCase: MarkDownloadsPendingDeleteUseCase
+    private lateinit var updateDownloadsPendingDeleteUseCase: UpdateDownloadsPendingDeleteUseCase
+
+    @Mock
+    private lateinit var updateDownloadsSeenUseCase: UpdateDownloadsSeenUseCase
 
     @Before
     fun setUp() {
@@ -173,7 +177,7 @@ class DownloadsViewModelTest {
         }
 
     @Test
-    fun updateSearchQuery_trimsInputAndFiltersDownloads() = runTest(testDispatcher) {
+    fun updateSearchQuery_trimsInputAndFiltersDownloadsByTitle() = runTest(testDispatcher) {
         val downloadsFlow = MutableStateFlow(
             listOf(
                 createDownload(id = 1L, title = "Download 1"),
@@ -233,7 +237,7 @@ class DownloadsViewModelTest {
         viewModel.stopDownload(42L)
         advanceUntilIdle()
 
-        verify(updateDownloadStatusByIdUseCase).invoke(42L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.STOPPED)
         verify(updateDownloadProgressUseCase).invoke(
             id = 42L,
             progressPercent = 0F,
@@ -245,8 +249,9 @@ class DownloadsViewModelTest {
 
     @Test
     fun stopDownload_stillStopsWorker_whenStatusUpdateFails() = runTest(testDispatcher) {
-        `when`(updateDownloadStatusByIdUseCase.invoke(7L, DownloadStatus.STOPPED))
+        `when`(updateDownloadStatusUseCase.invoke(7L, DownloadStatus.STOPPED))
             .thenThrow(RuntimeException("update failed"))
+
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(null),
@@ -255,7 +260,7 @@ class DownloadsViewModelTest {
         viewModel.stopDownload(7L)
         advanceUntilIdle()
 
-        verify(updateDownloadStatusByIdUseCase).invoke(7L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase).invoke(7L, DownloadStatus.STOPPED)
         verify(updateDownloadProgressUseCase, never()).invoke(
             id = 7L,
             progressPercent = 0F,
@@ -279,6 +284,57 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun toggleDownloadsSeen_marksAllSeen_whenAnySelectedDownloadIsUnseen() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                downloadsFlow = MutableStateFlow(
+                    listOf(
+                        createDownload(id = 1L, title = "Seen", seen = true),
+                        createDownload(id = 2L, title = "Unseen", seen = false),
+                        createDownload(id = 3L, title = "Seen 2", seen = true),
+                    )
+                ),
+                updateFlow = MutableStateFlow(null),
+            )
+
+            val collector = backgroundScope.launch {
+                viewModel.uiState.collect()
+            }
+            waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+            viewModel.toggleDownloadsSeen(setOf(1L, 2L, 3L))
+            advanceUntilIdle()
+
+            verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L, 3L), true)
+            collector.cancel()
+        }
+
+    @Test
+    fun toggleDownloadsSeen_marksAllUnseen_whenAllSelectedDownloadsAreSeen() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                downloadsFlow = MutableStateFlow(
+                    listOf(
+                        createDownload(id = 1L, title = "Seen", seen = true),
+                        createDownload(id = 2L, title = "Seen 2", seen = true),
+                    )
+                ),
+                updateFlow = MutableStateFlow(null),
+            )
+
+            val collector = backgroundScope.launch {
+                viewModel.uiState.collect()
+            }
+            waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+            viewModel.toggleDownloadsSeen(setOf(1L, 2L))
+            advanceUntilIdle()
+
+            verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L), false)
+            collector.cancel()
+        }
+
+    @Test
     fun markDownloadsPendingDelete_marksIds_andRequestsDelayedDeleteWorker() =
         runTest(testDispatcher) {
             val viewModel = createViewModel(
@@ -290,7 +346,7 @@ class DownloadsViewModelTest {
             viewModel.markDownloadsPendingDelete(ids)
             advanceUntilIdle()
 
-            verify(markDownloadsPendingDeleteUseCase).invoke(ids, true)
+            verify(updateDownloadsPendingDeleteUseCase).invoke(ids, true)
             verify(requestDeletePendingDownloadsDelayedUseCase).invoke()
         }
 
@@ -306,7 +362,7 @@ class DownloadsViewModelTest {
             viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
             advanceUntilIdle()
 
-            verify(markDownloadsPendingDeleteUseCase).invoke(ids, false)
+            verify(updateDownloadsPendingDeleteUseCase).invoke(ids, false)
             verify(requestDeletePendingDownloadsDelayedUseCase, never()).invoke()
         }
 
@@ -335,14 +391,16 @@ class DownloadsViewModelTest {
             .thenReturn(getDownloadsWithMetadataAsFlowUseCase)
         `when`(availableUpdateUseCase.getAvailableUpdateAsFlowUseCase)
             .thenReturn(getAvailableUpdateAsFlowUseCase)
-        `when`(downloadUseCase.updateDownloadStatusByIdUseCase)
-            .thenReturn(updateDownloadStatusByIdUseCase)
+        `when`(downloadUseCase.updateDownloadStatusUseCase)
+            .thenReturn(updateDownloadStatusUseCase)
+        `when`(downloadUseCase.updateDownloadsSeenUseCase)
+            .thenReturn(updateDownloadsSeenUseCase)
         `when`(downloadUseCase.requestDeletePendingDownloadsDelayedUseCase)
             .thenReturn(requestDeletePendingDownloadsDelayedUseCase)
         `when`(downloadUseCase.requestDeletePendingDownloadsImmediateUseCase)
             .thenReturn(requestDeletePendingDownloadsImmediateUseCase)
-        `when`(downloadUseCase.markDownloadsPendingDeleteUseCase)
-            .thenReturn(markDownloadsPendingDeleteUseCase)
+        `when`(downloadUseCase.updateDownloadsPendingDeleteUseCase)
+            .thenReturn(updateDownloadsPendingDeleteUseCase)
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
 
@@ -371,14 +429,16 @@ class DownloadsViewModelTest {
     private fun createDownload(
         id: Long,
         title: String,
+        url: String = "https://example.com/$id",
+        seen: Boolean = false,
         pendingDelete: Boolean = false,
     ) = DownloadWithMetadata(
         id = id,
-        url = "https://example.com/$id",
+        url = url,
         title = title,
         thumbnailFilePath = null,
         status = DownloadStatus.DOWNLOADING,
-        seen = false,
+        seen = seen,
         pendingDelete = pendingDelete,
         progressPercent = 50f,
         etaSeconds = 10L,

@@ -3,13 +3,10 @@ package org.strigate.ferrot.domain.usecase.download
 import org.strigate.ferrot.domain.repository.DownloadRepository
 import javax.inject.Inject
 
-class MarkDownloadsPendingDeleteUseCase @Inject constructor(
+class UpdateDownloadsPendingDeleteUseCase @Inject constructor(
     private val downloadRepository: DownloadRepository,
 ) {
-    suspend operator fun invoke(
-        downloadIds: Collection<Long>,
-        pendingDelete: Boolean = true,
-    ) {
+    suspend operator fun invoke(downloadIds: Collection<Long>, pendingDelete: Boolean = true) {
         if (downloadIds.isEmpty()) {
             return
         }

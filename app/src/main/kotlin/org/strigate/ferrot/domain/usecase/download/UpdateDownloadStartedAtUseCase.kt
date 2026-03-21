@@ -6,7 +6,7 @@ import javax.inject.Inject
 class UpdateDownloadStartedAtUseCase @Inject constructor(
     private val downloadRepository: DownloadRepository
 ) {
-    suspend operator fun invoke(id: Long, startedAtMillis: Long?) {
-        downloadRepository.updateStartedAtById(id, startedAtMillis)
+    suspend operator fun invoke(downloadId: Long, startedAtMillis: Long?) {
+        downloadRepository.updateStartedAtById(downloadId, startedAtMillis)
     }
 }

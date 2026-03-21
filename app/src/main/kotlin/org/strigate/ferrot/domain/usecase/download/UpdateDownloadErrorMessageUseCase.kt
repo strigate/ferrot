@@ -6,7 +6,7 @@ import javax.inject.Inject
 class UpdateDownloadErrorMessageUseCase @Inject constructor(
     private val downloadRepository: DownloadRepository
 ) {
-    suspend operator fun invoke(id: Long, errorMessage: String?) {
-        downloadRepository.updateErrorMessageById(id, errorMessage)
+    suspend operator fun invoke(downloadId: Long, errorMessage: String?) {
+        downloadRepository.updateErrorMessageById(downloadId, errorMessage)
     }
 }

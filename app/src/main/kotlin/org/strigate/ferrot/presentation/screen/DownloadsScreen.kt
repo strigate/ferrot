@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -149,6 +151,10 @@ fun DownloadsScreen(
     val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
     val selectionMode = selectedIds.isNotEmpty()
     val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
+    val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads.any { it.id in selectedIds && !it.seen }
+    }
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
@@ -221,7 +227,25 @@ fun DownloadsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.SelectAll,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.content_description_select_all),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                viewModel.toggleDownloadsSeen(selectedIds)
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (shouldMarkSelectionSeen) {
+                                    Icons.Filled.Visibility
+                                } else {
+                                    Icons.Filled.VisibilityOff
+                                },
+                                contentDescription = if (shouldMarkSelectionSeen) {
+                                    stringResource(R.string.content_description_mark_seen)
+                                } else {
+                                    stringResource(R.string.content_description_mark_unseen)
+                                },
                             )
                         }
                         IconButton(
@@ -232,7 +256,7 @@ fun DownloadsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.content_description_delete),
                             )
                         }
                     },

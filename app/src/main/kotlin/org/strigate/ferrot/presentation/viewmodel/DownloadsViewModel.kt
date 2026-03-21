@@ -104,7 +104,7 @@ class DownloadsViewModel @Inject constructor(
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
         runCatching {
-            downloadUseCase.updateDownloadStatusByIdUseCase(downloadId, DownloadStatus.STOPPED)
+            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
             downloadProgressUseCase.updateDownloadProgressUseCase(
                 id = downloadId,
                 progressPercent = 0F,
@@ -119,9 +119,21 @@ class DownloadsViewModel @Inject constructor(
         startDownloadUseCase(downloadId)
     }
 
+    fun toggleDownloadsSeen(downloadIds: Set<Long>) {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val selectedDownloads = data.data.downloads.filter { it.id in downloadIds }
+        if (selectedDownloads.isEmpty()) {
+            return
+        }
+        val shouldMarkSeen = selectedDownloads.any { !it.seen }
+        viewModelScope.launch {
+            downloadUseCase.updateDownloadsSeenUseCase(downloadIds, shouldMarkSeen)
+        }
+    }
+
     fun markDownloadsPendingDelete(downloadIds: Set<Long>, pendingDelete: Boolean = true) {
         viewModelScope.launch {
-            downloadUseCase.markDownloadsPendingDeleteUseCase(downloadIds, pendingDelete)
+            downloadUseCase.updateDownloadsPendingDeleteUseCase(downloadIds, pendingDelete)
             if (pendingDelete && downloadIds.isNotEmpty()) {
                 downloadUseCase.requestDeletePendingDownloadsDelayedUseCase()
             }

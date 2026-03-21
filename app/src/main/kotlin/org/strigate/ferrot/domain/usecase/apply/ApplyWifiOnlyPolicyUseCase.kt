@@ -8,7 +8,7 @@ import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
-import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.util.NetworkOps
 import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
@@ -17,7 +17,7 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val getAllDownloadsUseCase: GetAllDownloadsUseCase,
     private val updateDownloadErrorMessageUseCase: UpdateDownloadErrorMessageUseCase,
-    private val updateDownloadStatusByIdUseCase: UpdateDownloadStatusByIdUseCase,
+    private val updateDownloadStatusUseCase: UpdateDownloadStatusUseCase,
     private val deleteDownloadFilesUseCase: DeleteDownloadFilesUseCase,
 ) {
     suspend operator fun invoke(isWifiOnly: Boolean) = withContext(Dispatchers.IO) {
@@ -42,9 +42,9 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                             updateDownloadErrorMessageUseCase(download.id, null)
                         }
                         runCatching {
-                            updateDownloadStatusByIdUseCase(
+                            updateDownloadStatusUseCase(
                                 status = DownloadStatus.WAITING_FOR_WIFI,
-                                id = download.id,
+                                downloadId = download.id,
                             )
                         }
                         runCatching {
@@ -67,9 +67,9 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                         updateDownloadErrorMessageUseCase(download.id, null)
                     }
                     runCatching {
-                        updateDownloadStatusByIdUseCase(
+                        updateDownloadStatusUseCase(
                             status = DownloadStatus.WAITING_FOR_NETWORK,
-                            id = download.id,
+                            downloadId = download.id,
                         )
                     }
                     DownloadWorker.enqueueOneTimeReplace(

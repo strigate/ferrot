@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetDownloadByIdUseCase @Inject constructor(
     private val downloadRepository: DownloadRepository,
 ) {
-    suspend operator fun invoke(id: Long): Download? {
-        return downloadRepository.getById(id)
+    suspend operator fun invoke(downloadId: Long): Download? {
+        return downloadRepository.getById(downloadId)
     }
 }

@@ -11,7 +11,7 @@ interface DownloadRepository {
     fun getByIdAsFlow(id: Long): Flow<Download?>
     suspend fun updateStatusById(id: Long, status: DownloadStatus): Int
     suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int
-    suspend fun updateSeenById(id: Long, seen: Boolean): Int
+    suspend fun updateSeenByIds(ids: Collection<Long>, seen: Boolean): Int
     suspend fun updatePendingDeleteByIds(ids: Collection<Long>, pendingDelete: Boolean): Int
     suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int
     suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int
