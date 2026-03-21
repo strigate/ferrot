@@ -20,8 +20,8 @@ class AvailableUpdateRepositoryImpl @Inject constructor(
             .map { it?.toDomain() }
     }
 
-    override suspend fun save(update: AvailableUpdate) {
-        availableUpdateDao.insertReplace(update.toEntity())
+    override suspend fun save(availableUpdate: AvailableUpdate) {
+        availableUpdateDao.insertReplace(availableUpdate.toEntity())
     }
 
     override suspend fun delete(): Int {
