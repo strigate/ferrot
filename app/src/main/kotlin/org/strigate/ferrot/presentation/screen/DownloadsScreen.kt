@@ -160,8 +160,6 @@ fun DownloadsScreen(
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.id in selectedIds && !it.seen }
     }
-    val latestSnackbarUndoDeleteIds by rememberUpdatedState(snackbarUndoDeleteIds)
-
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
@@ -175,42 +173,20 @@ fun DownloadsScreen(
             viewModel.requestDeletePendingDownloadsImmediate()
         }
     }
-    LaunchedEffect(pendingDeleteIds) {
-        snackbarUndoDeleteIds = if (pendingDeleteIds.isEmpty()) {
-            emptySet()
-        } else {
-            snackbarUndoDeleteIds + pendingDeleteIds
-        }
-    }
-    LaunchedEffect(hasPendingDeletes) {
-        if (!hasPendingDeletes) {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            return@LaunchedEffect
-        }
-        val snackbarDeleteIds = snackbarUndoDeleteIds.ifEmpty { pendingDeleteIds.toSet() }
-        val deletedCount = snackbarDeleteIds.size
-        val snackbarPendingDeleteMessage = if (deletedCount > 1) {
-            "$deletedCount $snackbarBulkDeleteMessage"
-        } else {
-            snackbarSingleDeleteMessage
-        }
-        val snackbarResult = snackbarHostState.showSnackbar(
-            message = snackbarPendingDeleteMessage,
-            actionLabel = snackbarUndoActionLabel,
-            duration = SnackbarDuration.Indefinite,
-            withDismissAction = true,
-        )
-        if (snackbarResult == SnackbarResult.ActionPerformed) {
-            viewModel.markDownloadsPendingDelete(
-                latestSnackbarUndoDeleteIds.ifEmpty { snackbarDeleteIds },
-                pendingDelete = false,
-            )
-            return@LaunchedEffect
-        }
-        if (snackbarDeleteIds.isNotEmpty()) {
-            viewModel.requestDeletePendingDownloadsImmediate()
-        }
-    }
+    PendingDeleteSnackbarEffect(
+        pendingDeleteIds = pendingDeleteIds,
+        hasPendingDeletes = hasPendingDeletes,
+        snackbarUndoDeleteIds = snackbarUndoDeleteIds,
+        onSnackbarUndoDeleteIdsChange = { snackbarUndoDeleteIds = it },
+        snackbarHostState = snackbarHostState,
+        snackbarSingleDeleteMessage = snackbarSingleDeleteMessage,
+        snackbarBulkDeleteMessage = snackbarBulkDeleteMessage,
+        snackbarUndoActionLabel = snackbarUndoActionLabel,
+        onUndoPendingDelete = { ids ->
+            viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
+        },
+        onConfirmPendingDelete = viewModel::requestDeletePendingDownloadsImmediate,
+    )
 
     Scaffold(
         modifier = modifier
@@ -519,6 +495,57 @@ fun DownloadsScreen(
     }
 }
 
+@Composable
+private fun PendingDeleteSnackbarEffect(
+    pendingDeleteIds: Set<Long>,
+    hasPendingDeletes: Boolean,
+    snackbarUndoDeleteIds: Set<Long>,
+    onSnackbarUndoDeleteIdsChange: (Set<Long>) -> Unit,
+    snackbarHostState: SnackbarHostState,
+    snackbarSingleDeleteMessage: String,
+    snackbarBulkDeleteMessage: String,
+    snackbarUndoActionLabel: String,
+    onUndoPendingDelete: (Set<Long>) -> Unit,
+    onConfirmPendingDelete: () -> Unit,
+) {
+    val latestSnackbarUndoDeleteIds by rememberUpdatedState(snackbarUndoDeleteIds)
+
+    LaunchedEffect(pendingDeleteIds) {
+        onSnackbarUndoDeleteIdsChange(
+            if (pendingDeleteIds.isEmpty()) {
+                emptySet()
+            } else {
+                snackbarUndoDeleteIds + pendingDeleteIds
+            }
+        )
+    }
+    LaunchedEffect(hasPendingDeletes) {
+        if (!hasPendingDeletes) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            return@LaunchedEffect
+        }
+        val snackbarDeleteIds = snackbarUndoDeleteIds.ifEmpty { pendingDeleteIds.toSet() }
+        val snackbarPendingDeleteMessage = getPendingDeleteSnackbarMessage(
+            snackbarDeleteIds = snackbarDeleteIds,
+            snackbarSingleDeleteMessage = snackbarSingleDeleteMessage,
+            snackbarBulkDeleteMessage = snackbarBulkDeleteMessage,
+        )
+        val snackbarResult = snackbarHostState.showSnackbar(
+            message = snackbarPendingDeleteMessage,
+            actionLabel = snackbarUndoActionLabel,
+            duration = SnackbarDuration.Indefinite,
+            withDismissAction = true,
+        )
+        if (snackbarResult == SnackbarResult.ActionPerformed) {
+            onUndoPendingDelete(latestSnackbarUndoDeleteIds.ifEmpty { snackbarDeleteIds })
+            return@LaunchedEffect
+        }
+        if (snackbarDeleteIds.isNotEmpty()) {
+            onConfirmPendingDelete()
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DownloadsList(
@@ -791,23 +818,6 @@ private fun DownloadsListRow(
     }
 }
 
-private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = when (status) {
-    DownloadStatusUiData.QUEUED,
-    DownloadStatusUiData.WAITING_FOR_NETWORK,
-    DownloadStatusUiData.WAITING_FOR_WIFI,
-    DownloadStatusUiData.DOWNLOADING,
-    DownloadStatusUiData.METADATA -> false
-
-    else -> true
-}
-
-private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> =
-    if (itemId in selectedIds) {
-        selectedIds - itemId
-    } else {
-        selectedIds + itemId
-    }
-
 @Composable
 private fun ScrollToBottomButton(
     modifier: Modifier = Modifier,
@@ -838,35 +848,6 @@ private fun ScrollToBottomButton(
             )
         }
     }
-}
-
-internal fun hasNewItemAtTop(
-    previousItemIds: List<Long>,
-    currentItemIds: List<Long>,
-    previousPendingDeleteIds: Set<Long>,
-    searchQuery: String,
-): Boolean {
-    if (searchQuery.isNotBlank()) {
-        return false
-    }
-    if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
-        return false
-    }
-    val previousIdsSet = previousItemIds.toSet()
-    return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
-}
-
-internal fun getRestoredItemIds(
-    previousPendingDeleteIds: Set<Long>,
-    currentItemIds: List<Long>,
-    currentPendingDeleteIds: Set<Long>,
-): Set<Long> {
-    if (previousPendingDeleteIds.isEmpty()) {
-        return emptySet()
-    }
-    return previousPendingDeleteIds
-        .intersect(currentItemIds.toSet())
-        .minus(currentPendingDeleteIds)
 }
 
 @Composable
@@ -983,4 +964,64 @@ private fun DownloadsError(
         alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_downloads),
     )
+}
+
+private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = when (status) {
+    DownloadStatusUiData.QUEUED,
+    DownloadStatusUiData.WAITING_FOR_NETWORK,
+    DownloadStatusUiData.WAITING_FOR_WIFI,
+    DownloadStatusUiData.DOWNLOADING,
+    DownloadStatusUiData.METADATA -> false
+
+    else -> true
+}
+
+private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
+    return if (itemId in selectedIds) {
+        selectedIds - itemId
+    } else {
+        selectedIds + itemId
+    }
+}
+
+internal fun hasNewItemAtTop(
+    previousItemIds: List<Long>,
+    currentItemIds: List<Long>,
+    previousPendingDeleteIds: Set<Long>,
+    searchQuery: String,
+): Boolean {
+    if (searchQuery.isNotBlank()) {
+        return false
+    }
+    if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
+        return false
+    }
+    val previousIdsSet = previousItemIds.toSet()
+    return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
+}
+
+internal fun getRestoredItemIds(
+    previousPendingDeleteIds: Set<Long>,
+    currentItemIds: List<Long>,
+    currentPendingDeleteIds: Set<Long>,
+): Set<Long> {
+    if (previousPendingDeleteIds.isEmpty()) {
+        return emptySet()
+    }
+    return previousPendingDeleteIds
+        .intersect(currentItemIds.toSet())
+        .minus(currentPendingDeleteIds)
+}
+
+private fun getPendingDeleteSnackbarMessage(
+    snackbarDeleteIds: Set<Long>,
+    snackbarSingleDeleteMessage: String,
+    snackbarBulkDeleteMessage: String,
+): String {
+    val deletedCount = snackbarDeleteIds.size
+    return if (deletedCount > 1) {
+        "$deletedCount $snackbarBulkDeleteMessage"
+    } else {
+        snackbarSingleDeleteMessage
+    }
 }
