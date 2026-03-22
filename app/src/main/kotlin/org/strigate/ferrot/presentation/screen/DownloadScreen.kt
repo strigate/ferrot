@@ -224,10 +224,8 @@ fun DownloadScreen(
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
-                        onDownloadPageSelected = { downloadId ->
-                            viewModel.selectDownload(downloadId)
-                            viewModel.markSeenIfCompleted(downloadId)
-                        },
+                        onDownloadPageSelected = viewModel::selectDownload,
+                        onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
                         onSelectedMedia = { downloadId, type ->
                             viewModel.setSelectedMedia(type, downloadId)
                         },
@@ -259,6 +257,7 @@ private fun DownloadPager(
     selectedMedia: DownloadMediaType,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
+    onVisibleCompletedUnseenDownload: (Long) -> Unit,
     onSelectedMedia: (Long, DownloadMediaType) -> Unit,
     onPlayClick: (Long) -> Unit,
     onSaveClick: (Long) -> Unit,
@@ -317,6 +316,7 @@ private fun DownloadPager(
             val pageData by remember(downloadId) {
                 pageDataForId(downloadId)
             }.collectAsStateWithLifecycle(initialValue = null)
+            val isCurrentPage = pagerState.currentPage == page
 
             Surface(
                 modifier = Modifier
@@ -329,7 +329,9 @@ private fun DownloadPager(
                 pageData?.let { download ->
                     DownloadPageContent(
                         data = download,
+                        isCurrentPage = isCurrentPage,
                         selectedMedia = selectedMedia,
+                        onCompletedUnseenVisible = onVisibleCompletedUnseenDownload,
                         onMediaChange = { mediaType ->
                             onSelectedMedia(download.id, mediaType)
                         },
@@ -362,7 +364,9 @@ private fun DownloadPager(
 @Composable
 private fun DownloadPageContent(
     data: DownloadPageUiData,
+    isCurrentPage: Boolean,
     selectedMedia: DownloadMediaType,
+    onCompletedUnseenVisible: (Long) -> Unit,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
     onPlayClick: () -> Unit,
@@ -372,6 +376,11 @@ private fun DownloadPageContent(
 ) {
     val dimens = LocalDimens.current
     with(data) {
+        LaunchedEffect(id, status, seen, isCurrentPage) {
+            if (isCurrentPage && status == DownloadStatusUiData.COMPLETED && !seen) {
+                onCompletedUnseenVisible(id)
+            }
+        }
         LaunchedEffect(video?.filePath, audio?.filePath, selectedMedia) {
             val hasVideo = !video?.filePath.isNullOrBlank()
             val hasAudio = !audio?.filePath.isNullOrBlank()
