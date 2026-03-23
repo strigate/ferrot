@@ -7,6 +7,26 @@ import org.junit.Test
 
 class DownloadsScreenScrollBehaviorTest {
     @Test
+    fun getBulkDeleteVisibleIds_returnsOnlySelectedIdsThatAreCurrentlyVisible() {
+        val visibleSelectedIds = getBulkDeleteVisibleIds(
+            selectedIds = setOf(1L, 2L, 3L, 4L),
+            visibleItemKeys = listOf(9L, 3L, "header", 1L),
+        )
+
+        assertEquals(setOf(1L, 3L), visibleSelectedIds)
+    }
+
+    @Test
+    fun getBulkDeleteVisibleIds_returnsEmptySet_whenNothingSelectedIsVisible() {
+        val visibleSelectedIds = getBulkDeleteVisibleIds(
+            selectedIds = setOf(1L, 2L),
+            visibleItemKeys = listOf(9L, 8L),
+        )
+
+        assertTrue(visibleSelectedIds.isEmpty())
+    }
+
+    @Test
     fun hasNewItemAtTop_returnsTrue_whenNewItemIsInsertedAtTop() {
         val shouldScroll = hasNewItemAtTop(
             previousItemIds = listOf(3L, 2L, 1L),
