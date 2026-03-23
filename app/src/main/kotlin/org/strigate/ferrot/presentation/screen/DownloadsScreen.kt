@@ -244,7 +244,15 @@ fun DownloadsScreen(
                         }
                         IconButton(
                             onClick = {
-                                dismissingIds = dismissingIds + selectedIds
+                                val visibleSelectedIds = getBulkDeleteVisibleIds(
+                                    selectedIds = selectedIds,
+                                    visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                                )
+                                val hiddenSelectedIds = selectedIds - visibleSelectedIds
+                                dismissingIds = dismissingIds + visibleSelectedIds
+                                if (hiddenSelectedIds.isNotEmpty()) {
+                                    viewModel.markDownloadsPendingDelete(hiddenSelectedIds)
+                                }
                                 selectedIds = emptySet()
                             },
                         ) {
@@ -982,6 +990,20 @@ private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
     } else {
         selectedIds + itemId
     }
+}
+
+internal fun getBulkDeleteVisibleIds(
+    selectedIds: Set<Long>,
+    visibleItemKeys: List<Any>,
+): Set<Long> {
+    if (selectedIds.isEmpty() || visibleItemKeys.isEmpty()) {
+        return emptySet()
+    }
+    val visibleIds = visibleItemKeys
+        .mapNotNull { it as? Long }
+        .toSet()
+
+    return selectedIds.intersect(visibleIds)
 }
 
 internal fun hasNewItemAtTop(
