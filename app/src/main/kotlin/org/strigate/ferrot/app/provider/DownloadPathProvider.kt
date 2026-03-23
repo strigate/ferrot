@@ -16,6 +16,11 @@ interface DownloadPathProvider {
 class DownloadPathProviderImpl @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
 ) : DownloadPathProvider {
-    override fun outputDir(): File = File(appContext.filesDir, DOWNLOADS).apply { mkdirs() }
-    override fun uidDir(uid: String): File = File(outputDir(), uid).apply { mkdirs() }
+    override fun outputDir(): File {
+        return File(appContext.filesDir, DOWNLOADS).apply { mkdirs() }
+    }
+
+    override fun uidDir(uid: String): File {
+        return File(outputDir(), uid).apply { mkdirs() }
+    }
 }

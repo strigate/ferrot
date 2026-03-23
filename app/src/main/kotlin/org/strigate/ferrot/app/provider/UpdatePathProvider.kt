@@ -16,6 +16,11 @@ interface UpdatePathProvider {
 class UpdatePathProviderImpl @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
 ) : UpdatePathProvider {
-    override fun updatesDir(): File = File(appContext.filesDir, UPDATES).apply { mkdirs() }
-    override fun apkFileFor(tag: String): File = File(updatesDir(), "ferrot-$tag.apk")
+    override fun updatesDir(): File {
+        return File(appContext.filesDir, UPDATES).apply { mkdirs() }
+    }
+
+    override fun apkFileFor(tag: String): File {
+        return File(updatesDir(), "ferrot-$tag.apk")
+    }
 }
