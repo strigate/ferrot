@@ -709,6 +709,7 @@ private fun DownloadsListRow(
 ) {
     val dimens = LocalDimens.current
 
+    val swipeEnabled = selectedIds.isEmpty()
     val isSelected = selectedIds.contains(item.id)
     val dismissState = rememberSwipeToDismissBoxState()
     var rowWidthPx by remember { mutableFloatStateOf(0f) }
@@ -716,7 +717,7 @@ private fun DownloadsListRow(
         MutableTransitionState(!isRestoring)
     }
 
-    LaunchedEffect(isPendingDismiss, isRestoring) {
+    LaunchedEffect(isPendingDismiss, isRestoring, swipeEnabled) {
         visibilityState.targetState = !isPendingDismiss
         if (isRestoring) {
             visibilityState.targetState = true
@@ -754,7 +755,7 @@ private fun DownloadsListRow(
                 SwipeToDismissBox(
                     state = dismissState,
                     enableDismissFromStartToEnd = false,
-                    enableDismissFromEndToStart = selectedIds.isEmpty(),
+                    enableDismissFromEndToStart = swipeEnabled,
                     backgroundContent = {
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer,
@@ -779,7 +780,7 @@ private fun DownloadsListRow(
                     DownloadItem(
                         item = item,
                         isSelected = isSelected,
-                        longClickEnabled = selectedIds.isEmpty(),
+                        longClickEnabled = swipeEnabled,
                         onClick = {
                             if (selectedIds.isNotEmpty()) {
                                 onSelectionChange(toggleSelection(selectedIds, item.id))
