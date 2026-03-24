@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.4 - 2026-03-24
+### Added
+- Pending delete flow for downloads with swipe dismiss and undo support
+- Restore animations for downloads brought back from pending delete
+- Bulk delete handling that distinguishes between visible and hidden selected downloads
+- Bulk seen and unseen actions for selected downloads
+- Mark unseen action on the Download screen
+- Unit tests covering repositories, mappers, and utility helpers
+
+### Changed
+- Refined downloads list scroll behavior and item click handling
+- Completed downloads are marked seen when their Download screen page becomes visible
+- Unified download update use cases to support batch operations
+- Extracted and refined pending delete snackbar handling
+- Aligned data layer naming and set explicit surface colors on Material `Surface` components
+- Updated Kotlin, Mockito, and Firebase BOM versions
+- Cleaned up README formatting
+
+### Fixed
+- Corrected index bounds checks when resolving the next selected download
+- Reset swipe state correctly when exiting downloads selection mode
+
 ## 1.5.3 - 2026-03-14
 ### Added
 - Download progress reporting for app update downloads
