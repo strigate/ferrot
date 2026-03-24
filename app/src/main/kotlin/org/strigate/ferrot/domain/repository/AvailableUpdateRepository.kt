@@ -5,6 +5,6 @@ import org.strigate.ferrot.domain.model.AvailableUpdate
 
 interface AvailableUpdateRepository {
     fun getAsFlow(): Flow<AvailableUpdate?>
-    suspend fun save(update: AvailableUpdate)
+    suspend fun save(availableUpdate: AvailableUpdate)
     suspend fun delete(): Int
 }

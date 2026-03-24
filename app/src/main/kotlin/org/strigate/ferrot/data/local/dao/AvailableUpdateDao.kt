@@ -13,7 +13,7 @@ interface AvailableUpdateDao {
     fun get(): Flow<AvailableUpdateEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertReplace(row: AvailableUpdateEntity)
+    suspend fun insertReplace(availableUpdateEntity: AvailableUpdateEntity)
 
     @Query("DELETE FROM available_update")
     suspend fun delete(): Int

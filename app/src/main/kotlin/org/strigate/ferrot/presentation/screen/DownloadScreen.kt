@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -114,26 +115,6 @@ fun DownloadScreen(
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
-
-    if (showConfirmDeleteDialog.value) {
-        ConfirmDialog(
-            title = stringResource(R.string.confirm_dialog_delete_download_title),
-            message = stringResource(R.string.confirm_dialog_delete_download_description),
-            positiveButtonText = stringResource(R.string.yes),
-            onPositiveClick = {
-                viewModel.deleteDownload()
-                showConfirmDeleteDialog.value = false
-            },
-            negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = {
-                showConfirmDeleteDialog.value = false
-            },
-            onDismissRequest = {
-                showConfirmDeleteDialog.value = false
-            },
-        )
-    }
-
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -154,6 +135,25 @@ fun DownloadScreen(
                 }
             }
         }
+    }
+
+    if (showConfirmDeleteDialog.value) {
+        ConfirmDialog(
+            title = stringResource(R.string.confirm_dialog_delete_download_title),
+            message = stringResource(R.string.confirm_dialog_delete_download_description),
+            positiveButtonText = stringResource(R.string.yes),
+            onPositiveClick = {
+                viewModel.deleteDownload()
+                showConfirmDeleteDialog.value = false
+            },
+            negativeButtonText = stringResource(R.string.no),
+            onNegativeClick = {
+                showConfirmDeleteDialog.value = false
+            },
+            onDismissRequest = {
+                showConfirmDeleteDialog.value = false
+            },
+        )
     }
 
     Scaffold(
@@ -177,6 +177,16 @@ fun DownloadScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            viewModel.markUnseenAndNavigateBack()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.VisibilityOff,
+                            contentDescription = stringResource(R.string.content_description_mark_unseen),
+                        )
+                    }
                     IconButton(
                         onClick = {
                             showConfirmDeleteDialog.value = true
@@ -214,10 +224,8 @@ fun DownloadScreen(
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
-                        onDownloadPageSelected = { downloadId ->
-                            viewModel.selectDownload(downloadId)
-                            viewModel.markSeenIfCompleted(downloadId)
-                        },
+                        onDownloadPageSelected = viewModel::selectDownload,
+                        onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
                         onSelectedMedia = { downloadId, type ->
                             viewModel.setSelectedMedia(type, downloadId)
                         },
@@ -249,6 +257,7 @@ private fun DownloadPager(
     selectedMedia: DownloadMediaType,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
+    onVisibleCompletedUnseenDownload: (Long) -> Unit,
     onSelectedMedia: (Long, DownloadMediaType) -> Unit,
     onPlayClick: (Long) -> Unit,
     onSaveClick: (Long) -> Unit,
@@ -307,6 +316,7 @@ private fun DownloadPager(
             val pageData by remember(downloadId) {
                 pageDataForId(downloadId)
             }.collectAsStateWithLifecycle(initialValue = null)
+            val isCurrentPage = pagerState.currentPage == page
 
             Surface(
                 modifier = Modifier
@@ -319,7 +329,9 @@ private fun DownloadPager(
                 pageData?.let { download ->
                     DownloadPageContent(
                         data = download,
+                        isCurrentPage = isCurrentPage,
                         selectedMedia = selectedMedia,
+                        onCompletedUnseenVisible = onVisibleCompletedUnseenDownload,
                         onMediaChange = { mediaType ->
                             onSelectedMedia(download.id, mediaType)
                         },
@@ -352,7 +364,9 @@ private fun DownloadPager(
 @Composable
 private fun DownloadPageContent(
     data: DownloadPageUiData,
+    isCurrentPage: Boolean,
     selectedMedia: DownloadMediaType,
+    onCompletedUnseenVisible: (Long) -> Unit,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
     onPlayClick: () -> Unit,
@@ -362,6 +376,11 @@ private fun DownloadPageContent(
 ) {
     val dimens = LocalDimens.current
     with(data) {
+        LaunchedEffect(id, status, seen, isCurrentPage) {
+            if (isCurrentPage && status == DownloadStatusUiData.COMPLETED && !seen) {
+                onCompletedUnseenVisible(id)
+            }
+        }
         LaunchedEffect(video?.filePath, audio?.filePath, selectedMedia) {
             val hasVideo = !video?.filePath.isNullOrBlank()
             val hasAudio = !audio?.filePath.isNullOrBlank()

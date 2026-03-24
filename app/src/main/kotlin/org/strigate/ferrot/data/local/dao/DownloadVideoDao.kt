@@ -10,7 +10,7 @@ import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
 @Dao
 interface DownloadVideoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertReplace(entity: DownloadVideoEntity): Long
+    suspend fun insertReplace(downloadVideoEntity: DownloadVideoEntity): Long
 
     @Query("SELECT * FROM download_video WHERE downloadId = :downloadId LIMIT 1")
     fun getByDownloadIdAsFlow(downloadId: Long): Flow<DownloadVideoEntity?>

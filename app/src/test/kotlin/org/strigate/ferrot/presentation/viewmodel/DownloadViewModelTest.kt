@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -38,6 +39,7 @@ import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadProgress
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadVideo
+import org.strigate.ferrot.domain.model.DownloadWithMetadata
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -48,12 +50,12 @@ import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
-import org.strigate.ferrot.domain.usecase.download.UpdateDownloadSeenByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadaudio.GetDownloadAudioByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.GetDownloadProgressByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadVideoByDownloadIdAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadIdsWithMetadataAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadEvent
@@ -94,7 +96,7 @@ class DownloadViewModelTest {
     private lateinit var downloadWithMetadataUseCase: DownloadWithMetadataUseCase
 
     @Mock
-    private lateinit var getDownloadIdsWithMetadataAsFlowUseCase: GetDownloadIdsWithMetadataAsFlowUseCase
+    private lateinit var getDownloadsWithMetadataAsFlowUseCase: GetDownloadsWithMetadataAsFlowUseCase
 
     @Mock
     private lateinit var getDownloadByIdAsFlowUseCase: GetDownloadByIdAsFlowUseCase
@@ -103,7 +105,7 @@ class DownloadViewModelTest {
     private lateinit var getDownloadByIdUseCase: GetDownloadByIdUseCase
 
     @Mock
-    private lateinit var updateDownloadSeenByIdUseCase: UpdateDownloadSeenByIdUseCase
+    private lateinit var updateDownloadsSeenUseCase: UpdateDownloadsSeenUseCase
 
     @Mock
     private lateinit var requestDeleteDownloadsUseCase: RequestDeleteDownloadsUseCase
@@ -224,13 +226,13 @@ class DownloadViewModelTest {
             advanceUntilIdle()
             downloadIdsFlow.value = listOf(10L, 30L)
             advanceUntilIdle()
-            waitForUiState(viewModel)
+            waitForUiState(viewModel) { state ->
+                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+                data.data.id == 30L
+            }
 
             assertEquals(30L, viewModel.selectedId.value)
-            assertEquals(
-                30L,
-                (viewModel.uiState.value as DownloadUiState.Data).data.id,
-            )
+            assertEquals(30L, (viewModel.uiState.value as DownloadUiState.Data).data.id)
 
             collector.cancel()
         }
@@ -248,7 +250,10 @@ class DownloadViewModelTest {
             advanceUntilIdle()
             downloadIdsFlow.value = listOf(10L, 20L)
             advanceUntilIdle()
-            waitForUiState(viewModel)
+            waitForUiState(viewModel) { state ->
+                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+                data.data.id == 20L
+            }
 
             assertEquals(20L, viewModel.selectedId.value)
             assertEquals(
@@ -258,6 +263,32 @@ class DownloadViewModelTest {
 
             collector.cancel()
         }
+
+    @Test
+    fun uiState_filtersOutPendingDeleteDownloadIds() = runTest(testDispatcher) {
+        val downloadsFlow = MutableStateFlow(
+            listOf(
+                createDownloadWithMetadata(id = 10L, pendingDelete = false),
+                createDownloadWithMetadata(id = 20L, pendingDelete = true),
+                createDownloadWithMetadata(id = 30L, pendingDelete = false),
+            )
+        )
+        val viewModel = createViewModel(
+            initialId = 10L,
+            downloadsWithMetadataFlow = downloadsFlow,
+        )
+        val collector = collectUiState(backgroundScope, viewModel)
+
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.downloadIds == listOf(10L, 30L)
+        }
+
+        val state = viewModel.uiState.value as DownloadUiState.Data
+        assertEquals(listOf(10L, 30L), state.data.downloadIds)
+
+        collector.cancel()
+    }
 
     @Test
     fun selectDownload_updatesSelectedId_andDefaultsMediaToVideo() = runTest(testDispatcher) {
@@ -345,7 +376,7 @@ class DownloadViewModelTest {
         viewModel.markSeenIfCompleted(7L)
         advanceUntilIdle()
 
-        verify(updateDownloadSeenByIdUseCase).invoke(7L)
+        verify(updateDownloadsSeenUseCase).invoke(setOf(7L))
     }
 
     @Test
@@ -363,9 +394,9 @@ class DownloadViewModelTest {
             viewModel.markSeenIfCompleted(9L)
             advanceUntilIdle()
 
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(7L)
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(8L)
-            verify(updateDownloadSeenByIdUseCase, never()).invoke(9L)
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(7L))
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(8L))
+            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(9L))
         }
 
     @Test
@@ -696,18 +727,23 @@ class DownloadViewModelTest {
     private fun createViewModel(
         initialId: Long = 20L,
         downloadIdsFlow: MutableStateFlow<List<Long>> = MutableStateFlow(listOf(10L, 20L, 30L)),
+        downloadsWithMetadataFlow: MutableStateFlow<List<DownloadWithMetadata>>? = null,
     ): DownloadViewModel {
-        `when`(getDownloadIdsWithMetadataAsFlowUseCase.invoke())
-            .thenReturn(downloadIdsFlow)
-        `when`(downloadWithMetadataUseCase.getDownloadIdsWithMetadataAsFlowUseCase)
-            .thenReturn(getDownloadIdsWithMetadataAsFlowUseCase)
+        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke())
+            .thenReturn(
+                downloadsWithMetadataFlow ?: downloadIdsFlow.map { ids ->
+                    ids.map { id -> createDownloadWithMetadata(id) }
+                }
+            )
+        `when`(downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase)
+            .thenReturn(getDownloadsWithMetadataAsFlowUseCase)
 
         `when`(downloadUseCase.getDownloadByIdAsFlowUseCase)
             .thenReturn(getDownloadByIdAsFlowUseCase)
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
-        `when`(downloadUseCase.updateDownloadSeenByIdUseCase)
-            .thenReturn(updateDownloadSeenByIdUseCase)
+        `when`(downloadUseCase.updateDownloadsSeenUseCase)
+            .thenReturn(updateDownloadsSeenUseCase)
         `when`(downloadUseCase.requestDeleteDownloadsUseCase)
             .thenReturn(requestDeleteDownloadsUseCase)
 
@@ -795,5 +831,23 @@ class DownloadViewModelTest {
         seen = seen,
         errorMessage = errorMessage,
         completedAtMillis = completedAtMillis,
+    )
+
+    private fun createDownloadWithMetadata(
+        id: Long,
+        pendingDelete: Boolean = false,
+    ) = DownloadWithMetadata(
+        id = id,
+        url = "https://example.com/$id",
+        title = "Title $id",
+        thumbnailFilePath = null,
+        status = DownloadStatus.COMPLETED,
+        seen = true,
+        pendingDelete = pendingDelete,
+        progressPercent = 100f,
+        etaSeconds = null,
+        bytesDownloaded = 1000L,
+        expectedBytes = 1000L,
+        completedAtMillis = 1234L,
     )
 }

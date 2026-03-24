@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -53,7 +54,14 @@ class DownloadViewModel @Inject constructor(
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
 
     private val downloadIds = downloadWithMetadataUseCase
-        .getDownloadIdsWithMetadataAsFlowUseCase()
+        .getDownloadsWithMetadataAsFlowUseCase()
+        .map { downloads ->
+            downloads
+                .asSequence()
+                .filter { !it.pendingDelete }
+                .map { it.id }
+                .toList()
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
@@ -97,7 +105,7 @@ class DownloadViewModel @Inject constructor(
                 val currentSelectedId = _selectedId.value
                 if (ids.isNotEmpty() && currentSelectedId !in ids) {
                     val previousIndex = previousIds.indexOf(currentSelectedId)
-                    _selectedId.value = if (previousIndex in ids.indices) {
+                    _selectedId.value = if (previousIndex >= 0 && previousIndex < ids.size) {
                         ids[previousIndex]
                     } else {
                         ids.last()
@@ -172,8 +180,14 @@ class DownloadViewModel @Inject constructor(
     fun markSeenIfCompleted(downloadId: Long) = viewModelScope.launch {
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
         if (download.status == DownloadStatus.COMPLETED && !download.seen) {
-            downloadUseCase.updateDownloadSeenByIdUseCase(downloadId)
+            downloadUseCase.updateDownloadsSeenUseCase(setOf(downloadId))
         }
+    }
+
+    fun markUnseenAndNavigateBack(id: Long? = null) = viewModelScope.launch {
+        val downloadId = id ?: _selectedId.value
+        downloadUseCase.updateDownloadsSeenUseCase(setOf(downloadId), seen = false)
+        _events.emit(DownloadEvent.NavigateBack)
     }
 
     fun setSelectedMedia(type: DownloadMediaType, forDownloadId: Long? = null) {

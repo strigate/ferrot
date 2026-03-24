@@ -9,6 +9,7 @@ internal fun DownloadEntity.toDomain() = Download(
     url = url,
     status = status.toDomain(),
     seen = seen,
+    pendingDelete = pendingDelete,
     errorMessage = errorMessage,
     completedAtMillis = completedAtMillis,
 )
@@ -19,6 +20,7 @@ internal fun Download.toEntity() = DownloadEntity(
     url = url,
     status = status.toEntity(),
     seen = seen,
+    pendingDelete = pendingDelete,
     errorMessage = errorMessage,
     completedAtMillis = completedAtMillis,
 )

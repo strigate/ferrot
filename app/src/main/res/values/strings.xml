@@ -25,8 +25,8 @@
     <string name="screen_title_updates">Updates</string>
     <string name="screen_title_about">About</string>
 
-    <string name="downloads_intro_title">Share to %1$s</string>
-    <string name="downloads_intro_body">When viewing a video or post on social media or in your browser, tap Share and choose %1$s. %1$s will try to download it straight to your device and list it here.</string>
+    <string name="downloads_intro_title">No downloads yet</string>
+    <string name="downloads_intro_body">Share a video or post from any app. Tap Share and pick %1$s.</string>
 
     <string name="available_update_ready">Update %1$s is ready to install</string>
 
@@ -53,7 +53,6 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="percent_0">0%</string>
-    <string name="percent_100">100%</string>
     <string name="share_to">Share to…</string>
     <string name="select_all">Select all</string>
     <string name="never">Never</string>
@@ -66,9 +65,8 @@
     <string name="download_complete">Download complete</string>
     <string name="download_failed">Download failed</string>
 
-    <string name="snackbar_bulk_delete_deleted">downloads deleted</string>
-    <string name="snackbar_bulk_delete_undo">Undo</string>
-    <string name="snackbar_delete_deleted">Download deleted</string>
+    <string name="snackbar_bulk_delete_bulk_delete">downloads deleted</string>
+    <string name="snackbar_delete_single_delete">Download deleted</string>
     <string name="snackbar_delete_undo">Undo</string>
     <string name="bulk_selected">selected</string>
 
@@ -125,6 +123,10 @@
     <string name="content_description_resume_download">Resume download</string>
     <string name="content_description_open_download">Open download</string>
     <string name="content_description_save_to_device">Save to device</string>
+    <string name="content_description_select_all">Select all</string>
+    <string name="content_description_mark_seen">Mark as seen</string>
+    <string name="content_description_mark_unseen">Mark as unseen</string>
+    <string name="content_description_delete">Delete</string>
     <string name="content_description_delete_download">Delete download</string>
     <string name="content_description_share_download">Share download</string>
     <string name="content_description_copy_to_clipboard">Copy to clipboard</string>

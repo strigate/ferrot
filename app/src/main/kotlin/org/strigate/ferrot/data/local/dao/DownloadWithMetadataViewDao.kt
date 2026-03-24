@@ -10,9 +10,6 @@ interface DownloadWithMetadataViewDao {
     @Query(SELECT_ALL_QUERY)
     fun getAllAsFlow(): Flow<List<DownloadWithMetadataView>>
 
-    @Query(SELECT_IDS_QUERY)
-    fun getAllIdsAsFlow(): Flow<List<Long>>
-
     companion object {
         private const val ORDER_BY = "ORDER BY\n" +
                 "  CASE status\n" +
@@ -37,7 +34,5 @@ interface DownloadWithMetadataViewDao {
 
         private const val SELECT_ALL_QUERY =
             "SELECT * FROM downloads_with_metadata_view\n$ORDER_BY"
-        private const val SELECT_IDS_QUERY =
-            "SELECT id FROM downloads_with_metadata_view\n$ORDER_BY"
     }
 }

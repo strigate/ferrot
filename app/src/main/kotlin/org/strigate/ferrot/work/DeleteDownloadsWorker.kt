@@ -84,7 +84,7 @@ class DeleteDownloadsWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 ONETIME_DELETE_DOWNLOADS,
-                ExistingWorkPolicy.APPEND,
+                ExistingWorkPolicy.APPEND_OR_REPLACE,
                 oneTimeWorkRequest,
             )
         }

@@ -19,7 +19,7 @@ class StartDownloadUseCase @Inject constructor(
     private val settingsUseCase: SettingsUseCase,
     private val downloadUseCase: DownloadUseCase,
 ) {
-    suspend operator fun invoke(id: Long) = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(downloadId: Long) = withContext(Dispatchers.IO) {
         val wifiOnly = settingsUseCase
             .getDownloadWifiOnlySettingAsFlowUseCase()
             .first()
@@ -31,14 +31,14 @@ class StartDownloadUseCase @Inject constructor(
             wifiOnly && !isOnWifi -> DownloadStatus.WAITING_FOR_WIFI
             else -> DownloadStatus.QUEUED
         }
-        downloadUseCase.updateDownloadStatusByIdUseCase(
+        downloadUseCase.updateDownloadStatusUseCase(
             status = downloadStatus,
-            id = id,
+            downloadId = downloadId,
         )
-        Log.d(LOG_TAG, "Enqueuing download: $id ($downloadStatus)")
+        Log.d(LOG_TAG, "Enqueuing download: $downloadId ($downloadStatus)")
         DownloadWorker.enqueueOneTimeReplace(
             context = appContext,
-            id = id,
+            id = downloadId,
             wifiOnly = wifiOnly,
         )
     }
