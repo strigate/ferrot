@@ -20,7 +20,6 @@ import org.strigate.ferrot.app.DownloadNotificationActionType.RETRY
 import org.strigate.ferrot.app.DownloadNotificationActionType.STOP
 import org.strigate.ferrot.app.DownloadNotificationActionType.UNDO_DELETE
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.activeDownloadNotificationTag
 import org.strigate.ferrot.app.buildDownloadNotificationAction
 import org.strigate.ferrot.app.downloadNotificationExtras
 import org.strigate.ferrot.app.downloadNotificationTag
@@ -120,11 +119,6 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                 etaSeconds = null,
             )
         }
-        val tag = activeDownloadNotificationTag(downloadId)
-        notificationService.clearNotification(
-            notificationId = tag.hashCode(),
-            tag = tag,
-        )
         stopDownloadUseCase(downloadId)
     }
 

@@ -24,6 +24,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
@@ -40,6 +41,7 @@ class DownloadsViewModel @Inject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
+    private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow(
         TextFieldValue(text = "", selection = TextRange(0))
@@ -128,6 +130,9 @@ class DownloadsViewModel @Inject constructor(
         val shouldMarkSeen = selectedDownloads.any { !it.seen }
         viewModelScope.launch {
             downloadUseCase.updateDownloadsSeenUseCase(downloadIds, shouldMarkSeen)
+            if (shouldMarkSeen) {
+                downloadIds.forEach(clearNotificationsByDownloadIdUseCase::invoke)
+            }
         }
     }
 
