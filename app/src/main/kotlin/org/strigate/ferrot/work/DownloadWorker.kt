@@ -23,14 +23,13 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Notifications.Ids.ID_ACTIVE_DOWNLOAD_FOREGROUND
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.DownloadNotificationActionType
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.activeDownloadNotificationTag
+import org.strigate.ferrot.app.buildCancelDownloadNotificationAction
 import org.strigate.ferrot.app.buildDownloadNotificationAction
 import org.strigate.ferrot.app.downloadNotificationExtras
 import org.strigate.ferrot.app.downloadNotificationTag
@@ -394,7 +393,6 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag $downloadComplete")
                 appContext.toast("$downloadComplete: $contentText", true)
-                clearActiveDownloadNotification(downloadId)
                 notificationService.notifyDownloaded(
                     contentText = contentText,
                     contentTitle = downloadComplete,
@@ -459,7 +457,6 @@ class DownloadWorker(
         }
         val downloadFailed = appContext.getString(R.string.download_failed)
         appContext.toast(downloadFailed, true)
-        clearActiveDownloadNotification(downloadId)
         notificationService.notifyDownloaded(
             contentTitle = downloadFailed,
             contentText = notificationText,
@@ -473,7 +470,6 @@ class DownloadWorker(
     private suspend fun handleDownloadStoppedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            clearActiveDownloadNotification(downloadId)
             withContext(NonCancellable) {
                 val status = runCatching {
                     downloadUseCase.getDownloadByIdUseCase(downloadId)?.status
@@ -499,7 +495,6 @@ class DownloadWorker(
     private suspend fun handleDownloadFailedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            clearActiveDownloadNotification(downloadId)
             withContext(NonCancellable) {
                 resetProgressAndCleanup()
                 runCatching {
@@ -519,7 +514,6 @@ class DownloadWorker(
         if (downloadId <= 0L) {
             return Result.success()
         }
-        clearActiveDownloadNotification(downloadId)
         runCatching {
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
         }
@@ -535,21 +529,13 @@ class DownloadWorker(
         extras: Map<String, String>? = null,
     ) {
         enableForeground(
-            notificationId = ID_ACTIVE_DOWNLOAD_FOREGROUND.toLong(),
+            notificationId = downloadId,
             notificationText = notificationText,
             progress = progress,
             indeterminate = indeterminate,
             contentText = contentText,
             extras = extras,
-            actions = emptyList(),
-        )
-        showActiveDownloadNotification(
-            downloadId = downloadId,
-            notificationText = notificationText,
-            progress = progress,
-            indeterminate = indeterminate,
-            contentText = contentText,
-            extras = extras,
+            actions = buildActiveNotificationActions(),
         )
     }
 
@@ -566,59 +552,15 @@ class DownloadWorker(
             indeterminate = indeterminate,
             contentText = contentText,
             extras = extras,
-            actions = emptyList(),
-        )
-        showActiveDownloadNotification(
-            downloadId = _downloadId,
-            notificationText = notificationText,
-            progress = progress,
-            indeterminate = indeterminate,
-            contentText = contentText,
-            extras = extras,
+            actions = buildActiveNotificationActions(),
         )
     }
 
-    private fun showActiveDownloadNotification(
-        downloadId: Long,
-        notificationText: String,
-        progress: Int?,
-        indeterminate: Boolean,
-        contentText: String?,
-        extras: Map<String, String>?,
-    ) {
-        if (downloadId <= 0L) {
-            return
-        }
-        notificationService.notifyActiveDownload(
-            contentTitle = notificationText,
-            contentText = contentText.orEmpty(),
-            extras = extras.orEmpty(),
-            tag = activeDownloadNotificationTag(downloadId),
-            actions = buildActiveNotificationActions(downloadId),
-            progress = progress,
-            indeterminate = indeterminate,
-        )
-    }
-
-    private fun clearActiveDownloadNotification(downloadId: Long) {
-        if (downloadId <= 0L) {
-            return
-        }
-        val tag = activeDownloadNotificationTag(downloadId)
-        notificationService.clearNotification(
-            notificationId = tag.hashCode(),
-            tag = tag,
-        )
-    }
-
-    private fun buildActiveNotificationActions(
-        downloadId: Long,
-    ): List<NotificationCompat.Action> {
+    private fun buildActiveNotificationActions(): List<NotificationCompat.Action> {
         return listOf(
-            buildDownloadNotificationAction(
+            buildCancelDownloadNotificationAction(
                 context = appContext,
-                downloadId = downloadId,
-                actionType = DownloadNotificationActionType.STOP,
+                workId = id,
             ),
         )
     }
