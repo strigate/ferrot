@@ -313,9 +313,13 @@ object NotificationOps {
     fun clearNotificationsByExtraValue(
         context: Context,
         stringExtras: Map<String, String>,
+        channelId: String? = null,
     ) {
         val notificationManager = notificationManager(context)
         for (statusBarNotification in notificationManager.activeNotifications) {
+            if (channelId != null && statusBarNotification.notification.channelId != channelId) {
+                continue
+            }
             val extras = statusBarNotification.notification.extras
             var match = true
             for ((key, value) in stringExtras) {

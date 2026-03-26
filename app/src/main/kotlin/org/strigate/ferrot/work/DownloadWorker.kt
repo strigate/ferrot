@@ -29,7 +29,6 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.DownloadNotificationActionType
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.buildCancelDownloadNotificationAction
 import org.strigate.ferrot.app.buildDownloadNotificationAction
 import org.strigate.ferrot.app.downloadNotificationExtras
 import org.strigate.ferrot.app.downloadNotificationTag
@@ -558,9 +557,10 @@ class DownloadWorker(
 
     private fun buildActiveNotificationActions(): List<NotificationCompat.Action> {
         return listOf(
-            buildCancelDownloadNotificationAction(
+            buildDownloadNotificationAction(
                 context = appContext,
-                workId = id,
+                downloadId = _downloadId,
+                actionType = DownloadNotificationActionType.STOP,
             ),
         )
     }

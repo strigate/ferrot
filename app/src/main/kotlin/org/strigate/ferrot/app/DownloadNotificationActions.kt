@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import androidx.work.WorkManager
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.Action.ACTION_DOWNLOAD_NOTIFICATION
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
@@ -12,7 +11,6 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_NOTIFICATION_ACTION
 import org.strigate.ferrot.app.receiver.DownloadNotificationActionReceiver
-import java.util.UUID
 
 enum class DownloadNotificationActionType {
     MARK_SEEN,
@@ -58,16 +56,5 @@ fun buildDownloadNotificationAction(
         R.drawable.ic_logo,
         context.getString(titleResource),
         pendingIntent,
-    ).build()
-}
-
-fun buildCancelDownloadNotificationAction(
-    context: Context,
-    workId: UUID,
-): NotificationCompat.Action {
-    return NotificationCompat.Action.Builder(
-        R.drawable.ic_logo,
-        context.getString(R.string.notification_action_stop),
-        WorkManager.getInstance(context).createCancelPendingIntent(workId),
     ).build()
 }
