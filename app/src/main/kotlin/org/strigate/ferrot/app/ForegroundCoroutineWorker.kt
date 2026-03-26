@@ -26,6 +26,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ) {
         currentNotificationId = notificationId
         currentExtras = extras
@@ -37,6 +38,7 @@ abstract class ForegroundCoroutineWorker(
                 indeterminate = indeterminate,
                 contentText = contentText,
                 extras = extras,
+                actions = actions,
             ),
         )
     }
@@ -47,6 +49,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ) {
         if (extras != null) {
             currentExtras = extras
@@ -59,6 +62,7 @@ abstract class ForegroundCoroutineWorker(
                 indeterminate = indeterminate,
                 contentText = contentText,
                 extras = currentExtras,
+                actions = actions,
             ),
         )
     }
@@ -70,6 +74,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ): ForegroundInfo {
         val intent = Intent(context, MainActivity::class.java).apply {
             extras?.forEach { (key, value) ->
@@ -91,6 +96,7 @@ abstract class ForegroundCoroutineWorker(
             .setContentTitle(notificationText)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .setOnlyAlertOnce(true)
 
         if (contentText != null) {
             builder.setContentText(contentText)
@@ -98,6 +104,10 @@ abstract class ForegroundCoroutineWorker(
                 NotificationCompat.BigTextStyle().bigText(contentText),
             )
         }
+        extras?.forEach { (key, value) ->
+            builder.extras.putString(key, value)
+        }
+        actions.forEach(builder::addAction)
         if (progress != null || indeterminate) {
             builder.setProgress(100, progress?.coerceIn(0, 100) ?: 0, indeterminate)
         }

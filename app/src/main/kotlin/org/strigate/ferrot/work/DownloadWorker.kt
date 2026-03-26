@@ -3,6 +3,7 @@ package org.strigate.ferrot.work
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
@@ -21,15 +22,18 @@ import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
-import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.Constants.Notifications.Ids.ID_ACTIVE_DOWNLOAD_FOREGROUND
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
+import org.strigate.ferrot.app.DownloadNotificationActionType
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.activeDownloadNotificationTag
+import org.strigate.ferrot.app.buildDownloadNotificationAction
+import org.strigate.ferrot.app.downloadNotificationExtras
+import org.strigate.ferrot.app.downloadNotificationTag
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMediaType
@@ -91,12 +95,9 @@ class DownloadWorker(
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
             ?: return handleDownloadFailedResult()
 
-        val notificationExtras = mapOf(
-            EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
-            EXTRA_DOWNLOAD_ID to download.id.toString(),
-        )
-        enableForeground(
-            notificationId = downloadId,
+        val notificationExtras = downloadNotificationExtras(download.id)
+        enableDownloadForeground(
+            downloadId = downloadId,
             notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
             indeterminate = true,
             contentText = download.url,
@@ -163,7 +164,7 @@ class DownloadWorker(
 
                 videoTitle = videoInfoTitle ?: "Download_$downloadId"
 
-                updateForeground(
+                updateDownloadForeground(
                     notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
                     indeterminate = true,
                     contentText = videoTitle,
@@ -361,7 +362,7 @@ class DownloadWorker(
                 }
 
                 val finalPercent = 100
-                updateForeground(
+                updateDownloadForeground(
                     notificationText = appContext.getString(R.string.download_complete),
                     progress = finalPercent,
                     indeterminate = false,
@@ -393,10 +394,13 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag $downloadComplete")
                 appContext.toast("$downloadComplete: $contentText", true)
+                clearActiveDownloadNotification(downloadId)
                 notificationService.notifyDownloaded(
                     contentText = contentText,
                     contentTitle = downloadComplete,
                     extras = notificationExtras,
+                    tag = downloadNotificationTag(downloadId),
+                    actions = buildCompletedNotificationActions(downloadId),
                 )
                 Result.success()
 
@@ -455,11 +459,13 @@ class DownloadWorker(
         }
         val downloadFailed = appContext.getString(R.string.download_failed)
         appContext.toast(downloadFailed, true)
+        clearActiveDownloadNotification(downloadId)
         notificationService.notifyDownloaded(
             contentTitle = downloadFailed,
             contentText = notificationText,
             extras = notificationExtras,
-            tag = notificationText,
+            tag = downloadNotificationTag(downloadId),
+            actions = buildFailedNotificationActions(downloadId),
         )
         return handleDownloadFailedResult()
     }
@@ -467,6 +473,7 @@ class DownloadWorker(
     private suspend fun handleDownloadStoppedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
+            clearActiveDownloadNotification(downloadId)
             withContext(NonCancellable) {
                 val status = runCatching {
                     downloadUseCase.getDownloadByIdUseCase(downloadId)?.status
@@ -492,6 +499,7 @@ class DownloadWorker(
     private suspend fun handleDownloadFailedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
+            clearActiveDownloadNotification(downloadId)
             withContext(NonCancellable) {
                 resetProgressAndCleanup()
                 runCatching {
@@ -511,10 +519,140 @@ class DownloadWorker(
         if (downloadId <= 0L) {
             return Result.success()
         }
+        clearActiveDownloadNotification(downloadId)
         runCatching {
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
         }
         return Result.success()
+    }
+
+    private suspend fun enableDownloadForeground(
+        downloadId: Long,
+        notificationText: String,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+        contentText: String? = null,
+        extras: Map<String, String>? = null,
+    ) {
+        enableForeground(
+            notificationId = ID_ACTIVE_DOWNLOAD_FOREGROUND.toLong(),
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+            actions = emptyList(),
+        )
+        showActiveDownloadNotification(
+            downloadId = downloadId,
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+        )
+    }
+
+    private fun updateDownloadForeground(
+        notificationText: String,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+        contentText: String? = null,
+        extras: Map<String, String>? = null,
+    ) {
+        updateForeground(
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+            actions = emptyList(),
+        )
+        showActiveDownloadNotification(
+            downloadId = _downloadId,
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+        )
+    }
+
+    private fun showActiveDownloadNotification(
+        downloadId: Long,
+        notificationText: String,
+        progress: Int?,
+        indeterminate: Boolean,
+        contentText: String?,
+        extras: Map<String, String>?,
+    ) {
+        if (downloadId <= 0L) {
+            return
+        }
+        notificationService.notifyActiveDownload(
+            contentTitle = notificationText,
+            contentText = contentText.orEmpty(),
+            extras = extras.orEmpty(),
+            tag = activeDownloadNotificationTag(downloadId),
+            actions = buildActiveNotificationActions(downloadId),
+            progress = progress,
+            indeterminate = indeterminate,
+        )
+    }
+
+    private fun clearActiveDownloadNotification(downloadId: Long) {
+        if (downloadId <= 0L) {
+            return
+        }
+        val tag = activeDownloadNotificationTag(downloadId)
+        notificationService.clearNotification(
+            notificationId = tag.hashCode(),
+            tag = tag,
+        )
+    }
+
+    private fun buildActiveNotificationActions(
+        downloadId: Long,
+    ): List<NotificationCompat.Action> {
+        return listOf(
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = downloadId,
+                actionType = DownloadNotificationActionType.STOP,
+            ),
+        )
+    }
+
+    private fun buildCompletedNotificationActions(downloadId: Long): List<NotificationCompat.Action> {
+        val actions = mutableListOf<NotificationCompat.Action>()
+        actions += buildDownloadNotificationAction(
+            context = appContext,
+            downloadId = downloadId,
+            actionType = DownloadNotificationActionType.MARK_SEEN,
+        )
+        actions += buildDownloadNotificationAction(
+            context = appContext,
+            downloadId = downloadId,
+            actionType = DownloadNotificationActionType.DELETE,
+        )
+        return actions
+    }
+
+    private fun buildFailedNotificationActions(
+        downloadId: Long,
+    ): List<NotificationCompat.Action> {
+        return listOf(
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = downloadId,
+                actionType = DownloadNotificationActionType.RETRY,
+            ),
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = downloadId,
+                actionType = DownloadNotificationActionType.DELETE,
+            ),
+        )
     }
 
     private suspend fun resetProgressAndCleanup() {
@@ -693,7 +831,7 @@ class DownloadWorker(
                 if (throttle.shouldNotify(percentInt)) {
                     val etaLine = formatEta(tick.etaSeconds)
                     val contentLine = buildNotifLine(percentInt, etaLine, phaseContext.title)
-                    updateForeground(
+                    updateDownloadForeground(
                         notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
                         progress = percentInt,
                         indeterminate = false,

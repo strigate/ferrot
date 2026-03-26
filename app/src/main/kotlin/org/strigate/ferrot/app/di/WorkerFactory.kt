@@ -21,9 +21,11 @@ import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
 import org.strigate.ferrot.work.DeleteAllOrphanDownloadFilesWorker
 import org.strigate.ferrot.work.DeleteDownloadsWorker
+import org.strigate.ferrot.work.DeletePendingDownloadDelayedWorker
 import org.strigate.ferrot.work.DeletePendingDownloadsDelayedWorker
 import org.strigate.ferrot.work.DeletePendingDownloadsImmediateWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
@@ -44,6 +46,7 @@ class WorkerFactory @Inject constructor(
     private val downloadPathProvider: DownloadPathProvider,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
+    private val stopDownloadUseCase: StopDownloadUseCase,
     private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
@@ -110,6 +113,7 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 
@@ -119,6 +123,7 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 
@@ -128,6 +133,17 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
+                )
+            }
+
+            DeletePendingDownloadDelayedWorker::class.java.name -> {
+                DeletePendingDownloadDelayedWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    downloadUseCase = downloadUseCase,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 
