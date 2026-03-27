@@ -56,10 +56,12 @@ class DeletePendingDownloadDelayedWorker(
         }
 
         enableForeground(
-            notificationText = applicationContext.resources.getQuantityString(
-                R.plurals.worker_notification_text_deleting_downloads,
-                1,
-            ),
+            notificationText = applicationContext
+                .resources
+                .getQuantityString(
+                    R.plurals.notification_text_deleting_downloads,
+                    1,
+                ),
         )
         runCatching {
             stopDownloadUseCase(downloadId)

@@ -18,8 +18,10 @@ import org.strigate.ferrot.app.DownloadNotificationActionType.DELETE
 import org.strigate.ferrot.app.DownloadNotificationActionType.MARK_SEEN
 import org.strigate.ferrot.app.DownloadNotificationActionType.RETRY
 import org.strigate.ferrot.app.DownloadNotificationActionType.STOP
+import org.strigate.ferrot.app.DownloadNotificationActionType.STOP_ALL
 import org.strigate.ferrot.app.DownloadNotificationActionType.UNDO_DELETE
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.activeDownloadNotificationTag
 import org.strigate.ferrot.app.buildDownloadNotificationAction
 import org.strigate.ferrot.app.downloadNotificationExtras
 import org.strigate.ferrot.app.downloadNotificationTag
@@ -64,11 +66,18 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val downloadId = intent.getStringExtra(EXTRA_DOWNLOAD_ID)?.toLongOrNull()
                 val action = intent.getStringExtra(EXTRA_NOTIFICATION_ACTION)
                     ?.let { runCatching { DownloadNotificationActionType.valueOf(it) }.getOrNull() }
 
-                if (downloadId == null || downloadId <= 0L || action == null) {
+                if (action == null) {
+                    return@launch
+                }
+                if (action == STOP_ALL) {
+                    handleStopAll()
+                    return@launch
+                }
+                val downloadId = intent.getStringExtra(EXTRA_DOWNLOAD_ID)?.toLongOrNull()
+                if (downloadId == null || downloadId <= 0L) {
                     return@launch
                 }
                 when (action) {
@@ -110,6 +119,25 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
     }
 
     private suspend fun handleStop(downloadId: Long) {
+        stopActiveDownload(downloadId)
+    }
+
+    private suspend fun handleStopAll() {
+        val activeStatuses = setOf(
+            DownloadStatus.METADATA,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.QUEUED,
+            DownloadStatus.WAITING_FOR_NETWORK,
+            DownloadStatus.WAITING_FOR_WIFI,
+        )
+        downloadUseCase.getAllDownloadsUseCase()
+            .asSequence()
+            .filter { it.status in activeStatuses }
+            .map { it.id }
+            .forEach { downloadId -> stopActiveDownload(downloadId) }
+    }
+
+    private suspend fun stopActiveDownload(downloadId: Long) {
         runCatching {
             downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
             downloadProgressUseCase.updateDownloadProgressUseCase(
@@ -119,6 +147,10 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                 etaSeconds = null,
             )
         }
+        notificationService.clearNotification(
+            notificationId = downloadId.toInt(),
+            tag = activeDownloadNotificationTag(downloadId),
+        )
         stopDownloadUseCase(downloadId)
     }
 
@@ -166,7 +198,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
             ),
         )
         notificationService.notifyDownloaded(
-            contentTitle = appContext.getString(R.string.notification_deleted_title),
+            contentTitle = appContext.getString(R.string.notification_title_deleted),
             contentText = "",
             extras = downloadNotificationExtras(download.id),
             tag = downloadNotificationTag(download.id),

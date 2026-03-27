@@ -153,7 +153,7 @@ class DownloadAvailableUpdateWorker(
 
             enableForeground(
                 notificationId = NOTIFICATION_ID,
-                notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+                notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
             )
             if (isAppInForeground()) {
                 appContext.toast(R.string.toast_downloading_app_update, true)
@@ -198,7 +198,7 @@ class DownloadAvailableUpdateWorker(
     }
 
     private fun notifyAvailableUpdate(versionTag: String, apkFilePath: String) {
-        val contentTitle = appContext.getString(R.string.notification_app_update_title)
+        val contentTitle = appContext.getString(R.string.notification_title_app_update)
         val contentText = appContext.getString(R.string.available_update_ready, versionTag)
         notificationService.notifyAvailableUpdate(
             contentTitle = contentTitle,
@@ -293,7 +293,7 @@ class DownloadAvailableUpdateWorker(
                     formatBytes(downloadedBytes)
                 }
                 updateForeground(
-                    notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+                    notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
                     progress = progressPercent.takeIf { it >= 0 },
                     indeterminate = progressPercent < 0,
                     contentText = contentText,

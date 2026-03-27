@@ -18,6 +18,7 @@ enum class DownloadNotificationActionType {
     UNDO_DELETE,
     RETRY,
     STOP,
+    STOP_ALL,
 }
 
 fun downloadNotificationTag(downloadId: Long): String = "download:$downloadId"
@@ -40,6 +41,7 @@ fun buildDownloadNotificationAction(
         DownloadNotificationActionType.UNDO_DELETE -> R.string.notification_action_undo
         DownloadNotificationActionType.RETRY -> R.string.notification_action_retry
         DownloadNotificationActionType.STOP -> R.string.notification_action_stop
+        DownloadNotificationActionType.STOP_ALL -> R.string.notification_action_stop_all
     }
     val intent = Intent(context, DownloadNotificationActionReceiver::class.java).apply {
         action = ACTION_DOWNLOAD_NOTIFICATION

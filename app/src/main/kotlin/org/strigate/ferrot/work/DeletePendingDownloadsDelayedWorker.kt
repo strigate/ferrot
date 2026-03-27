@@ -52,10 +52,12 @@ class DeletePendingDownloadsDelayedWorker(
         }
 
         enableForeground(
-            notificationText = applicationContext.resources.getQuantityString(
-                R.plurals.worker_notification_text_deleting_downloads,
-                pendingDeleteIds.size,
-            ),
+            notificationText = applicationContext
+                .resources
+                .getQuantityString(
+                    R.plurals.notification_text_deleting_downloads,
+                    pendingDeleteIds.size,
+                ),
         )
         val message =
             "Starting delayed delete worker for ${pendingDeleteIds.size} pending download(s)"
