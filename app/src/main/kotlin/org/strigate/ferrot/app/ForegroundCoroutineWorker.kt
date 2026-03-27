@@ -1,5 +1,6 @@
 package org.strigate.ferrot.app
 
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -19,6 +20,10 @@ abstract class ForegroundCoroutineWorker(
     private var currentNotificationId: Long = 1L
     private var currentExtras: Map<String, String>? = null
 
+    private fun notificationManager(): NotificationManager {
+        return context.getSystemService(NotificationManager::class.java)
+    }
+
     suspend fun enableForeground(
         notificationId: Long = 1,
         notificationText: String,
@@ -26,6 +31,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ) {
         currentNotificationId = notificationId
         currentExtras = extras
@@ -37,6 +43,7 @@ abstract class ForegroundCoroutineWorker(
                 indeterminate = indeterminate,
                 contentText = contentText,
                 extras = extras,
+                actions = actions,
             ),
         )
     }
@@ -47,6 +54,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ) {
         if (extras != null) {
             currentExtras = extras
@@ -59,6 +67,7 @@ abstract class ForegroundCoroutineWorker(
                 indeterminate = indeterminate,
                 contentText = contentText,
                 extras = currentExtras,
+                actions = actions,
             ),
         )
     }
@@ -70,6 +79,7 @@ abstract class ForegroundCoroutineWorker(
         indeterminate: Boolean = false,
         contentText: String? = null,
         extras: Map<String, String>? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ): ForegroundInfo {
         val intent = Intent(context, MainActivity::class.java).apply {
             extras?.forEach { (key, value) ->
@@ -83,6 +93,10 @@ abstract class ForegroundCoroutineWorker(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val existingNotification = notificationManager()
+            .activeNotifications
+            .firstOrNull { it.id == id.toInt() }
+            ?.notification
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_ACTIVE_TASKS)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -91,6 +105,8 @@ abstract class ForegroundCoroutineWorker(
             .setContentTitle(notificationText)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(existingNotification?.`when`?.let { it > 0L } ?: true)
 
         if (contentText != null) {
             builder.setContentText(contentText)
@@ -98,6 +114,14 @@ abstract class ForegroundCoroutineWorker(
                 NotificationCompat.BigTextStyle().bigText(contentText),
             )
         }
+        existingNotification?.`when`
+            ?.takeIf { it > 0L }
+            ?.let(builder::setWhen)
+        existingNotification?.sortKey?.let(builder::setSortKey)
+        extras?.forEach { (key, value) ->
+            builder.extras.putString(key, value)
+        }
+        actions.forEach(builder::addAction)
         if (progress != null || indeterminate) {
             builder.setProgress(100, progress?.coerceIn(0, 100) ?: 0, indeterminate)
         }

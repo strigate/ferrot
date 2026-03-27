@@ -377,6 +377,7 @@ class DownloadViewModelTest {
         advanceUntilIdle()
 
         verify(updateDownloadsSeenUseCase).invoke(setOf(7L))
+        verify(clearNotificationsByDownloadIdUseCase).invoke(7L)
     }
 
     @Test

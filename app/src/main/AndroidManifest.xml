@@ -82,6 +82,11 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".app.receiver.DownloadNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

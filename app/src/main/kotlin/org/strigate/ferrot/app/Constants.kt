@@ -30,6 +30,10 @@ object Constants {
     }
 
     object Notifications {
+        object Ids {
+            const val ID_ACTIVE_DOWNLOAD_FOREGROUND = 1
+        }
+
         object ChannelGroups {
             private const val CHANNEL_GROUP_ID = "$APP_ID.notification.channel.group.id"
             const val CHANNEL_GROUP_ID_FOREGROUND = "$CHANNEL_GROUP_ID.FOREGROUND"
@@ -75,6 +79,8 @@ object Constants {
                 "$ONETIME.DELETE_DOWNLOADS"
             const val ONETIME_DELETE_PENDING_DOWNLOADS_DELAYED =
                 "$ONETIME.DELETE_PENDING_DOWNLOADS_DELAYED"
+            const val ONETIME_DELETE_PENDING_DOWNLOAD_DELAYED =
+                "$ONETIME.DELETE_PENDING_DOWNLOAD_DELAYED"
             const val ONETIME_DELETE_PENDING_DOWNLOADS_IMMEDIATE =
                 "$ONETIME.DELETE_PENDING_DOWNLOADS_IMMEDIATE"
             const val ONETIME_DELETE_DUPLICATE_DOWNLOADS =
@@ -112,6 +118,7 @@ object Constants {
         private const val EXTRA = "$APP_ID.intent.extra"
 
         const val EXTRA_ACTION = "$EXTRA.ACTION"
+        const val EXTRA_NOTIFICATION_ACTION = "$EXTRA.NOTIFICATION_ACTION"
         const val EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH = "$EXTRA.AVAILABLE_UPDATE_APK_FILE_PATH"
         const val EXTRA_AVAILABLE_UPDATE_VERSION_TAG = "$EXTRA.AVAILABLE_UPDATE_VERSION_TAG"
 
@@ -127,5 +134,6 @@ object Constants {
         const val ACTION_INSTALL_AVAILABLE_UPDATE = "$ACTION.INSTALL_AVAILABLE_UPDATE"
         const val ACTION_START_DOWNLOAD_FROM_SHARE = "$ACTION.START_DOWNLOAD_FROM_SHARE"
         const val ACTION_NAVIGATE_DOWNLOAD = "$ACTION.NAVIGATE_DOWNLOAD"
+        const val ACTION_DOWNLOAD_NOTIFICATION = "$ACTION.DOWNLOAD_NOTIFICATION"
     }
 }

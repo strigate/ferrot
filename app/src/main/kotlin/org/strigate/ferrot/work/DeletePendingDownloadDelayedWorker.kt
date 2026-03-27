@@ -14,7 +14,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_PENDING_DOWNLOADS_DELAYED
+import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
+import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_PENDING_DOWNLOAD_DELAYED
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
@@ -22,7 +23,7 @@ import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
 
-class DeletePendingDownloadsDelayedWorker(
+class DeletePendingDownloadDelayedWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val downloadUseCase: DownloadUseCase,
@@ -30,47 +31,43 @@ class DeletePendingDownloadsDelayedWorker(
     private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val downloadId = inputData.getLong(KEY_ID, -1L)
+        if (downloadId <= 0L) {
+            Log.w(LOG_TAG, "No valid download ID provided for single delayed delete worker")
+            return@withContext Result.success()
+        }
+
         val delayMillis = inputData
             .getLong(KEY_DELAY_MILLIS, DEFAULT_DELAY_MILLIS)
             .coerceAtLeast(0L)
 
         if (delayMillis > 0L) {
-            Log.d(LOG_TAG, "Delayed pending delete worker waiting ${delayMillis}ms")
+            Log.d(LOG_TAG, "Single delayed delete worker waiting ${delayMillis}ms for $downloadId")
             delay(delayMillis)
         }
-
-        val pendingDeleteIds = downloadUseCase
-            .getAllDownloadsUseCase()
-            .asSequence()
-            .filter { it.pendingDelete }
-            .map { it.id }
-            .toList()
-
-        if (pendingDeleteIds.isEmpty()) {
-            Log.d(LOG_TAG, "No pending deletes found after delayed wait")
+        val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
+        if (download == null) {
+            Log.d(LOG_TAG, "Download already gone before single delayed delete fired: $downloadId")
+            return@withContext Result.success()
+        }
+        if (!download.pendingDelete) {
+            Log.d(LOG_TAG, "Pending delete was cleared before timeout for $downloadId")
             return@withContext Result.success()
         }
 
         enableForeground(
             notificationText = applicationContext.resources.getQuantityString(
                 R.plurals.worker_notification_text_deleting_downloads,
-                pendingDeleteIds.size,
+                1,
             ),
         )
-        val message =
-            "Starting delayed delete worker for ${pendingDeleteIds.size} pending download(s)"
-        Log.d(LOG_TAG, message)
-
-        pendingDeleteIds.forEach { downloadId ->
-            runCatching {
-                stopDownloadUseCase(downloadId)
-                deleteDownloadAndRelatedCombinedUseCase(downloadId)
-                Log.d(LOG_TAG, "Delayed deleted pending downloadId=$downloadId")
-            }.onFailure {
-                Log.w(LOG_TAG, "Delayed pending delete failed for downloadId=$downloadId", it)
-            }
+        runCatching {
+            stopDownloadUseCase(downloadId)
+            deleteDownloadAndRelatedCombinedUseCase(downloadId)
+            Log.d(LOG_TAG, "Single delayed delete completed for $downloadId")
+        }.onFailure {
+            Log.w(LOG_TAG, "Single delayed delete failed for $downloadId", it)
         }
-        Log.d(LOG_TAG, "Finished delayed pending delete worker")
         Result.success()
     }
 
@@ -80,8 +77,12 @@ class DeletePendingDownloadsDelayedWorker(
 
         fun enqueueOneTimeReplace(
             context: Context,
+            downloadId: Long,
             delayMillis: Long = DEFAULT_DELAY_MILLIS,
         ) {
+            if (downloadId <= 0L) {
+                return
+            }
             val constraints = Constraints.Builder()
                 .setRequiresBatteryNotLow(false)
                 .setRequiresCharging(false)
@@ -89,10 +90,11 @@ class DeletePendingDownloadsDelayedWorker(
                 .build()
 
             val oneTimeWorkRequest =
-                OneTimeWorkRequestBuilder<DeletePendingDownloadsDelayedWorker>()
+                OneTimeWorkRequestBuilder<DeletePendingDownloadDelayedWorker>()
                     .setConstraints(constraints)
                     .setInputData(
                         workDataOf(
+                            KEY_ID to downloadId,
                             KEY_DELAY_MILLIS to delayMillis.coerceAtLeast(0L),
                         ),
                     )
@@ -105,10 +107,14 @@ class DeletePendingDownloadsDelayedWorker(
                     .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
-                ONETIME_DELETE_PENDING_DOWNLOADS_DELAYED,
+                uniqueWorkName(downloadId),
                 ExistingWorkPolicy.REPLACE,
                 oneTimeWorkRequest,
             )
+        }
+
+        private fun uniqueWorkName(downloadId: Long): String {
+            return "$ONETIME_DELETE_PENDING_DOWNLOAD_DELAYED-$downloadId"
         }
     }
 }

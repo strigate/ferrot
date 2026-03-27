@@ -6,6 +6,7 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
 import org.strigate.ferrot.domain.usecase.download.SaveDownloadUseCase
@@ -29,6 +30,7 @@ class DownloadUseCase @Inject constructor(
     val updateDownloadStartedAtUseCase: UpdateDownloadStartedAtUseCase,
     val updateDownloadStatusUseCase: UpdateDownloadStatusUseCase,
     val requestDeleteDownloadsUseCase: RequestDeleteDownloadsUseCase,
+    val requestDeletePendingDownloadDelayedUseCase: RequestDeletePendingDownloadDelayedUseCase,
     val requestDeletePendingDownloadsDelayedUseCase: RequestDeletePendingDownloadsDelayedUseCase,
     val requestDeletePendingDownloadsImmediateUseCase: RequestDeletePendingDownloadsImmediateUseCase,
     val deleteDownloadByIdUseCase: DeleteDownloadByIdUseCase,

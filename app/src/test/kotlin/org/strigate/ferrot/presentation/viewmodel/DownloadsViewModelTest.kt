@@ -44,6 +44,7 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteU
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import kotlin.time.Duration.Companion.seconds
 
@@ -96,6 +97,9 @@ class DownloadsViewModelTest {
 
     @Mock
     private lateinit var updateDownloadsSeenUseCase: UpdateDownloadsSeenUseCase
+
+    @Mock
+    private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
     @Before
     fun setUp() {
@@ -306,6 +310,9 @@ class DownloadsViewModelTest {
             advanceUntilIdle()
 
             verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L, 3L), true)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(1L)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(2L)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(3L)
             collector.cancel()
         }
 
@@ -331,6 +338,8 @@ class DownloadsViewModelTest {
             advanceUntilIdle()
 
             verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L), false)
+            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(1L)
+            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(2L)
             collector.cancel()
         }
 
@@ -412,6 +421,7 @@ class DownloadsViewModelTest {
             availableUpdateUseCase = availableUpdateUseCase,
             downloadProgressUseCase = downloadProgressUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
+            clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
         )
     }
 

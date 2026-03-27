@@ -34,6 +34,12 @@ class MainViewModel @Inject constructor(
     fun navigateToDownload(downloadId: Long) {
         viewModelScope.launch {
             downloadUseCase.getDownloadByIdUseCase(downloadId)?.let { download ->
+                if (download.pendingDelete) {
+                    downloadUseCase.updateDownloadsPendingDeleteUseCase(
+                        downloadIds = setOf(download.id),
+                        pendingDelete = false,
+                    )
+                }
                 navigateTo(
                     route = Screen.Download.route(download.id),
                     popUpToDownloads = true,

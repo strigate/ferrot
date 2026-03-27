@@ -181,6 +181,7 @@ class DownloadViewModel @Inject constructor(
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId) ?: return@launch
         if (download.status == DownloadStatus.COMPLETED && !download.seen) {
             downloadUseCase.updateDownloadsSeenUseCase(setOf(downloadId))
+            clearNotificationsByDownloadIdUseCase(downloadId)
         }
     }
 

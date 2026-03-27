@@ -5,6 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
+import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
 import org.strigate.ferrot.util.NotificationOps
 import javax.inject.Inject
 
@@ -16,6 +17,10 @@ class ClearNotificationsByDownloadIdUseCase @Inject constructor(
             EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
             EXTRA_DOWNLOAD_ID to downloadId.toString(),
         )
-        NotificationOps.clearNotificationsByExtraValue(appContext, extras)
+        NotificationOps.clearNotificationsByExtraValue(
+            context = appContext,
+            stringExtras = extras,
+            channelId = CHANNEL_ID_DOWNLOADED,
+        )
     }
 }

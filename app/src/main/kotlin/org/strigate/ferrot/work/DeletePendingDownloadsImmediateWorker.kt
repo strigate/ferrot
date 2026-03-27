@@ -16,6 +16,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_PENDING_DOWNLO
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
+import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
 
@@ -24,6 +25,7 @@ class DeletePendingDownloadsImmediateWorker(
     workerParameters: WorkerParameters,
     private val downloadUseCase: DownloadUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
+    private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val pendingDeleteIds = downloadUseCase
@@ -50,6 +52,7 @@ class DeletePendingDownloadsImmediateWorker(
 
         pendingDeleteIds.forEach { downloadId ->
             runCatching {
+                stopDownloadUseCase(downloadId)
                 deleteDownloadAndRelatedCombinedUseCase(downloadId)
                 Log.d(LOG_TAG, "Immediately deleted pending downloadId=$downloadId")
             }.onFailure {

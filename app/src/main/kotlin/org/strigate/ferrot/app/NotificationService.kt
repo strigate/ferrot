@@ -13,6 +13,7 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIV
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_UPDATES
 import org.strigate.ferrot.app.Constants.Notifications.Groups.GROUP_ID_DOWNLOADED
+import org.strigate.ferrot.util.NotificationOps.cancel
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannel
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannelGroup
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelGroupsOtherThan
@@ -95,11 +96,47 @@ class NotificationService @Inject constructor(
         )
     }
 
+    fun notifyActiveDownload(
+        contentTitle: String,
+        contentText: String,
+        extras: Map<String, String> = emptyMap(),
+        tag: String? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
+        notificationId: Int? = null,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+    ) {
+        notify(
+            context = appContext,
+            channelId = CHANNEL_ID_ACTIVE_TASKS,
+            groupId = null,
+            summaryTitleResource = R.string.notification_download_title,
+            contentTitle = contentTitle,
+            contentText = contentText,
+            colorResource = R.color.coral,
+            iconResource = R.drawable.ic_logo,
+            largeIcon = null,
+            priority = NotificationCompat.PRIORITY_HIGH,
+            tag = tag,
+            extras = extras,
+            actions = actions,
+            notificationId = notificationId,
+            autoCancel = false,
+            ongoing = true,
+            progress = progress,
+            indeterminate = indeterminate,
+        )
+    }
+
     fun notifyDownloaded(
         contentTitle: String,
         contentText: String,
         extras: Map<String, String> = emptyMap(),
         tag: String? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
+        notificationId: Int? = null,
+        autoCancel: Boolean = true,
+        ongoing: Boolean = false,
     ) {
         notify(
             context = appContext,
@@ -114,6 +151,21 @@ class NotificationService @Inject constructor(
             priority = NotificationCompat.PRIORITY_HIGH,
             tag = tag,
             extras = extras,
+            actions = actions,
+            notificationId = notificationId,
+            autoCancel = autoCancel,
+            ongoing = ongoing,
+        )
+    }
+
+    fun clearNotification(
+        notificationId: Int,
+        tag: String? = null,
+    ) {
+        cancel(
+            context = appContext,
+            notificationId = notificationId,
+            tag = tag,
         )
     }
 }
