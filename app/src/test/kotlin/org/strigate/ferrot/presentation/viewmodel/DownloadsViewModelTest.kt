@@ -288,6 +288,35 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun retryFailedDownloads_startsOnlyFailedDownloads() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Failed", status = DownloadStatus.FAILED),
+                    createDownload(id = 2L, title = "Stopped", status = DownloadStatus.STOPPED),
+                    createDownload(id = 3L, title = "Completed", status = DownloadStatus.COMPLETED),
+                    createDownload(id = 4L, title = "Failed 2", status = DownloadStatus.FAILED),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.retryFailedDownloads()
+        advanceUntilIdle()
+
+        verify(startDownloadUseCase).invoke(1L)
+        verify(startDownloadUseCase).invoke(4L)
+        verify(startDownloadUseCase, never()).invoke(2L)
+        verify(startDownloadUseCase, never()).invoke(3L)
+        collector.cancel()
+    }
+
+    @Test
     fun toggleDownloadsSeen_marksAllSeen_whenAnySelectedDownloadIsUnseen() =
         runTest(testDispatcher) {
             val viewModel = createViewModel(
@@ -440,6 +469,7 @@ class DownloadsViewModelTest {
         id: Long,
         title: String,
         url: String = "https://example.com/$id",
+        status: DownloadStatus = DownloadStatus.DOWNLOADING,
         seen: Boolean = false,
         pendingDelete: Boolean = false,
     ) = DownloadWithMetadata(
@@ -447,7 +477,7 @@ class DownloadsViewModelTest {
         url = url,
         title = title,
         thumbnailFilePath = null,
-        status = DownloadStatus.DOWNLOADING,
+        status = status,
         seen = seen,
         pendingDelete = pendingDelete,
         progressPercent = 50f,
