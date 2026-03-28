@@ -411,7 +411,7 @@ fun DownloadsScreen(
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Filled.Refresh,
-                                            contentDescription = stringResource(R.string.content_description_retry),
+                                            contentDescription = stringResource(R.string.content_description_retry_failed),
                                         )
                                     },
                                     onClick = {
