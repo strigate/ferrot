@@ -12,9 +12,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.strigate.ferrot.presentation.MainActivity
 import kotlin.reflect.KClass
 
@@ -110,7 +107,7 @@ object NotificationOps {
         ongoing: Boolean = false,
         progress: Int? = null,
         indeterminate: Boolean = false,
-    ) = CoroutineScope(Dispatchers.Main).launch {
+    ) {
         notifyInternal(
             context = context,
             channelId = channelId,

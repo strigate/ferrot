@@ -361,15 +361,6 @@ class DownloadWorker(
                     )
                 }
 
-                val finalPercent = 100
-                updateDownloadForeground(
-                    notificationText = appContext.getString(R.string.download_complete),
-                    progress = finalPercent,
-                    indeterminate = false,
-                    contentText = videoTitle ?: download.url,
-                    extras = notificationExtras,
-                )
-
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
                 downloadUseCase.updateDownloadStatusUseCase(
                     status = DownloadStatus.COMPLETED,
