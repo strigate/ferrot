@@ -32,7 +32,7 @@ class UpdateDependenciesWorker(
     override suspend fun doWork(): Result {
         return try {
             enableForeground(
-                notificationText = appContext.getString(R.string.worker_notification_text_updating_dependencies),
+                notificationText = appContext.getString(R.string.notification_text_updating_dependencies),
             )
             Log.d(LOG_TAG, "Updating YoutubeDL")
             val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
