@@ -27,6 +27,7 @@ import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
+import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import javax.inject.Inject
@@ -119,6 +120,24 @@ class DownloadsViewModel @Inject constructor(
 
     fun retryDownload(downloadId: Long) = viewModelScope.launch {
         startDownloadUseCase(downloadId)
+    }
+
+    fun retryFailedDownloads() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val failedDownloadIds = data.data.downloads
+            .asSequence()
+            .filter { it.status == DownloadStatusUiData.FAILED }
+            .map { it.id }
+            .toList()
+
+        if (failedDownloadIds.isEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            failedDownloadIds.forEach { downloadId ->
+                startDownloadUseCase(downloadId)
+            }
+        }
     }
 
     fun toggleDownloadsSeen(downloadIds: Set<Long>) {

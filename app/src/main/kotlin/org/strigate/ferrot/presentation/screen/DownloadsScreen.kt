@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
@@ -156,10 +157,15 @@ fun DownloadsScreen(
     val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
     val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
 
+    val hasFailedDownloads = remember(uiState) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads.any { it.status == DownloadStatusUiData.FAILED }
+    }
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.id in selectedIds && !it.seen }
     }
+
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
@@ -391,6 +397,25 @@ fun DownloadsScreen(
                                     },
                                     onClick = {
                                         selectedIds = allIds
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
+                            if (hasFailedDownloads) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.retry_failed),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Refresh,
+                                            contentDescription = stringResource(R.string.content_description_retry),
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.retryFailedDownloads()
                                         menuExpanded = false
                                     },
                                 )
