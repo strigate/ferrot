@@ -416,6 +416,9 @@ fun DownloadsScreen(
                                     },
                                     onClick = {
                                         viewModel.retryFailedDownloads()
+                                        coroutineScope.launch {
+                                            lazyListState.animateScrollToItem(0)
+                                        }
                                         menuExpanded = false
                                     },
                                 )
