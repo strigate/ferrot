@@ -30,10 +30,6 @@ object Constants {
     }
 
     object Notifications {
-        object Ids {
-            const val ID_ACTIVE_DOWNLOAD_FOREGROUND = 1
-        }
-
         object ChannelGroups {
             private const val CHANNEL_GROUP_ID = "$APP_ID.notification.channel.group.id"
             const val CHANNEL_GROUP_ID_FOREGROUND = "$CHANNEL_GROUP_ID.FOREGROUND"

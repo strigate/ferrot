@@ -96,38 +96,6 @@ class NotificationService @Inject constructor(
         )
     }
 
-    fun notifyActiveDownload(
-        contentTitle: String,
-        contentText: String,
-        extras: Map<String, String> = emptyMap(),
-        tag: String? = null,
-        actions: List<NotificationCompat.Action> = emptyList(),
-        notificationId: Int? = null,
-        progress: Int? = null,
-        indeterminate: Boolean = false,
-    ) {
-        notify(
-            context = appContext,
-            channelId = CHANNEL_ID_ACTIVE_TASKS,
-            groupId = null,
-            summaryTitleResource = R.string.notification_title_download,
-            contentTitle = contentTitle,
-            contentText = contentText,
-            colorResource = R.color.coral,
-            iconResource = R.drawable.ic_logo,
-            largeIcon = null,
-            priority = NotificationCompat.PRIORITY_HIGH,
-            tag = tag,
-            extras = extras,
-            actions = actions,
-            notificationId = notificationId,
-            autoCancel = false,
-            ongoing = true,
-            progress = progress,
-            indeterminate = indeterminate,
-        )
-    }
-
     fun notifyDownloaded(
         contentTitle: String,
         contentText: String,

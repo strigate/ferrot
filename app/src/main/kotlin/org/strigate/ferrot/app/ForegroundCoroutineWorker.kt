@@ -12,12 +12,19 @@ import androidx.work.WorkerParameters
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIVE_TASKS
 import org.strigate.ferrot.presentation.MainActivity
+import kotlin.math.abs
 
 abstract class ForegroundCoroutineWorker(
     private val context: Context,
     workerParameters: WorkerParameters,
 ) : CoroutineWorker(context, workerParameters) {
-    private var currentNotificationId: Long = 1L
+    private val defaultForegroundNotificationId: Int = workerParameters.id.hashCode()
+        .let {
+            if (it == Int.MIN_VALUE) 0 else abs(it)
+        }
+        .coerceAtLeast(1)
+
+    private var currentNotificationId: Int = defaultForegroundNotificationId
     private var currentExtras: Map<String, String>? = null
 
     private fun notificationManager(): NotificationManager {
@@ -25,7 +32,7 @@ abstract class ForegroundCoroutineWorker(
     }
 
     suspend fun enableForeground(
-        notificationId: Long = 1,
+        notificationId: Int = defaultForegroundNotificationId,
         notificationText: String,
         progress: Int? = null,
         indeterminate: Boolean = false,
@@ -73,7 +80,7 @@ abstract class ForegroundCoroutineWorker(
     }
 
     private fun buildForegroundInfo(
-        id: Long,
+        id: Int,
         notificationText: String,
         progress: Int? = null,
         indeterminate: Boolean = false,
@@ -86,7 +93,7 @@ abstract class ForegroundCoroutineWorker(
                 putExtra(key, value)
             }
         }
-        val requestCode = if (extras == null) 0 else id.toInt()
+        val requestCode = if (extras == null) 0 else id
         val pendingIntent = PendingIntent.getActivity(
             context,
             requestCode,
@@ -95,8 +102,9 @@ abstract class ForegroundCoroutineWorker(
         )
         val existingNotification = notificationManager()
             .activeNotifications
-            .firstOrNull { it.id == id.toInt() }
+            .firstOrNull { it.id == id }
             ?.notification
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_ACTIVE_TASKS)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -117,6 +125,7 @@ abstract class ForegroundCoroutineWorker(
         existingNotification?.`when`
             ?.takeIf { it > 0L }
             ?.let(builder::setWhen)
+
         existingNotification?.sortKey?.let(builder::setSortKey)
         extras?.forEach { (key, value) ->
             builder.extras.putString(key, value)
@@ -127,7 +136,7 @@ abstract class ForegroundCoroutineWorker(
         }
         val notification = builder.build()
         return ForegroundInfo(
-            id.toInt(),
+            id,
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
