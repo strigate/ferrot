@@ -152,7 +152,6 @@ class DownloadAvailableUpdateWorker(
             Log.d(LOG_TAG, "Downloading update to ${partFile.absolutePath}")
 
             enableForeground(
-                notificationId = NOTIFICATION_ID,
                 notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
             )
             if (isAppInForeground()) {
@@ -447,8 +446,6 @@ class DownloadAvailableUpdateWorker(
     }
 
     companion object {
-        private const val NOTIFICATION_ID = 2001L
-
         fun enqueuePeriodicKeep(
             context: Context,
             targetHour: Int = 3,

@@ -23,14 +23,12 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.app.Constants.Notifications.Ids.ID_ACTIVE_DOWNLOAD_FOREGROUND
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.DownloadNotificationActionType
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.activeDownloadNotificationTag
 import org.strigate.ferrot.app.buildDownloadNotificationAction
 import org.strigate.ferrot.app.downloadNotificationExtras
 import org.strigate.ferrot.app.downloadNotificationTag
@@ -385,7 +383,6 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag $downloadComplete")
                 appContext.toast("$downloadComplete: $contentText", true)
-                clearActiveDownloadNotification(downloadId)
                 notificationService.notifyDownloaded(
                     contentText = contentText,
                     contentTitle = downloadComplete,
@@ -450,7 +447,6 @@ class DownloadWorker(
         }
         val downloadFailed = appContext.getString(R.string.download_failed)
         appContext.toast(downloadFailed, true)
-        clearActiveDownloadNotification(downloadId)
         notificationService.notifyDownloaded(
             contentTitle = downloadFailed,
             contentText = notificationText,
@@ -474,7 +470,6 @@ class DownloadWorker(
 
                 if (!shouldPreserve && status != DownloadStatus.COMPLETED && status != DownloadStatus.FAILED) {
                     resetProgressAndCleanup()
-                    clearActiveDownloadNotification(downloadId)
                     runCatching {
                         downloadUseCase.updateDownloadStatusUseCase(
                             downloadId,
@@ -492,7 +487,6 @@ class DownloadWorker(
         if (downloadId > 0L) {
             withContext(NonCancellable) {
                 resetProgressAndCleanup()
-                clearActiveDownloadNotification(downloadId)
                 runCatching {
                     analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_FAILED)
                     downloadUseCase.updateDownloadStatusUseCase(
@@ -510,7 +504,6 @@ class DownloadWorker(
         if (downloadId <= 0L) {
             return Result.success()
         }
-        clearActiveDownloadNotification(downloadId)
         runCatching {
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
         }
@@ -525,18 +518,14 @@ class DownloadWorker(
         contentText: String? = null,
         extras: Map<String, String>? = null,
     ) {
-        syncActiveDownloadNotification(
-            downloadId = downloadId,
+        enableForeground(
+            notificationId = downloadId.toInt(),
             notificationText = notificationText,
             progress = progress,
             indeterminate = indeterminate,
             contentText = contentText,
             extras = extras,
-        )
-        enableForeground(
-            notificationId = ID_ACTIVE_DOWNLOAD_FOREGROUND.toLong(),
-            notificationText = appContext.getString(R.string.notification_title_downloads_in_progress),
-            actions = buildForegroundNotificationActions(),
+            actions = buildActiveNotificationActions(),
         )
     }
 
@@ -547,50 +536,13 @@ class DownloadWorker(
         contentText: String? = null,
         extras: Map<String, String>? = null,
     ) {
-        syncActiveDownloadNotification(
-            downloadId = _downloadId,
+        updateForeground(
             notificationText = notificationText,
             progress = progress,
             indeterminate = indeterminate,
             contentText = contentText,
             extras = extras,
-        )
-        updateForeground(
-            notificationText = appContext.getString(R.string.notification_title_downloads_in_progress),
-            actions = buildForegroundNotificationActions(),
-        )
-    }
-
-    private fun syncActiveDownloadNotification(
-        downloadId: Long,
-        notificationText: String,
-        progress: Int? = null,
-        indeterminate: Boolean = false,
-        contentText: String? = null,
-        extras: Map<String, String>? = null,
-    ) {
-        if (downloadId <= 0L) {
-            return
-        }
-        notificationService.notifyActiveDownload(
-            contentTitle = notificationText,
-            contentText = contentText.orEmpty(),
-            extras = extras.orEmpty(),
-            tag = activeDownloadNotificationTag(downloadId),
             actions = buildActiveNotificationActions(),
-            notificationId = downloadId.toInt(),
-            progress = progress,
-            indeterminate = indeterminate,
-        )
-    }
-
-    private fun clearActiveDownloadNotification(downloadId: Long = _downloadId) {
-        if (downloadId <= 0L) {
-            return
-        }
-        notificationService.clearNotification(
-            notificationId = downloadId.toInt(),
-            tag = activeDownloadNotificationTag(downloadId),
         )
     }
 
@@ -600,16 +552,6 @@ class DownloadWorker(
                 context = appContext,
                 downloadId = _downloadId,
                 actionType = DownloadNotificationActionType.STOP,
-            ),
-        )
-    }
-
-    private fun buildForegroundNotificationActions(): List<NotificationCompat.Action> {
-        return listOf(
-            buildDownloadNotificationAction(
-                context = appContext,
-                downloadId = -1L,
-                actionType = DownloadNotificationActionType.STOP_ALL,
             ),
         )
     }

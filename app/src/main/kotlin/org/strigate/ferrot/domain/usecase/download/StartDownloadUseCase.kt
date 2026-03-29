@@ -10,6 +10,7 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.util.NetworkOps
 import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
@@ -18,6 +19,7 @@ class StartDownloadUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val settingsUseCase: SettingsUseCase,
     private val downloadUseCase: DownloadUseCase,
+    private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
 ) {
     suspend operator fun invoke(downloadId: Long) = withContext(Dispatchers.IO) {
         val wifiOnly = settingsUseCase
@@ -31,6 +33,7 @@ class StartDownloadUseCase @Inject constructor(
             wifiOnly && !isOnWifi -> DownloadStatus.WAITING_FOR_WIFI
             else -> DownloadStatus.QUEUED
         }
+        clearNotificationsByDownloadIdUseCase(downloadId)
         downloadUseCase.updateDownloadStatusUseCase(
             status = downloadStatus,
             downloadId = downloadId,

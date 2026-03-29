@@ -106,6 +106,7 @@ import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
+private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -417,6 +418,7 @@ fun DownloadsScreen(
                                     onClick = {
                                         viewModel.retryFailedDownloads()
                                         coroutineScope.launch {
+                                            delay(RETRY_FAILED_SCROLL_DELAY_MILLIS)
                                             lazyListState.animateScrollToItem(0)
                                         }
                                         menuExpanded = false
