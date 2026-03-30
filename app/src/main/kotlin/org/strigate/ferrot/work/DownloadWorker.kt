@@ -74,7 +74,6 @@ class DownloadWorker(
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
 
-    private var videoTitle: String? = null
     private var lastForegroundProgress: Int = -1
     private val qualityProfile: QualityProfile = QualityProfile.MAX
 
@@ -105,6 +104,7 @@ class DownloadWorker(
         var wasDownloadDeleted = false
         return coroutineScope mainScope@{
             try {
+                var thumbnailFilePath: String? = null
                 val canStart = when (download.status) {
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
@@ -120,7 +120,6 @@ class DownloadWorker(
                     Log.w(LOG_TAG, "$tag Cannot start in status: ${download.status}")
                     return@mainScope Result.failure()
                 }
-
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_STARTED)
 
                 resetProgressAndCleanup()
@@ -160,8 +159,7 @@ class DownloadWorker(
                         ?.fileSizeApproximate
                         ?.takeIf { it > 0L }
 
-                videoTitle = videoInfoTitle ?: "Download_$downloadId"
-
+                val videoTitle = videoInfoTitle ?: "Download_$downloadId"
                 updateDownloadForeground(
                     notificationText = appContext.getString(R.string.notification_text_downloading),
                     indeterminate = true,
@@ -173,7 +171,7 @@ class DownloadWorker(
                 if (videoInfo?.id != null) {
                     withContext(Dispatchers.IO) {
                         runCatching {
-                            val thumbnailFilePath = youtubeDlAndroidUseCase
+                            thumbnailFilePath = youtubeDlAndroidUseCase
                                 .downloadThumbnailUseCase(
                                     url = download.url,
                                     outputDir = uidDir,
@@ -233,14 +231,14 @@ class DownloadWorker(
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val title = (videoInfoTitle ?: videoTitle ?: "Download").toSafeFileName()
+                val title = videoTitle.toSafeFileName()
                 val videoTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Video.%(ext)s"
                 val audioTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Audio.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,
                     weights = weights,
-                    title = videoTitle ?: download.url,
+                    title = videoTitle,
                     notificationExtras = notificationExtras,
                 )
 
@@ -379,16 +377,16 @@ class DownloadWorker(
                 DeleteAllOrphanDownloadFilesWorker.enqueueDebouncedReplace(appContext)
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
-                val contentText = videoTitle ?: download.url
-
                 Log.d(LOG_TAG, "$tag $downloadComplete")
-                appContext.toast("$downloadComplete: $contentText", true)
+                appContext.toast("$downloadComplete: $videoTitle", true)
+
                 notificationService.notifyDownloaded(
-                    contentText = contentText,
+                    contentText = videoTitle,
                     contentTitle = downloadComplete,
                     extras = notificationExtras,
                     tag = downloadNotificationTag(downloadId),
                     actions = buildCompletedNotificationActions(downloadId),
+                    thumbnailFilePath = thumbnailFilePath,
                 )
                 Result.success()
 

@@ -98,6 +98,7 @@ object NotificationOps {
         contentTitle: String? = null,
         contentText: String? = null,
         largeIcon: Bitmap? = null,
+        bigPicture: Bitmap? = null,
         groupId: String? = null,
         tag: String? = null,
         extras: Map<String, String> = emptyMap(),
@@ -119,6 +120,7 @@ object NotificationOps {
             colorResource = colorResource,
             iconResource = iconResource,
             largeIcon = largeIcon,
+            bigPicture = bigPicture,
             priority = priority,
             extras = extras,
             actions = actions,
@@ -142,6 +144,7 @@ object NotificationOps {
         colorResource: Int,
         iconResource: Int,
         largeIcon: Bitmap?,
+        bigPicture: Bitmap?,
         priority: Int,
         extras: Map<String, String>,
         actions: List<NotificationCompat.Action>,
@@ -169,6 +172,7 @@ object NotificationOps {
             colorResource = colorResource,
             iconResource = iconResource,
             largeIcon = largeIcon,
+            bigPicture = bigPicture,
             priority = priority,
             extras = extras,
             actions = actions,
@@ -212,6 +216,7 @@ object NotificationOps {
         colorResource: Int,
         iconResource: Int,
         largeIcon: Bitmap?,
+        bigPicture: Bitmap?,
         priority: Int,
         extras: Map<String, String>,
         actions: List<NotificationCompat.Action>,
@@ -253,9 +258,10 @@ object NotificationOps {
             .apply {
                 whenMillis?.takeIf { it > 0L }?.let(::setWhen)
                 sortKey?.let(::setSortKey)
-                if (largeIcon != null) {
+                if (bigPicture != null) {
                     setStyle(
                         NotificationCompat.BigPictureStyle()
+                            .bigPicture(bigPicture)
                             .setSummaryText(contentText)
                             .bigLargeIcon(largeIcon)
                     )
