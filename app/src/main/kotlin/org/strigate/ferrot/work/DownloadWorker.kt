@@ -105,6 +105,15 @@ class DownloadWorker(
         return coroutineScope mainScope@{
             try {
                 var thumbnailFilePath: String? = null
+                suspend fun throwIfDownloadDeleted() {
+                    if (downloadUseCase.getDownloadByIdUseCase(downloadId) != null) {
+                        return
+                    }
+                    Log.w(LOG_TAG, "$tag Download record does not exist")
+                    wasDownloadDeleted = true
+                    throw CancellationException()
+                }
+
                 val canStart = when (download.status) {
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
@@ -177,10 +186,7 @@ class DownloadWorker(
                                     outputDir = uidDir,
                                     videoId = videoInfo.id,
                                 )
-                            if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                                wasDownloadDeleted = true
-                                throw CancellationException()
-                            }
+                            throwIfDownloadDeleted()
                             downloadMetadataUseCase.saveDownloadMetadataUseCase(
                                 DownloadMetadata(
                                     downloadId = downloadId,
@@ -204,10 +210,7 @@ class DownloadWorker(
                         expectedBytes = videoInfoVideoBytes,
                     )
                 }
-                if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                    wasDownloadDeleted = true
-                    throw CancellationException()
-                }
+                throwIfDownloadDeleted()
                 downloadUseCase.updateDownloadStatusUseCase(
                     downloadId = downloadId,
                     status = DownloadStatus.DOWNLOADING,
@@ -262,11 +265,7 @@ class DownloadWorker(
                 }
                 Log.d(LOG_TAG, "$tag Downloaded video")
 
-                if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                    Log.w(LOG_TAG, "$tag Download record was deleted during download")
-                    wasDownloadDeleted = true
-                    throw CancellationException()
-                }
+                throwIfDownloadDeleted()
 
                 val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfoId)
                 if (videoOutputFile == null || !videoOutputFile.exists()) {
