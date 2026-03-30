@@ -159,9 +159,12 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
     }
 
     private suspend fun showCompletedNotification(download: Download) {
+        val metadata = downloadMetadataUseCase
+            .getDownloadMetadataByIdAsFlowUseCase(download.id).first()
         notificationService.notifyDownloaded(
             contentTitle = appContext.getString(R.string.download_complete),
-            contentText = notificationText(download),
+            contentText = metadata?.title?.takeIf { it.isNotBlank() } ?: download.url,
+            thumbnailFilePath = metadata?.thumbnailFilePath,
             extras = downloadNotificationExtras(download.id),
             tag = downloadNotificationTag(download.id),
             actions = buildCompletedActions(download),

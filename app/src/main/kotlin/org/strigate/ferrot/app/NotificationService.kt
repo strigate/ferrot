@@ -2,6 +2,8 @@ package org.strigate.ferrot.app
 
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.strigate.ferrot.R
@@ -19,6 +21,7 @@ import org.strigate.ferrot.util.NotificationOps.createNotificationChannelGroup
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelGroupsOtherThan
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelsOtherThan
 import org.strigate.ferrot.util.NotificationOps.notify
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -99,6 +102,7 @@ class NotificationService @Inject constructor(
     fun notifyDownloaded(
         contentTitle: String,
         contentText: String,
+        thumbnailFilePath: String? = null,
         extras: Map<String, String> = emptyMap(),
         tag: String? = null,
         actions: List<NotificationCompat.Action> = emptyList(),
@@ -106,6 +110,7 @@ class NotificationService @Inject constructor(
         autoCancel: Boolean = true,
         ongoing: Boolean = false,
     ) {
+        val thumbnailBitmap = thumbnailFilePath.toNotificationBitmap()
         notify(
             context = appContext,
             channelId = CHANNEL_ID_DOWNLOADED,
@@ -116,6 +121,7 @@ class NotificationService @Inject constructor(
             colorResource = R.color.coral,
             iconResource = R.drawable.ic_logo,
             largeIcon = null,
+            bigPicture = thumbnailBitmap,
             priority = NotificationCompat.PRIORITY_HIGH,
             tag = tag,
             extras = extras,
@@ -135,5 +141,14 @@ class NotificationService @Inject constructor(
             notificationId = notificationId,
             tag = tag,
         )
+    }
+
+    private fun String?.toNotificationBitmap(): Bitmap? {
+        val thumbnailPath = this?.takeIf { it.isNotBlank() } ?: return null
+        val thumbnailFile = File(thumbnailPath)
+        if (!thumbnailFile.exists()) {
+            return null
+        }
+        return BitmapFactory.decodeFile(thumbnailFile.absolutePath)
     }
 }
