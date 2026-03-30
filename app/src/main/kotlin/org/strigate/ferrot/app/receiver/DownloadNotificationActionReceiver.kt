@@ -114,7 +114,6 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
     }
 
     private suspend fun handleRetry(downloadId: Long) {
-        clearNotificationsByDownloadIdUseCase(downloadId)
         startDownloadUseCase(downloadId)
     }
 
@@ -123,16 +122,9 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
     }
 
     private suspend fun handleStopAll() {
-        val activeStatuses = setOf(
-            DownloadStatus.METADATA,
-            DownloadStatus.DOWNLOADING,
-            DownloadStatus.QUEUED,
-            DownloadStatus.WAITING_FOR_NETWORK,
-            DownloadStatus.WAITING_FOR_WIFI,
-        )
         downloadUseCase.getAllDownloadsUseCase()
             .asSequence()
-            .filter { it.status in activeStatuses }
+            .filter { it.status in ACTIVE_DOWNLOAD_STATUSES }
             .map { it.id }
             .forEach { downloadId -> stopActiveDownload(downloadId) }
     }
@@ -260,5 +252,15 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
         val metadata = downloadMetadataUseCase
             .getDownloadMetadataByIdAsFlowUseCase(download.id).first()
         return metadata?.title?.takeIf { it.isNotBlank() } ?: download.url
+    }
+
+    companion object {
+        private val ACTIVE_DOWNLOAD_STATUSES = setOf(
+            DownloadStatus.METADATA,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.QUEUED,
+            DownloadStatus.WAITING_FOR_NETWORK,
+            DownloadStatus.WAITING_FOR_WIFI,
+        )
     }
 }
