@@ -275,6 +275,44 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun stopAllDownloads_stopsOnlyActiveDownloads() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Queued", status = DownloadStatus.QUEUED),
+                    createDownload(
+                        id = 2L,
+                        title = "Downloading",
+                        status = DownloadStatus.DOWNLOADING
+                    ),
+                    createDownload(id = 3L, title = "Failed", status = DownloadStatus.FAILED),
+                    createDownload(id = 4L, title = "Stopped", status = DownloadStatus.STOPPED),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.stopAllDownloads()
+        advanceUntilIdle()
+
+        verify(updateDownloadStatusUseCase).invoke(1L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase).invoke(2L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never()).invoke(3L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never()).invoke(4L, DownloadStatus.STOPPED)
+        verify(stopDownloadUseCase).invoke(1L)
+        verify(stopDownloadUseCase).invoke(2L)
+        verify(stopDownloadUseCase, never()).invoke(3L)
+        verify(stopDownloadUseCase, never()).invoke(4L)
+
+        collector.cancel()
+    }
+
+    @Test
     fun retryDownload_startsDownload() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
