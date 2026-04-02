@@ -29,6 +29,7 @@ import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
+import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import javax.inject.Inject
 
@@ -106,16 +107,25 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
-        runCatching {
-            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
-            downloadProgressUseCase.updateDownloadProgressUseCase(
-                id = downloadId,
-                progressPercent = 0F,
-                bytesDownloaded = 0L,
-                etaSeconds = null,
-            )
+        stopDownloadAndResetProgress(downloadId)
+    }
+
+    fun stopAllDownloads() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val activeDownloadIds = data.data.downloads
+            .asSequence()
+            .filter { it.status.isActive }
+            .map { it.id }
+            .toList()
+
+        if (activeDownloadIds.isEmpty()) {
+            return
         }
-        stopDownloadsUseCase(downloadId)
+        viewModelScope.launch {
+            activeDownloadIds.forEach { downloadId ->
+                stopDownloadAndResetProgress(downloadId)
+            }
+        }
     }
 
     fun retryDownload(downloadId: Long) = viewModelScope.launch {
@@ -168,6 +178,19 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             downloadUseCase.requestDeletePendingDownloadsImmediateUseCase()
         }
+    }
+
+    private suspend fun stopDownloadAndResetProgress(downloadId: Long) {
+        runCatching {
+            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
+            downloadProgressUseCase.updateDownloadProgressUseCase(
+                id = downloadId,
+                progressPercent = 0F,
+                bytesDownloaded = 0L,
+                etaSeconds = null,
+            )
+        }
+        stopDownloadsUseCase(downloadId)
     }
 
     companion object {

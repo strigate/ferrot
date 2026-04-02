@@ -18,7 +18,6 @@ import org.strigate.ferrot.app.DownloadNotificationActionType.DELETE
 import org.strigate.ferrot.app.DownloadNotificationActionType.MARK_SEEN
 import org.strigate.ferrot.app.DownloadNotificationActionType.RETRY
 import org.strigate.ferrot.app.DownloadNotificationActionType.STOP
-import org.strigate.ferrot.app.DownloadNotificationActionType.STOP_ALL
 import org.strigate.ferrot.app.DownloadNotificationActionType.UNDO_DELETE
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.activeDownloadNotificationTag
@@ -72,10 +71,6 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                 if (action == null) {
                     return@launch
                 }
-                if (action == STOP_ALL) {
-                    handleStopAll()
-                    return@launch
-                }
                 val downloadId = intent.getStringExtra(EXTRA_DOWNLOAD_ID)?.toLongOrNull()
                 if (downloadId == null || downloadId <= 0L) {
                     return@launch
@@ -119,14 +114,6 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
 
     private suspend fun handleStop(downloadId: Long) {
         stopActiveDownload(downloadId)
-    }
-
-    private suspend fun handleStopAll() {
-        downloadUseCase.getAllDownloadsUseCase()
-            .asSequence()
-            .filter { it.status in ACTIVE_DOWNLOAD_STATUSES }
-            .map { it.id }
-            .forEach { downloadId -> stopActiveDownload(downloadId) }
     }
 
     private suspend fun stopActiveDownload(downloadId: Long) {
@@ -255,15 +242,5 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
         val metadata = downloadMetadataUseCase
             .getDownloadMetadataByIdAsFlowUseCase(download.id).first()
         return metadata?.title?.takeIf { it.isNotBlank() } ?: download.url
-    }
-
-    companion object {
-        private val ACTIVE_DOWNLOAD_STATUSES = setOf(
-            DownloadStatus.METADATA,
-            DownloadStatus.DOWNLOADING,
-            DownloadStatus.QUEUED,
-            DownloadStatus.WAITING_FOR_NETWORK,
-            DownloadStatus.WAITING_FOR_WIFI,
-        )
     }
 }

@@ -97,6 +97,8 @@ import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
+import org.strigate.ferrot.presentation.model.isActive
+import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
@@ -160,7 +162,11 @@ fun DownloadsScreen(
 
     val hasFailedDownloads = remember(uiState) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
-        downloads.any { it.status == DownloadStatusUiData.FAILED }
+        downloads.any { it.status.isFailed }
+    }
+    val hasActiveDownloads = remember(uiState) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads.any { it.status.isActive }
     }
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
@@ -421,6 +427,25 @@ fun DownloadsScreen(
                                             delay(RETRY_FAILED_SCROLL_DELAY_MILLIS)
                                             lazyListState.animateScrollToItem(0)
                                         }
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
+                            if (hasActiveDownloads) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.notification_action_stop_all),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.notification_action_stop_all),
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.stopAllDownloads()
                                         menuExpanded = false
                                     },
                                 )
