@@ -21,8 +21,8 @@
     <application
         android:name=".Ferrot"
         android:allowBackup="false"
-        android:fullBackupContent="@xml/full_backup_content"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/full_backup_content"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_launcher"
@@ -84,6 +84,14 @@
 
         <receiver
             android:name=".app.receiver.DownloadNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name=".work.trigger.AvailableUpdateDailyTriggerReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name=".work.trigger.DependencyUpdateDailyTriggerReceiver"
             android:enabled="true"
             android:exported="false" />
 

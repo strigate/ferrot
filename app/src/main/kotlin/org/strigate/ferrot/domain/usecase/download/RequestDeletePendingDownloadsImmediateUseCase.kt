@@ -2,7 +2,7 @@ package org.strigate.ferrot.domain.usecase.download
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import org.strigate.ferrot.work.DeletePendingDownloadsImmediateWorker
+import org.strigate.ferrot.work.worker.DeletePendingDownloadsImmediateWorker
 import javax.inject.Inject
 
 class RequestDeletePendingDownloadsImmediateUseCase @Inject constructor(

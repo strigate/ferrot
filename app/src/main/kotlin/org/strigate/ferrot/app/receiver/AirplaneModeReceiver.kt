@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
 
 @AndroidEntryPoint
 class AirplaneModeReceiver : BroadcastReceiver() {
@@ -17,7 +17,7 @@ class AirplaneModeReceiver : BroadcastReceiver() {
         val state = intent.getBooleanExtra("state", false)
         Log.d(LOG_TAG, "Airplane mode: $state")
         if (!state) {
-            RequeuePendingDownloadsWorker.enqueueOneItem(context)
+            RequeuePendingDownloadsWorker.enqueueOneTime(context)
         }
     }
 }

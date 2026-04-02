@@ -1,25 +1,21 @@
-package org.strigate.ferrot.work
+package org.strigate.ferrot.work.worker
 
 import android.content.Context
 import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.yausername.youtubedl_android.YoutubeDL
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
-import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
-import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import org.strigate.ferrot.util.isAppInForeground
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
@@ -81,39 +77,6 @@ class UpdateDependenciesWorker(
     }
 
     companion object {
-        fun enqueuePeriodicKeep(
-            context: Context,
-            repeatIntervalDays: Long = 3,
-            targetHour: Int = 4,
-            flexHours: Long = 2,
-        ) {
-            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
-
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
-                .build()
-
-            val periodicWorkRequest = PeriodicWorkRequestBuilder<UpdateDependenciesWorker>(
-                repeatInterval = repeatIntervalDays,
-                repeatIntervalTimeUnit = TimeUnit.DAYS,
-                flexTimeInterval = flexHours,
-                flexTimeIntervalUnit = TimeUnit.HOURS,
-            )
-                .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
-                .setConstraints(constraints)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-                .build()
-
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC_UPDATE_DEPENDENCIES,
-                ExistingPeriodicWorkPolicy.KEEP,
-                periodicWorkRequest,
-            )
-        }
-
         fun enqueueOneTimeReplace(
             context: Context,
         ) {
@@ -135,10 +98,6 @@ class UpdateDependenciesWorker(
                 ExistingWorkPolicy.REPLACE,
                 oneTimeWorkRequest,
             )
-        }
-
-        fun cancelPeriodic(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_UPDATE_DEPENDENCIES)
         }
     }
 }
