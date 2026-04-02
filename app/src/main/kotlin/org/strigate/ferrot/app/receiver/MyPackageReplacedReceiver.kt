@@ -14,13 +14,17 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
-import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
-import org.strigate.ferrot.work.UpdateDependenciesWorker
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.work.trigger.AvailableUpdateDailyTriggerReceiver
+import org.strigate.ferrot.work.trigger.DependencyUpdateDailyTriggerReceiver
+import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.worker.UpdateDependenciesWorker
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -32,6 +36,9 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
     @Inject
     lateinit var availableUpdateUseCase: AvailableUpdateUseCase
 
+    @Inject
+    lateinit var settingsUseCase: SettingsUseCase
+
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) {
             return
@@ -42,6 +49,23 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
             try {
                 availableUpdateUseCase.clearAvailableUpdateUseCase()
                 updatePathProvider.updatesDir().deleteRecursively()
+                val automaticUpdatesSetting = settingsUseCase
+                    .getAutomaticUpdatesSettingAsFlowUseCase()
+                    .first()
+                val automaticDependencyUpdatesSetting = settingsUseCase
+                    .getAutomaticDependencyUpdatesSettingAsFlowUseCase()
+                    .first()
+
+                if (automaticUpdatesSetting) {
+                    AvailableUpdateDailyTriggerReceiver.schedule(appContext)
+                } else {
+                    AvailableUpdateDailyTriggerReceiver.cancel(appContext)
+                }
+                if (automaticDependencyUpdatesSetting) {
+                    DependencyUpdateDailyTriggerReceiver.schedule(appContext)
+                } else {
+                    DependencyUpdateDailyTriggerReceiver.cancel(appContext)
+                }
 
                 val constraints = Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)

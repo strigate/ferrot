@@ -44,4 +44,21 @@ class WorkScheduleTest {
         )
         assertEquals(24 * 60 * 60 * 1000L, result)
     }
+
+    @Test
+    fun calculateDailyTriggerAtMillis_returnsExpectedTimestamp_whenBeforeTargetHour() {
+        val zoneId = ZoneId.of("UTC")
+        val now = ZonedDateTime.of(2026, 3, 4, 2, 15, 0, 0, zoneId)
+
+        val result = calculateDailyTriggerAtMillis(
+            targetHour = 3,
+            zoneId = zoneId,
+            now = now,
+        )
+
+        assertEquals(
+            ZonedDateTime.of(2026, 3, 4, 3, 0, 0, 0, zoneId).toInstant().toEpochMilli(),
+            result,
+        )
+    }
 }

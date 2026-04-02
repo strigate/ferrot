@@ -1,4 +1,4 @@
-package org.strigate.ferrot.work
+package org.strigate.ferrot.work.worker
 
 import android.content.Context
 import android.os.Build

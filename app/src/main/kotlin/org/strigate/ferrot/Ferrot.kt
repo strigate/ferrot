@@ -16,10 +16,10 @@ import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
-import org.strigate.ferrot.work.DeleteAllOrphanDownloadFilesWorker
-import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
-import org.strigate.ferrot.work.UpdateDependenciesWorker
+import org.strigate.ferrot.work.trigger.AvailableUpdateDailyTriggerReceiver
+import org.strigate.ferrot.work.trigger.DependencyUpdateDailyTriggerReceiver
+import org.strigate.ferrot.work.worker.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.worker.DeleteAllOrphanDownloadFilesWorker
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -75,14 +75,14 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
             .first()
 
         if (automaticUpdatesSetting) {
-            DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
+            AvailableUpdateDailyTriggerReceiver.schedule(appContext)
         } else {
-            DownloadAvailableUpdateWorker.cancelPeriodic(appContext)
+            AvailableUpdateDailyTriggerReceiver.cancel(appContext)
         }
         if (automaticDependencyUpdatesSetting) {
-            UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
+            DependencyUpdateDailyTriggerReceiver.schedule(appContext)
         } else {
-            UpdateDependenciesWorker.cancelPeriodic(appContext)
+            DependencyUpdateDailyTriggerReceiver.cancel(appContext)
         }
         if (automaticDuplicateDownloadDeletionSetting) {
             DeleteAllDuplicateDownloadsWorker.enqueuePeriodicKeep(appContext)

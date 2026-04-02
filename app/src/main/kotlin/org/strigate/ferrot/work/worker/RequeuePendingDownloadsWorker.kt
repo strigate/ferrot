@@ -1,4 +1,4 @@
-package org.strigate.ferrot.work
+package org.strigate.ferrot.work.worker
 
 import android.content.Context
 import android.util.Log
@@ -29,7 +29,7 @@ class RequeuePendingDownloadsWorker(
     }
 
     companion object {
-        fun enqueueOneItem(context: Context) {
+        fun enqueueOneTime(context: Context) {
             val oneTimeWorkRequestBuilder =
                 OneTimeWorkRequestBuilder<RequeuePendingDownloadsWorker>()
             val oneTimeWorkRequest = oneTimeWorkRequestBuilder

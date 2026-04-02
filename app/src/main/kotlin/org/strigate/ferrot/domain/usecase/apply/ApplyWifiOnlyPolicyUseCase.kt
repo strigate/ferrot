@@ -10,7 +10,7 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.util.NetworkOps
-import org.strigate.ferrot.work.DownloadWorker
+import org.strigate.ferrot.work.worker.DownloadWorker
 import javax.inject.Inject
 
 class ApplyWifiOnlyPolicyUseCase @Inject constructor(
