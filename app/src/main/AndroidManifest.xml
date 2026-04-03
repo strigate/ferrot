@@ -86,14 +86,6 @@
             android:name=".app.receiver.DownloadNotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />
-        <receiver
-            android:name=".work.trigger.AvailableUpdateDailyTriggerReceiver"
-            android:enabled="true"
-            android:exported="false" />
-        <receiver
-            android:name=".work.trigger.DependencyUpdateDailyTriggerReceiver"
-            android:enabled="true"
-            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
