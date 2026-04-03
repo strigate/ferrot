@@ -14,8 +14,6 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
-import org.strigate.ferrot.work.trigger.AvailableUpdateDailyTriggerReceiver
-import org.strigate.ferrot.work.trigger.DependencyUpdateDailyTriggerReceiver
 import org.strigate.ferrot.work.worker.DeleteAllDuplicateDownloadsWorker
 import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
 import javax.inject.Inject
@@ -44,26 +42,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 Log.d(LOG_TAG, "Boot completed received")
 
                 RequeuePendingDownloadsWorker.enqueueOneTime(context)
-                val automaticUpdatesSetting = settingsUseCase
-                    .getAutomaticUpdatesSettingAsFlowUseCase()
-                    .first()
-                val automaticDependencyUpdatesSetting = settingsUseCase
-                    .getAutomaticDependencyUpdatesSettingAsFlowUseCase()
-                    .first()
                 val automaticDuplicateDownloadDeletionSetting = settingsUseCase
                     .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
                     .first()
 
-                if (automaticUpdatesSetting) {
-                    AvailableUpdateDailyTriggerReceiver.schedule(context)
-                } else {
-                    AvailableUpdateDailyTriggerReceiver.cancel(context)
-                }
-                if (automaticDependencyUpdatesSetting) {
-                    DependencyUpdateDailyTriggerReceiver.schedule(context)
-                } else {
-                    DependencyUpdateDailyTriggerReceiver.cancel(context)
-                }
                 if (automaticDuplicateDownloadDeletionSetting) {
                     DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(context)
                 }

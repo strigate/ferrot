@@ -21,8 +21,6 @@ import org.strigate.ferrot.presentation.model.UpdatesInfoUiData
 import org.strigate.ferrot.presentation.model.UpdatesSettingsUiData
 import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
-import org.strigate.ferrot.work.trigger.AvailableUpdateDailyTriggerReceiver
-import org.strigate.ferrot.work.trigger.DependencyUpdateDailyTriggerReceiver
 import org.strigate.ferrot.work.worker.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.worker.UpdateDependenciesWorker
 import javax.inject.Inject
@@ -68,9 +66,9 @@ class UpdatesViewModel @Inject constructor(
         viewModelScope.launch {
             settingsUseCase.saveAutomaticUpdatesSettingUseCase(enabled)
             if (enabled) {
-                AvailableUpdateDailyTriggerReceiver.schedule(appContext)
+                DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
             } else {
-                AvailableUpdateDailyTriggerReceiver.cancel(appContext)
+                DownloadAvailableUpdateWorker.cancelPeriodic(appContext)
             }
         }
     }
@@ -86,9 +84,9 @@ class UpdatesViewModel @Inject constructor(
         viewModelScope.launch {
             settingsUseCase.saveAutomaticDependencyUpdatesSettingUseCase(enabled)
             if (enabled) {
-                DependencyUpdateDailyTriggerReceiver.schedule(appContext)
+                UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
             } else {
-                DependencyUpdateDailyTriggerReceiver.cancel(appContext)
+                UpdateDependenciesWorker.cancelPeriodic(appContext)
             }
         }
     }

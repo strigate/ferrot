@@ -4,9 +4,11 @@ import android.content.Context
 import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +25,15 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_VERSION_TAG
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD_AVAILABLE_UPDATE
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import org.strigate.ferrot.util.isAppInForeground
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.io.File
@@ -442,14 +447,59 @@ class DownloadAvailableUpdateWorker(
     }
 
     companion object {
+        fun enqueuePeriodicKeep(
+            context: Context,
+            flexHours: Long = 1,
+        ) {
+            enqueuePeriodicDailyUpdate(
+                context = context,
+                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST,
+                targetHour = 3,
+                flexHours = flexHours,
+            )
+            enqueuePeriodicDailyUpdate(
+                context = context,
+                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND,
+                targetHour = 12,
+                flexHours = flexHours,
+            )
+        }
+
+        private fun enqueuePeriodicDailyUpdate(
+            context: Context,
+            uniqueWorkName: String,
+            targetHour: Int,
+            flexHours: Long,
+        ) {
+            val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val periodicWorkRequest = PeriodicWorkRequestBuilder<DownloadAvailableUpdateWorker>(
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = TimeUnit.DAYS,
+                flexTimeInterval = flexHours,
+                flexTimeIntervalUnit = TimeUnit.HOURS,
+            )
+                .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
+                .setConstraints(constraints)
+                .addTag(Constants.Work.Tag.DOWNLOAD_AVAILABLE_UPDATE)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                uniqueWorkName,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                periodicWorkRequest,
+            )
+        }
+
         fun enqueueOneTimeReplace(
             context: Context,
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
                 .build()
 
             val oneTimeWorkRequest = OneTimeWorkRequestBuilder<DownloadAvailableUpdateWorker>()
@@ -464,6 +514,13 @@ class DownloadAvailableUpdateWorker(
                 ExistingWorkPolicy.REPLACE,
                 oneTimeWorkRequest,
             )
+        }
+
+        fun cancelPeriodic(context: Context) {
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST)
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND)
         }
     }
 }
