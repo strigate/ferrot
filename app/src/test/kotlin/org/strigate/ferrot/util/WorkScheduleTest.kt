@@ -7,6 +7,26 @@ import java.time.ZonedDateTime
 
 class WorkScheduleTest {
     @Test
+    fun calculateDailyInitialDelayMillis_supportsFirstAndSecondAppUpdateChecks() {
+        val zoneId = ZoneId.of("UTC")
+        val now = ZonedDateTime.of(2026, 3, 4, 2, 15, 0, 0, zoneId)
+
+        val firstCheckDelay = calculateDailyInitialDelayMillis(
+            targetHour = 3,
+            zoneId = zoneId,
+            now = now,
+        )
+        val secondCheckDelay = calculateDailyInitialDelayMillis(
+            targetHour = 12,
+            zoneId = zoneId,
+            now = now,
+        )
+
+        assertEquals(45 * 60 * 1000L, firstCheckDelay)
+        assertEquals((9 * 60 + 45) * 60 * 1000L, secondCheckDelay)
+    }
+
+    @Test
     fun calculateDailyInitialDelayMillis_returnsSameDayDelay_whenBeforeTargetHour() {
         val zoneId = ZoneId.of("UTC")
         val now = ZonedDateTime.of(2026, 3, 4, 2, 15, 0, 0, zoneId)
