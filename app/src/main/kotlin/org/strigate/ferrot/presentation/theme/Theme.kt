@@ -34,6 +34,9 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = Color(0xFFF6ECE9),
     onSurfaceVariant = Color(0xFF51423D),
     surfaceContainer = Color(0xFFFAF6F4),
+    inverseSurface = Color(0xFF2F2B2A),
+    inverseOnSurface = Color(0xFFF8EEEA),
+    inversePrimary = FerrotCoral,
 
     error = Color(0xFFB3261E),
     onError = Color.White,
@@ -65,6 +68,9 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = Color(0xFF2A2220),
     onSurfaceVariant = Color(0xFFD5C5BF),
     surfaceContainer = Color(0xFF1A1615),
+    inverseSurface = Color(0xFFF8EEEA),
+    inverseOnSurface = Color(0xFF2A1F1B),
+    inversePrimary = Color(0xFFFF6F3C),
 
     error = Color(0xFFF2B8B5),
     onError = Color(0xFF601410),

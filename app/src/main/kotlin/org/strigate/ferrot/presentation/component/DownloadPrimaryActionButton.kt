@@ -80,7 +80,7 @@ fun DownloadPrimaryActionButton(
     ) {
         Box(
             modifier = Modifier
-                .size(dimens.iconLarge),
+                .size(dimens.downloadListThumbnailSize),
             contentAlignment = Alignment.Center,
         ) {
             thumbnailFile?.let {
@@ -102,7 +102,7 @@ fun DownloadPrimaryActionButton(
             }
             Box(
                 modifier = Modifier
-                    .size(dimens.overlayButtonSmall)
+                    .size(dimens.downloadListOverlayButtonSize)
                     .clip(CircleShape)
                     .background(overlayScrim),
                 contentAlignment = Alignment.Center,
