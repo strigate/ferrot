@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -473,7 +474,15 @@ fun DownloadsScreen(
             }
         },
         snackbarHost = {
-            SnackbarHost(snackbarHostState)
+            SnackbarHost(snackbarHostState) { snackbarData ->
+                Snackbar(
+                    snackbarData = snackbarData,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                    actionColor = MaterialTheme.colorScheme.inversePrimary,
+                    dismissActionContentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+            }
         },
     ) { contentPadding ->
         Surface(
@@ -962,6 +971,13 @@ private fun DownloadItem(
                 modifier = Modifier
                     .weight(1f),
             ) {
+                val showInlineProgressBar = when (item.status) {
+                    DownloadStatusUiData.QUEUED,
+                    DownloadStatusUiData.METADATA,
+                    DownloadStatusUiData.DOWNLOADING -> true
+
+                    else -> false
+                }
                 val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -992,13 +1008,22 @@ private fun DownloadItem(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+                Spacer(
+                    modifier = Modifier.height(
+                        if (showInlineProgressBar) {
+                            dimens.spacingMediumAlt
+                        } else {
+                            dimens.spacingXXSmall
+                        },
+                    ),
+                )
                 DownloadProgressSection(
                     status = item.status,
                     progressFraction = item.progressFraction,
                     etaSeconds = item.etaSeconds,
                     bytesDownloaded = item.bytesDownloaded,
                     completedAtMillis = item.completedAtMillis,
+                    alwaysShowBar = false,
                 )
             }
         }

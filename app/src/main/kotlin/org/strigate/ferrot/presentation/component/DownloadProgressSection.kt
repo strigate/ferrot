@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ fun DownloadProgressSection(
     completedAtMillis: Long?,
     modifier: Modifier = Modifier,
     forcePrimaryBar: Boolean = false,
+    alwaysShowBar: Boolean = true,
 ) {
     val dimens = LocalDimens.current
     val running = when (status) {
@@ -44,18 +46,21 @@ fun DownloadProgressSection(
         DownloadStatusUiData.STOPPED -> 0f
         else -> null
     }
+    val showBar = running || alwaysShowBar
     Column(
         modifier = modifier,
     ) {
-        DownloadProgressBar(
-            progress = progress,
-            running = running,
-            forcePrimary = forcePrimaryBar,
-        )
-        Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+        if (showBar) {
+            DownloadProgressBar(
+                progress = progress,
+                running = running,
+                forcePrimary = forcePrimaryBar,
+            )
+            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+        }
         Box(
             modifier = Modifier
-                .height(dimens.spacingLarge),
+                .heightIn(min = dimens.spacingLarge),
         ) {
             StatusSizeEtaRow(
                 status = status,
