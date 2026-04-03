@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
-import org.strigate.ferrot.work.worker.DeleteAllDuplicateDownloadsWorker
-import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
+import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
 import javax.inject.Inject
 import kotlin.math.abs
 
