@@ -12,7 +12,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.util.NetworkOps
-import org.strigate.ferrot.work.worker.DownloadWorker
+import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
 
 class StartDownloadUseCase @Inject constructor(

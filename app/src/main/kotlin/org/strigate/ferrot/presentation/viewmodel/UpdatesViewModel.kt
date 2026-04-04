@@ -21,8 +21,8 @@ import org.strigate.ferrot.presentation.model.UpdatesInfoUiData
 import org.strigate.ferrot.presentation.model.UpdatesSettingsUiData
 import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
-import org.strigate.ferrot.work.worker.DownloadAvailableUpdateWorker
-import org.strigate.ferrot.work.worker.UpdateDependenciesWorker
+import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
+import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
 
 @HiltViewModel

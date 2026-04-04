@@ -19,8 +19,8 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
-import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
-import org.strigate.ferrot.work.worker.UpdateDependenciesWorker
+import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.UpdateDependenciesWorker
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 

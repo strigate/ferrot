@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import org.strigate.ferrot.app.Constants.LOG_TAG
-import org.strigate.ferrot.work.worker.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
 
 @AndroidEntryPoint
 class AirplaneModeReceiver : BroadcastReceiver() {

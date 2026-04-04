@@ -636,6 +636,12 @@ private fun DownloadsList(
     val coroutineScope = rememberCoroutineScope()
     val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
+    var trackedAutoScrollDownloadId by remember {
+        mutableStateOf<Long?>(null)
+    }
+    var trackedAutoScrollWasActive by remember {
+        mutableStateOf(false)
+    }
 
     val showScrollToBottom by remember {
         derivedStateOf {
@@ -663,10 +669,34 @@ private fun DownloadsList(
     }
     LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
         if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
+            trackedAutoScrollDownloadId =
+                itemIds.firstOrNull { it !in previousItemIds && it !in previousPendingDeleteIds }
+            trackedAutoScrollWasActive = items
+                .firstOrNull { it.id == trackedAutoScrollDownloadId }
+                ?.status
+                ?.isActive == true
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
         previousPendingDeleteIds = pendingDeleteIds
+    }
+    LaunchedEffect(items.map { it.id to it.status }, trackedAutoScrollDownloadId) {
+        val trackedId = trackedAutoScrollDownloadId ?: return@LaunchedEffect
+        val trackedIndex = items.indexOfFirst { it.id == trackedId }
+        if (trackedIndex < 0) {
+            trackedAutoScrollDownloadId = null
+            trackedAutoScrollWasActive = false
+            return@LaunchedEffect
+        }
+        val currentStatus = items[trackedIndex].status
+        val isActive = currentStatus.isActive
+        if (trackedAutoScrollWasActive && !isActive) {
+            lazyListState.animateScrollToItem(trackedIndex)
+            trackedAutoScrollDownloadId = null
+            trackedAutoScrollWasActive = false
+            return@LaunchedEffect
+        }
+        trackedAutoScrollWasActive = isActive
     }
     Box(
         modifier = Modifier
