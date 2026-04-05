@@ -4,8 +4,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -45,6 +47,7 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import kotlin.time.Duration.Companion.seconds
 
@@ -453,6 +456,70 @@ class DownloadsViewModelTest {
         advanceUntilIdle()
 
         verify(requestDeletePendingDownloadsImmediateUseCase).invoke()
+    }
+
+    @Test
+    fun installAvailableUpdate_emitsInstallEvent() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(
+                AvailableUpdate(
+                    tag = "v1.2.3",
+                    localFilePath = "/tmp/update.apk",
+                )
+            ),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+            data.data.availableUpdate?.localFilePath == "/tmp/update.apk"
+        }
+
+        val eventDeferred = backgroundScope.async { viewModel.events.first() }
+
+        viewModel.installAvailableUpdate()
+        advanceUntilIdle()
+
+        assertEquals(
+            DownloadsEvent.InstallUpdate("/tmp/update.apk"),
+            eventDeferred.await(),
+        )
+        collector.cancel()
+    }
+
+    @Test
+    fun installAvailableUpdate_doesNothingWithoutLocalFilePath() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(
+                AvailableUpdate(
+                    tag = "v1.2.3",
+                    localFilePath = null,
+                )
+            ),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        var emittedEvent: DownloadsEvent? = null
+        val eventCollector = backgroundScope.launch {
+            viewModel.events.collect { event ->
+                emittedEvent = event
+            }
+        }
+
+        viewModel.installAvailableUpdate()
+        advanceUntilIdle()
+
+        assertNull(emittedEvent)
+        eventCollector.cancel()
+        collector.cancel()
     }
 
     private fun createViewModel(
