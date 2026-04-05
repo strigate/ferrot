@@ -5,8 +5,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -96,6 +98,7 @@ import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.EmptyState
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.isActive
@@ -119,6 +122,7 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
+    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val lazyListState = rememberLazyListState()
@@ -181,6 +185,15 @@ fun DownloadsScreen(
     }
     LaunchedEffect(Unit) {
         viewModel.logShown()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is DownloadsEvent.InstallUpdate -> {
+                    InstallHelper.requestInstallApkIfExists(context, event.path)
+                }
+            }
+        }
     }
     LifecycleEffect {
         on(Lifecycle.Event.ON_START) {
@@ -506,16 +519,13 @@ fun DownloadsScreen(
                                 .fillMaxSize(),
                         ) {
                             availableUpdate?.let {
-                                val context = LocalContext.current
                                 AvailableUpdateBanner(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = dimens.spacingMedium)
-                                        .padding(bottom = dimens.spacingSmall),
+                                        .fillMaxWidth(),
                                     tag = it.tag,
                                     localFilePath = it.localFilePath,
-                                    onClick = { filePath ->
-                                        InstallHelper.requestInstallApkIfExists(context, filePath)
+                                    onClick = {
+                                        viewModel.installAvailableUpdate()
                                     },
                                 )
                             }
@@ -633,6 +643,7 @@ private fun DownloadsList(
     onBulkDismissAnimationFinished: (Long) -> Unit,
     onMarkPendingDelete: (Set<Long>) -> Unit,
 ) {
+    val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
     val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
@@ -731,6 +742,8 @@ private fun DownloadsList(
             modifier = Modifier
                 .fillMaxSize(),
             state = lazyListState,
+            contentPadding = PaddingValues(vertical = dimens.spacingXSmall),
+            verticalArrangement = Arrangement.spacedBy(dimens.spacingXXSmall),
         ) {
             items(
                 items = items,
@@ -838,67 +851,64 @@ private fun DownloadsListRow(
         enter = Transitions.listItemEnter,
         exit = Transitions.listItemExit,
     ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coordinates ->
-                        rowWidthPx = coordinates.size.width.toFloat()
-                    },
-            ) {
-                SwipeToDismissBox(
-                    state = dismissState,
-                    enableDismissFromStartToEnd = false,
-                    enableDismissFromEndToStart = swipeEnabled,
-                    backgroundContent = {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.medium,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    rowWidthPx = coordinates.size.width.toFloat()
+                },
+        ) {
+            SwipeToDismissBox(
+                state = dismissState,
+                enableDismissFromStartToEnd = false,
+                enableDismissFromEndToStart = swipeEnabled,
+                backgroundContent = {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.CenterEnd,
                         ) {
-                            Box(
+                            Icon(
                                 modifier = Modifier
-                                    .fillMaxSize(),
-                                contentAlignment = Alignment.CenterEnd,
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .padding(end = dimens.spacingMedium),
-                                    imageVector = Icons.Filled.Delete,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    contentDescription = null,
-                                )
-                            }
+                                    .padding(end = dimens.spacingMedium),
+                                imageVector = Icons.Filled.Delete,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                },
+            ) {
+                DownloadItem(
+                    item = item,
+                    isSelected = isSelected,
+                    longClickEnabled = swipeEnabled,
+                    onClick = {
+                        if (selectedIds.isNotEmpty()) {
+                            onSelectionChange(toggleSelection(selectedIds, item.id))
+                        } else {
+                            onItemClick(item)
                         }
                     },
-                ) {
-                    DownloadItem(
-                        item = item,
-                        isSelected = isSelected,
-                        longClickEnabled = swipeEnabled,
-                        onClick = {
-                            if (selectedIds.isNotEmpty()) {
-                                onSelectionChange(toggleSelection(selectedIds, item.id))
-                            } else {
-                                onItemClick(item)
-                            }
-                        },
-                        onLongClick = {
-                            onSelectionChange(selectedIds + item.id)
-                        },
-                        onPauseResume = {
-                            onPauseResume(item)
-                        },
-                        onOpen = {
-                            if (selectedIds.isNotEmpty()) {
-                                onSelectionChange(toggleSelection(selectedIds, item.id))
-                            } else {
-                                onItemClick(item)
-                            }
-                        },
-                    )
-                }
+                    onLongClick = {
+                        onSelectionChange(selectedIds + item.id)
+                    },
+                    onPauseResume = {
+                        onPauseResume(item)
+                    },
+                    onOpen = {
+                        if (selectedIds.isNotEmpty()) {
+                            onSelectionChange(toggleSelection(selectedIds, item.id))
+                        } else {
+                            onItemClick(item)
+                        }
+                    },
+                )
             }
-            Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
         }
     }
 

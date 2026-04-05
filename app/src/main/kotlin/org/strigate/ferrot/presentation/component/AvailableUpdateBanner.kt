@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import org.strigate.ferrot.R
@@ -34,10 +35,10 @@ fun AvailableUpdateBanner(
                 .clickable {
                     onClick(localFilePath)
                 },
-            shape = MaterialTheme.shapes.medium,
+            shape = RectangleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
-            tonalElevation = dimens.tonalElevationHigh,
-            shadowElevation = dimens.shadowElevationLow,
+            tonalElevation = dimens.zero,
+            shadowElevation = dimens.zero,
         ) {
             Row(
                 modifier = Modifier

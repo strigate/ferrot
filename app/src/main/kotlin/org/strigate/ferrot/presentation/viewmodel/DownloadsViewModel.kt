@@ -8,9 +8,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
@@ -25,6 +27,7 @@ import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
@@ -49,6 +52,12 @@ class DownloadsViewModel @Inject constructor(
         TextFieldValue(text = "", selection = TextRange(0))
     )
     val searchQuery: StateFlow<TextFieldValue> = _searchQuery
+
+    private val _events = MutableSharedFlow<DownloadsEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+    )
+    val events = _events.asSharedFlow()
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -177,6 +186,17 @@ class DownloadsViewModel @Inject constructor(
     fun requestDeletePendingDownloadsImmediate() {
         viewModelScope.launch {
             downloadUseCase.requestDeletePendingDownloadsImmediateUseCase()
+        }
+    }
+
+    fun installAvailableUpdate() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val localFilePath = data.data.availableUpdate?.localFilePath
+        if (localFilePath.isNullOrBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            _events.emit(DownloadsEvent.InstallUpdate(localFilePath))
         }
     }
 
