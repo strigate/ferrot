@@ -16,6 +16,7 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNL
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_UPDATES
 import org.strigate.ferrot.app.Constants.Notifications.Groups.GROUP_ID_DOWNLOADED
 import org.strigate.ferrot.util.NotificationOps.cancel
+import org.strigate.ferrot.util.NotificationOps.clearNotificationsByExtraValue
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannel
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannelGroup
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelGroupsOtherThan
@@ -81,7 +82,8 @@ class NotificationService @Inject constructor(
         contentTitle: String,
         contentText: String,
         extras: Map<String, String> = emptyMap(),
-        tag: String? = "update_available",
+        actions: List<NotificationCompat.Action> = emptyList(),
+        tag: String? = availableUpdateNotificationTag(),
     ) {
         notify(
             context = appContext,
@@ -96,6 +98,7 @@ class NotificationService @Inject constructor(
             priority = NotificationCompat.PRIORITY_HIGH,
             tag = tag,
             extras = extras,
+            actions = actions,
         )
     }
 
@@ -140,6 +143,14 @@ class NotificationService @Inject constructor(
             context = appContext,
             notificationId = notificationId,
             tag = tag,
+        )
+    }
+
+    fun clearAvailableUpdateNotification() {
+        clearNotificationsByExtraValue(
+            context = appContext,
+            stringExtras = availableUpdateNotificationExtras(),
+            channelId = CHANNEL_ID_UPDATES,
         )
     }
 

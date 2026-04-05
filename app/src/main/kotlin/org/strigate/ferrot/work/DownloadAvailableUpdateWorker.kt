@@ -19,16 +19,15 @@ import org.json.JSONObject
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants
-import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_VERSION_TAG
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.availableUpdateNotificationExtras
+import org.strigate.ferrot.app.buildDeleteAvailableUpdateNotificationAction
+import org.strigate.ferrot.app.buildInstallAvailableUpdateNotificationAction
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
@@ -87,7 +86,6 @@ class DownloadAvailableUpdateWorker(
             }
             if (savedTag != null && isNewerVersion(latestTag, savedTag)) {
                 Log.d(LOG_TAG, "Found newer update: latest=$latestTag replaces saved=$savedTag")
-                deleteIfExists(savedAvailableUpdate.localFilePath)
                 clearAvailableUpdate()
             }
 
@@ -203,10 +201,14 @@ class DownloadAvailableUpdateWorker(
         notificationService.notifyAvailableUpdate(
             contentTitle = contentTitle,
             contentText = contentText,
-            extras = mapOf(
-                EXTRA_ACTION to ACTION_INSTALL_AVAILABLE_UPDATE,
-                EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH to apkFilePath,
-                EXTRA_AVAILABLE_UPDATE_VERSION_TAG to versionTag,
+            extras = availableUpdateNotificationExtras(),
+            actions = listOf(
+                buildInstallAvailableUpdateNotificationAction(
+                    context = appContext,
+                    apkFilePath = apkFilePath,
+                    versionTag = versionTag,
+                ),
+                buildDeleteAvailableUpdateNotificationAction(appContext),
             ),
         )
     }
@@ -414,18 +416,9 @@ class DownloadAvailableUpdateWorker(
 
     private suspend fun clearAvailableUpdate() {
         try {
-            availableUpdateUseCase.clearAvailableUpdateUseCase()
+            availableUpdateUseCase.clearAvailableUpdateFilesAndDataUseCase()
         } catch (throwable: Throwable) {
-            Log.w(LOG_TAG, "Failed to clear available update row", throwable)
-        }
-    }
-
-    private fun deleteIfExists(path: String?) {
-        runCatching {
-            if (!path.isNullOrBlank()) {
-                val file = File(path)
-                if (file.exists()) file.delete()
-            }
+            Log.w(LOG_TAG, "Failed to clear available update files and data", throwable)
         }
     }
 
