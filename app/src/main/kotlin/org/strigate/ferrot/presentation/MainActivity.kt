@@ -22,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
+import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOADS
 import org.strigate.ferrot.app.Constants.Action.ACTION_START_DOWNLOAD_FROM_SHARE
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH
@@ -84,6 +85,14 @@ class MainActivity : ComponentActivity() {
                     viewModel.navigateToDownload(downloadId)
                     return
                 }
+            }
+
+            ACTION_NAVIGATE_DOWNLOADS -> {
+                viewModel.navigateTo(
+                    route = Screen.Downloads.route,
+                    popUpToDownloads = true,
+                )
+                return
             }
 
             ACTION_INSTALL_AVAILABLE_UPDATE -> {

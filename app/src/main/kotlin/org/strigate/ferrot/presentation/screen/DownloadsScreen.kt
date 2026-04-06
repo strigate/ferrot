@@ -52,7 +52,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -294,8 +293,6 @@ fun DownloadsScreen(
                 TopAppBar(
                     navigationIcon = {
                         IconButton(
-                            modifier = Modifier
-                                .padding(dimens.spacingXSmall),
                             onClick = {},
                         ) {
                             Icon(
@@ -308,8 +305,7 @@ fun DownloadsScreen(
                     title = {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(TopAppBarDefaults.TopAppBarExpandedHeight),
+                                .fillMaxWidth(),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             AnimatedVisibility(
@@ -534,6 +530,7 @@ fun DownloadsScreen(
                                 selectedIds = selectedIds,
                                 dismissingIds = dismissingIds,
                                 pendingDeleteIds = pendingDeleteIds,
+                                hasAvailableUpdateBanner = availableUpdate != null,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
                                 onItemClick = { item ->
@@ -635,6 +632,7 @@ private fun DownloadsList(
     selectedIds: Set<Long>,
     dismissingIds: Set<Long>,
     pendingDeleteIds: Set<Long>,
+    hasAvailableUpdateBanner: Boolean,
     searchQuery: String,
     lazyListState: LazyListState,
     onItemClick: (DownloadItemUiData) -> Unit,
@@ -742,7 +740,10 @@ private fun DownloadsList(
             modifier = Modifier
                 .fillMaxSize(),
             state = lazyListState,
-            contentPadding = PaddingValues(vertical = dimens.spacingXSmall),
+            contentPadding = PaddingValues(
+                top = if (hasAvailableUpdateBanner) dimens.spacingXSmall else dimens.zero,
+                bottom = dimens.spacingXSmall,
+            ),
             verticalArrangement = Arrangement.spacedBy(dimens.spacingXXSmall),
         ) {
             items(
