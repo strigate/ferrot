@@ -4,6 +4,7 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathPrintTemplate
 import javax.inject.Inject
 
 class BuildVideoDownloadRequestUseCase @Inject constructor() {
@@ -18,6 +19,7 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
             addOption("-f", formatSelectorFor(qualityProfile))
             addOption("-o", template)
             addOption("--windows-filenames")
+            addOption("--print", finalOutputPathPrintTemplate())
 
             val encoderString = "$NAME ${BuildConfig.VERSION}"
             addOption("--add-metadata")
@@ -52,7 +54,6 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         }
     }
 }
-
 
 private fun formatSelectorFor(profile: QualityProfile): String = when (profile) {
     QualityProfile.MAX -> "bv*+ba/b"

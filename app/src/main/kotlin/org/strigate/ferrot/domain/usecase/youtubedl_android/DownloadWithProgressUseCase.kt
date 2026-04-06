@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.extractFinalOutputFilePath
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
@@ -56,6 +57,17 @@ class DownloadWithProgressUseCase @Inject constructor(
                         percent = mapped,
                         etaSeconds = rawEta.takeIf { it >= 0 },
                         bytesDownloaded = bytesProvider(),
+                    ),
+                )
+            }
+            val outputFilePath = extractFinalOutputFilePath(youtubeDlResponse.out)
+            if (!outputFilePath.isNullOrBlank()) {
+                trySend(
+                    DownloadTick(
+                        percent = 100f,
+                        etaSeconds = null,
+                        bytesDownloaded = bytesProvider(),
+                        outputFilePath = outputFilePath,
                     ),
                 )
             }
@@ -120,5 +132,6 @@ class DownloadWithProgressUseCase @Inject constructor(
         val percent: Float,
         val etaSeconds: Long?,
         val bytesDownloaded: Long,
+        val outputFilePath: String? = null,
     )
 }
