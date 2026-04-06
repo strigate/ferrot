@@ -26,12 +26,12 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
-import org.strigate.ferrot.app.DownloadNotificationActionType
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.buildDownloadNotificationAction
-import org.strigate.ferrot.app.downloadNotificationExtras
-import org.strigate.ferrot.app.downloadNotificationTag
+import org.strigate.ferrot.app.actions.DownloadNotificationActionType
+import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
+import org.strigate.ferrot.app.actions.downloadNotificationExtras
+import org.strigate.ferrot.app.actions.downloadNotificationTag
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMediaType

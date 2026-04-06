@@ -1,4 +1,4 @@
-package org.strigate.ferrot.app
+package org.strigate.ferrot.app.actions
 
 import android.app.PendingIntent
 import android.content.Context
