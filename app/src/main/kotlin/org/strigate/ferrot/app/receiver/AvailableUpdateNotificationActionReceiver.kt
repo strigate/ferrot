@@ -7,9 +7,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.strigate.ferrot.app.AvailableUpdateNotificationActionType
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_NOTIFICATION_ACTION
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.actions.AvailableUpdateNotificationActionType
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import javax.inject.Inject
 

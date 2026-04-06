@@ -25,9 +25,9 @@ import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_U
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
-import org.strigate.ferrot.app.availableUpdateNotificationExtras
-import org.strigate.ferrot.app.buildDeleteAvailableUpdateNotificationAction
-import org.strigate.ferrot.app.buildInstallAvailableUpdateNotificationAction
+import org.strigate.ferrot.app.actions.availableUpdateNotificationExtras
+import org.strigate.ferrot.app.actions.buildDeleteAvailableUpdateNotificationAction
+import org.strigate.ferrot.app.actions.buildInstallAvailableUpdateNotificationAction
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase

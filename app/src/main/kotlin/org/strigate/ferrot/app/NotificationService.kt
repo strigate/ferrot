@@ -15,6 +15,8 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIV
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_UPDATES
 import org.strigate.ferrot.app.Constants.Notifications.Groups.GROUP_ID_DOWNLOADED
+import org.strigate.ferrot.app.actions.availableUpdateNotificationExtras
+import org.strigate.ferrot.app.actions.availableUpdateNotificationTag
 import org.strigate.ferrot.util.NotificationOps.cancel
 import org.strigate.ferrot.util.NotificationOps.clearNotificationsByExtraValue
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannel
