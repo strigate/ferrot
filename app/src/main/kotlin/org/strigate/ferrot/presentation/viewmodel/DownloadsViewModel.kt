@@ -83,11 +83,13 @@ class DownloadsViewModel @Inject constructor(
                 .map { it.id }
                 .toSet()
             val filteredDownloads = downloadsWithMetadata
+                .asSequence()
                 .filter { !it.pendingDelete }
-                .map { it.toUiData() }
                 .filter {
                     text.isBlank() || it.title.contains(text, ignoreCase = true)
                 }
+                .map { it.toUiData() }
+                .toList()
 
             val availableUpdateUiData = availableUpdate?.let {
                 AvailableUpdateUiData(

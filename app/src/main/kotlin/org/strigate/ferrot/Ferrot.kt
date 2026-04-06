@@ -9,9 +9,14 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
@@ -24,6 +29,8 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     @Inject
     lateinit var workerFactory: WorkerFactory
 
@@ -51,7 +58,15 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         notificationService.initializeNotificationChannels()
         registerReceivers()
         analyticsLogger.setConsent(!BuildConfig.DEBUG)
-        enqueueWork()
+
+        applicationScope.launch {
+            runCatching {
+                enqueueWork()
+                Log.i(LOG_TAG, "Enqueued background work")
+            }.onFailure {
+                Log.w(LOG_TAG, "Failed to enqueue background work", it)
+            }
+        }
     }
 
     private fun registerReceivers() {
@@ -61,34 +76,42 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         )
     }
 
-    private fun enqueueWork() = runBlocking {
+    private suspend fun enqueueWork() {
         val appContext = this@Ferrot
 
-        val automaticUpdatesSetting = settingsUseCase
-            .getAutomaticUpdatesSettingAsFlowUseCase()
-            .first()
-        val automaticDependencyUpdatesSetting = settingsUseCase
-            .getAutomaticDependencyUpdatesSettingAsFlowUseCase()
-            .first()
-        val automaticDuplicateDownloadDeletionSetting = settingsUseCase
-            .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
-            .first()
+        val settings = combine(
+            settingsUseCase.getAutomaticUpdatesSettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase(),
+        ) { automaticUpdates, automaticDependencyUpdates, automaticDuplicateDownloadDeletion ->
+            EnqueuedWorkSettings(
+                automaticUpdates = automaticUpdates,
+                automaticDependencyUpdates = automaticDependencyUpdates,
+                automaticDuplicateDownloadDeletion = automaticDuplicateDownloadDeletion,
+            )
+        }.first()
 
-        if (automaticUpdatesSetting) {
+        if (settings.automaticUpdates) {
             DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
         } else {
             DownloadAvailableUpdateWorker.cancelPeriodic(appContext)
         }
-        if (automaticDependencyUpdatesSetting) {
+        if (settings.automaticDependencyUpdates) {
             UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
         } else {
             UpdateDependenciesWorker.cancelPeriodic(appContext)
         }
-        if (automaticDuplicateDownloadDeletionSetting) {
+        if (settings.automaticDuplicateDownloadDeletion) {
             DeleteAllDuplicateDownloadsWorker.enqueuePeriodicKeep(appContext)
         } else {
             DeleteAllDuplicateDownloadsWorker.cancelPeriodic(appContext)
         }
         DeleteAllOrphanDownloadFilesWorker.enqueuePeriodicKeep(appContext)
     }
+
+    private data class EnqueuedWorkSettings(
+        val automaticUpdates: Boolean,
+        val automaticDependencyUpdates: Boolean,
+        val automaticDuplicateDownloadDeletion: Boolean,
+    )
 }
