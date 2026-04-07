@@ -1,6 +1,7 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathPrintTemplate
 import javax.inject.Inject
 
 class BuildAudioDownloadRequestUseCase @Inject constructor() {
@@ -14,6 +15,7 @@ class BuildAudioDownloadRequestUseCase @Inject constructor() {
             addOption("-f", "ba/b")
             addOption("-o", template)
             addOption("--windows-filenames")
+            addOption("--print", finalOutputPathPrintTemplate())
             addOption("--extract-audio")
             addOption("--audio-format", "mp3")
             addOption("--audio-quality", "0")

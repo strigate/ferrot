@@ -157,7 +157,6 @@ class DownloadWorker(
                 }
                 Log.d(LOG_TAG, "$tag $message")
 
-                val videoInfoId = videoInfo?.id
                 val videoInfoTitle = videoInfo?.title?.takeIf { it.isNotBlank() }
                 val videoInfoExtension = videoInfo?.ext?.takeIf { it.isNotBlank() }
                 val videoInfoDuration = videoInfo?.duration ?: -1
@@ -246,7 +245,7 @@ class DownloadWorker(
                 )
 
                 Log.d(LOG_TAG, "$tag Downloading video")
-                withContext(Dispatchers.IO) {
+                val videoOutputFilePath = withContext(Dispatchers.IO) {
                     collectPhase(
                         processId = videoProcessId,
                         url = download.url,
@@ -267,13 +266,16 @@ class DownloadWorker(
 
                 throwIfDownloadDeleted()
 
-                val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfoId)
-                if (videoOutputFile == null || !videoOutputFile.exists()) {
-                    Log.w(LOG_TAG, "$tag Video output file could not be located or does not exist")
+                if (videoOutputFilePath.isNullOrBlank()) {
+                    Log.w(LOG_TAG, "$tag Video output file path was not reported")
+                    return@mainScope handleDownloadFailedResult()
+                }
+                val videoOutputFile = File(videoOutputFilePath)
+                if (!videoOutputFile.exists() || videoOutputFile.length() <= 0L) {
+                    Log.w(LOG_TAG, "$tag Video output file path was reported but file is missing")
                     return@mainScope handleDownloadFailedResult()
                 }
 
-                val videoOutputFilePath = videoOutputFile.absolutePath
                 val videoOutputFileExtension = videoInfoExtension ?: videoOutputFilePath
                     .extractFileExtension()
                     .orEmpty()
@@ -310,7 +312,7 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag Downloading audio")
                 try {
-                    withContext(Dispatchers.IO) {
+                    val audioOutputFilePath = withContext(Dispatchers.IO) {
                         collectPhase(
                             processId = audioProcessId,
                             url = download.url,
@@ -328,20 +330,15 @@ class DownloadWorker(
                         )
                     }
                     Log.d(LOG_TAG, "$tag Downloaded audio")
-                } catch (throwable: Throwable) {
-                    val message = "$tag Audio download failed, continuing with video-only"
-                    Log.w(LOG_TAG, message, throwable)
-                }
 
-                val audioOutputFile = locateOutputFileByInfoId(
-                    dir = uidDir,
-                    videoInfoId = videoInfoId,
-                    audio = true,
-                )
-                if (audioOutputFile == null || !audioOutputFile.exists()) {
-                    Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
-                } else {
-                    val audioOutputFilePath = audioOutputFile.absolutePath
+                    if (audioOutputFilePath.isNullOrBlank()) {
+                        throw IllegalStateException("Audio output file path was not reported")
+                    }
+                    val audioOutputFile = File(audioOutputFilePath)
+                    if (!audioOutputFile.exists() || audioOutputFile.length() <= 0L) {
+                        throw IllegalStateException("Audio output file path was reported but file is missing")
+                    }
+
                     val audioOutputFileExtension = audioOutputFilePath
                         .extractFileExtension()
                         .orEmpty()
@@ -354,6 +351,9 @@ class DownloadWorker(
                             fileExtension = audioOutputFileExtension,
                         )
                     )
+                } catch (throwable: Throwable) {
+                    val message = "$tag Audio download failed, continuing with video-only"
+                    Log.w(LOG_TAG, message, throwable)
                 }
 
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
@@ -614,35 +614,6 @@ class DownloadWorker(
         }
     }
 
-    private fun locateOutputFileByInfoId(
-        dir: File,
-        videoInfoId: String?,
-        audio: Boolean = false,
-    ): File? {
-        if (!dir.exists()) {
-            return null
-        }
-        val extensions = if (audio) {
-            listOf("mp3", "m4a", "opus")
-        } else {
-            listOf("mp4", "mkv", "webm")
-        }
-        if (!videoInfoId.isNullOrBlank()) {
-            extensions
-                .map { File(dir, "$videoInfoId.$it") }
-                .firstOrNull { it.exists() && it.length() > 0L }
-                ?.let { return it }
-        }
-        return dir.listFiles()
-            ?.filter {
-                it.isFile && !it.name.startsWith("thumb_") && it.length() > 0L
-            }
-            ?.filter {
-                extensions.any { extension -> it.name.endsWith(".$extension") }
-            }
-            ?.maxByOrNull { it.lastModified() }
-    }
-
     private fun decideWeights(videoBytes: Long?, audioBytes: Long?): Weights {
         return if (videoBytes != null && audioBytes != null && videoBytes > 0 && audioBytes > 0) {
             val total = videoBytes + audioBytes
@@ -707,8 +678,9 @@ class DownloadWorker(
         initialVideoPercent: Float,
         onCanceled: () -> Unit,
         onCombined: (Float) -> Unit,
-    ) {
+    ): String? {
         val throttle = ProgressThrottle()
+        var outputFilePath: String? = null
         val downloadTickFlow = youtubeDlAndroidUseCase.downloadWithProgressUseCase(
             url = url,
             template = template,
@@ -719,6 +691,9 @@ class DownloadWorker(
         )
         try {
             downloadTickFlow.collect { tick ->
+                if (!tick.outputFilePath.isNullOrBlank()) {
+                    outputFilePath = tick.outputFilePath
+                }
                 val status = downloadUseCase.getDownloadByIdUseCase(_downloadId)?.status
                 if (status == null) {
                     onCanceled()
@@ -771,6 +746,7 @@ class DownloadWorker(
                     lastForegroundProgress = percentInt
                 }
             }
+            return outputFilePath
         } finally {
             destroyYoutubeDlProcess(processId)
         }
