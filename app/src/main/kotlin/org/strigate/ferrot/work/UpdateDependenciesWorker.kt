@@ -17,6 +17,7 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
+import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
@@ -28,12 +29,14 @@ class UpdateDependenciesWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
     private val stateUseCase: StateUseCase,
+    private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
         return try {
             enableForeground(
                 notificationText = appContext.getString(R.string.notification_text_updating_dependencies),
             )
+            youtubeDlRuntimeInitializer.initializeIfNeeded()
             Log.d(LOG_TAG, "Updating YoutubeDL")
             val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
                 updateChannel = YoutubeDL.UpdateChannel.STABLE,

@@ -6,6 +6,7 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
 import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.extractFinalOutputFilePath
@@ -16,6 +17,7 @@ import kotlin.math.max
 class DownloadWithProgressUseCase @Inject constructor(
     private val buildVideoDownloadRequestUseCase: BuildVideoDownloadRequestUseCase,
     private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
+    private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) {
     operator fun invoke(
         url: String,
@@ -27,6 +29,7 @@ class DownloadWithProgressUseCase @Inject constructor(
     ) = callbackFlow {
         val progressMappingPolicy = ProgressMappingPolicy()
         val job = launch {
+            youtubeDlRuntimeInitializer.initializeIfNeeded()
             val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
                 DownloadMediaType.VIDEO -> {
                     buildVideoDownloadRequestUseCase(

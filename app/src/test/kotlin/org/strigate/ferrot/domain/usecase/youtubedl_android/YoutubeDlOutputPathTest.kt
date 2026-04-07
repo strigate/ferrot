@@ -62,4 +62,17 @@ class YoutubeDlOutputPathTest {
         assertEquals(true, command.contains("--print"))
         assertEquals(true, command.contains(finalOutputPathPrintTemplate()))
     }
+
+    @Test
+    fun buildThumbnailRequest_usesIdBasedTemplate() {
+        val request = BuildThumbnailRequestUseCase().invoke(
+            url = "https://example.com/video",
+            outputDir = java.io.File("/tmp"),
+            convertToJpg = true,
+        )
+
+        val command = request.buildCommand()
+        assertEquals(true, command.contains("-o"))
+        assertEquals(true, command.contains("/tmp/%(id)s.%(ext)s"))
+    }
 }

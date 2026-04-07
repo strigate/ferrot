@@ -43,9 +43,6 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="org.strigate.ferrot.app.Initializer"
-                android:value="androidx.startup" />
-            <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
