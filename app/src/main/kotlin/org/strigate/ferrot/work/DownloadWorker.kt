@@ -243,6 +243,7 @@ class DownloadWorker(
                     title = videoTitle,
                     notificationExtras = notificationExtras,
                 )
+                val videoOutputPathFile = File(uidDir, ".video-output-path.txt")
 
                 Log.d(LOG_TAG, "$tag Downloading video")
                 val videoOutputFilePath = withContext(Dispatchers.IO) {
@@ -251,6 +252,7 @@ class DownloadWorker(
                         url = download.url,
                         template = videoTemplate,
                         qualityProfile = qualityProfile,
+                        outputPathFile = videoOutputPathFile,
                         bytesProviderRaw = bytesProviderRaw,
                         phaseContext = phaseContext.copy(
                             phase = DownloadMediaType.VIDEO,
@@ -312,12 +314,14 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag Downloading audio")
                 try {
+                    val audioOutputPathFile = File(uidDir, ".audio-output-path.txt")
                     val audioOutputFilePath = withContext(Dispatchers.IO) {
                         collectPhase(
                             processId = audioProcessId,
                             url = download.url,
                             template = audioTemplate,
                             qualityProfile = qualityProfile,
+                            outputPathFile = audioOutputPathFile,
                             bytesProviderRaw = bytesProviderRaw,
                             phaseContext = phaseContext.copy(
                                 phase = DownloadMediaType.AUDIO,
@@ -673,6 +677,7 @@ class DownloadWorker(
         url: String,
         template: String,
         qualityProfile: QualityProfile,
+        outputPathFile: File,
         bytesProviderRaw: () -> Long,
         phaseContext: PhaseContext,
         initialVideoPercent: Float,
@@ -681,6 +686,7 @@ class DownloadWorker(
     ): String? {
         val throttle = ProgressThrottle()
         var outputFilePath: String? = null
+
         val downloadTickFlow = youtubeDlAndroidUseCase.downloadWithProgressUseCase(
             url = url,
             template = template,
@@ -688,12 +694,11 @@ class DownloadWorker(
             processId = processId,
             bytesProvider = { throttle.throttledBytes(bytesProviderRaw) },
             downloadMediaType = phaseContext.phase,
+            outputPathFile = outputPathFile,
+            onOutputFilePath = { outputFilePath = it },
         )
         try {
             downloadTickFlow.collect { tick ->
-                if (!tick.outputFilePath.isNullOrBlank()) {
-                    outputFilePath = tick.outputFilePath
-                }
                 val status = downloadUseCase.getDownloadByIdUseCase(_downloadId)?.status
                 if (status == null) {
                     onCanceled()

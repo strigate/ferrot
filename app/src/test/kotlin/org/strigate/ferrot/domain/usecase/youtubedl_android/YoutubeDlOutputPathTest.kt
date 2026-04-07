@@ -1,66 +1,58 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.FINAL_OUTPUT_PATH_PREFIX
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.extractFinalOutputFilePath
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathPrintTemplate
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathTemplate
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.readFinalOutputFilePath
+import java.io.File
 
 class YoutubeDlOutputPathTest {
     @Test
-    fun finalOutputPathPrintTemplate_usesAfterMoveAndUniquePrefix() {
-        assertEquals(
-            "after_move:${FINAL_OUTPUT_PATH_PREFIX}%(filepath)s",
-            finalOutputPathPrintTemplate(),
-        )
-    }
-
-    @Test
-    fun extractFinalOutputFilePath_returnsLastReportedPath() {
-        val output = """
-            [download] 12.3% of 10.00MiB at 1.00MiB/s ETA 00:12
-            ${FINAL_OUTPUT_PATH_PREFIX}/data/user/0/org.strigate.ferrot/files/downloads/uid/video.mp4
-            ${FINAL_OUTPUT_PATH_PREFIX}/data/user/0/org.strigate.ferrot/files/downloads/uid/audio.mp3
-        """.trimIndent()
-
-        assertEquals(
-            "/data/user/0/org.strigate.ferrot/files/downloads/uid/audio.mp3",
-            extractFinalOutputFilePath(output),
-        )
-    }
-
-    @Test
-    fun extractFinalOutputFilePath_returnsNull_whenMarkerMissing() {
-        assertNull(extractFinalOutputFilePath("[download] 99.9%"))
-    }
-
-    @Test
-    fun buildVideoDownloadRequest_includesAfterMovePathPrintOption() {
+    fun buildVideoDownloadRequest_includesPrintToFileOption_whenPathProvided() {
         val request = BuildVideoDownloadRequestUseCase().invoke(
             url = "https://example.com/video",
             template = "/tmp/%(title)s.%(ext)s",
             qualityProfile = QualityProfile.MAX,
             noProgress = false,
+            outputPathFilePath = "/tmp/video-output-path.txt",
         )
 
         val command = request.buildCommand()
-        assertEquals(true, command.contains("--print"))
-        assertEquals(true, command.contains(finalOutputPathPrintTemplate()))
+        assertTrue(command.contains("--print-to-file"))
+        assertTrue(command.contains(finalOutputPathTemplate()))
+        assertTrue(command.contains("/tmp/video-output-path.txt"))
     }
 
     @Test
-    fun buildAudioDownloadRequest_includesAfterMovePathPrintOption() {
+    fun buildAudioDownloadRequest_includesPrintToFileOption_whenPathProvided() {
         val request = BuildAudioDownloadRequestUseCase().invoke(
             url = "https://example.com/video",
             template = "/tmp/%(title)s.%(ext)s",
             noProgress = false,
+            outputPathFilePath = "/tmp/audio-output-path.txt",
         )
 
         val command = request.buildCommand()
-        assertEquals(true, command.contains("--print"))
-        assertEquals(true, command.contains(finalOutputPathPrintTemplate()))
+        assertTrue(command.contains("--print-to-file"))
+        assertTrue(command.contains(finalOutputPathTemplate()))
+        assertTrue(command.contains("/tmp/audio-output-path.txt"))
+    }
+
+    @Test
+    fun readFinalOutputFilePath_returnsLastNonBlankLine() {
+        val tempFile = File.createTempFile("ferrot-output-path", ".txt")
+        tempFile.writeText(
+            """
+
+            /tmp/video.mp4
+            /tmp/audio.mp3
+            """.trimIndent()
+        )
+
+        assertEquals("/tmp/audio.mp3", readFinalOutputFilePath(tempFile))
+        tempFile.delete()
     }
 
     @Test

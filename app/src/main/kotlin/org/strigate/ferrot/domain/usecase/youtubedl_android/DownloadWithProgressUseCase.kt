@@ -9,7 +9,8 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.extractFinalOutputFilePath
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.readFinalOutputFilePath
+import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
@@ -26,10 +27,13 @@ class DownloadWithProgressUseCase @Inject constructor(
         processId: String,
         bytesProvider: () -> Long,
         downloadMediaType: DownloadMediaType = DownloadMediaType.VIDEO,
+        outputPathFile: File? = null,
+        onOutputFilePath: ((String) -> Unit)? = null,
     ) = callbackFlow {
         val progressMappingPolicy = ProgressMappingPolicy()
         val job = launch {
             youtubeDlRuntimeInitializer.initializeIfNeeded()
+            outputPathFile?.delete()
             val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
                 DownloadMediaType.VIDEO -> {
                     buildVideoDownloadRequestUseCase(
@@ -37,6 +41,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         template = template,
                         qualityProfile = profile,
                         noProgress = false,
+                        outputPathFilePath = outputPathFile?.absolutePath,
                     )
                 }
 
@@ -45,6 +50,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         url = url,
                         template = template,
                         noProgress = false,
+                        outputPathFilePath = outputPathFile?.absolutePath,
                     )
                 }
             }
@@ -63,16 +69,8 @@ class DownloadWithProgressUseCase @Inject constructor(
                     ),
                 )
             }
-            val outputFilePath = extractFinalOutputFilePath(youtubeDlResponse.out)
-            if (!outputFilePath.isNullOrBlank()) {
-                trySend(
-                    DownloadTick(
-                        percent = 100f,
-                        etaSeconds = null,
-                        bytesDownloaded = bytesProvider(),
-                        outputFilePath = outputFilePath,
-                    ),
-                )
+            readFinalOutputFilePath(outputPathFile ?: File(""))?.let { outputPath ->
+                onOutputFilePath?.invoke(outputPath)
             }
             if (youtubeDlResponse.exitCode != 0) {
                 throw IllegalStateException("Exit code ${youtubeDlResponse.exitCode}")
@@ -80,6 +78,7 @@ class DownloadWithProgressUseCase @Inject constructor(
             close()
         }
         awaitClose {
+            outputPathFile?.delete()
             runCatching {
                 YoutubeDL.getInstance().destroyProcessById(processId)
             }
@@ -135,6 +134,5 @@ class DownloadWithProgressUseCase @Inject constructor(
         val percent: Float,
         val etaSeconds: Long?,
         val bytesDownloaded: Long,
-        val outputFilePath: String? = null,
     )
 }
