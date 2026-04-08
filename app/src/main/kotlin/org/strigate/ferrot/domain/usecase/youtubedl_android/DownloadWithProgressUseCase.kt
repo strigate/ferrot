@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.readFinalOutputFilePath
 import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
@@ -69,7 +68,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                     ),
                 )
             }
-            readFinalOutputFilePath(outputPathFile ?: File(""))?.let { outputPath ->
+            readAfterMoveOutputFilePath(outputPathFile ?: File(""))?.let { outputPath ->
                 onOutputFilePath?.invoke(outputPath)
             }
             if (youtubeDlResponse.exitCode != 0) {
@@ -135,4 +134,17 @@ class DownloadWithProgressUseCase @Inject constructor(
         val etaSeconds: Long?,
         val bytesDownloaded: Long,
     )
+}
+
+private fun readAfterMoveOutputFilePath(file: File): String? {
+    if (!file.exists()) {
+        return null
+    }
+    return runCatching {
+        file.readLines()
+            .asReversed()
+            .firstOrNull { it.isNotBlank() }
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }.getOrNull()
 }

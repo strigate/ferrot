@@ -31,9 +31,10 @@ class DeletePendingDownloadDelayedWorker(
     private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val tag = "DeletePendingDownloadDelayed:"
         val downloadId = inputData.getLong(KEY_ID, -1L)
         if (downloadId <= 0L) {
-            Log.w(LOG_TAG, "No valid download ID provided for single delayed delete worker")
+            Log.w(LOG_TAG, "$tag No valid download ID provided")
             return@withContext Result.success()
         }
 
@@ -42,16 +43,16 @@ class DeletePendingDownloadDelayedWorker(
             .coerceAtLeast(0L)
 
         if (delayMillis > 0L) {
-            Log.d(LOG_TAG, "Single delayed delete worker waiting ${delayMillis}ms for $downloadId")
+            Log.d(LOG_TAG, "$tag Waiting ${delayMillis}ms before delete for downloadId=$downloadId")
             delay(delayMillis)
         }
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
         if (download == null) {
-            Log.d(LOG_TAG, "Download already gone before single delayed delete fired: $downloadId")
+            Log.d(LOG_TAG, "$tag Download already removed before delete for downloadId=$downloadId")
             return@withContext Result.success()
         }
         if (!download.pendingDelete) {
-            Log.d(LOG_TAG, "Pending delete was cleared before timeout for $downloadId")
+            Log.d(LOG_TAG, "$tag Pending delete cleared before timeout for downloadId=$downloadId")
             return@withContext Result.success()
         }
 
@@ -66,9 +67,9 @@ class DeletePendingDownloadDelayedWorker(
         runCatching {
             stopDownloadUseCase(downloadId)
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
-            Log.d(LOG_TAG, "Single delayed delete completed for $downloadId")
+            Log.d(LOG_TAG, "$tag Deleted downloadId=$downloadId")
         }.onFailure {
-            Log.w(LOG_TAG, "Single delayed delete failed for $downloadId", it)
+            Log.w(LOG_TAG, "$tag Failed to delete downloadId=$downloadId", it)
         }
         Result.success()
     }

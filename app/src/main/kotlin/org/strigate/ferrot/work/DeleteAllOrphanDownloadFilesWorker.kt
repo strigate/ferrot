@@ -34,7 +34,8 @@ class DeleteAllOrphanDownloadFilesWorker(
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        Log.d(LOG_TAG, "Starting orphan download file cleanup")
+        val tag = "DeleteAllOrphanDownloadFiles:"
+        Log.d(LOG_TAG, "$tag Starting orphan file cleanup")
 
         val referencedPaths = runCatching {
             val audioPaths = downloadAudioUseCase
@@ -49,7 +50,7 @@ class DeleteAllOrphanDownloadFilesWorker(
 
             (audioPaths + videoPaths + thumbnailPaths).toSet()
         }.getOrElse {
-            Log.w(LOG_TAG, "Failed to load referenced download file paths", it)
+            Log.w(LOG_TAG, "$tag Failed to load referenced file paths", it)
             return@withContext Result.failure()
         }
 
@@ -62,6 +63,7 @@ class DeleteAllOrphanDownloadFilesWorker(
         }.getOrNull() ?: return@withContext Result.success()
 
         var deletedCount = 0
+        var failedDeleteCount = 0
         downloadRoot
             .walkTopDown()
             .filter { it.isFile }
@@ -77,12 +79,13 @@ class DeleteAllOrphanDownloadFilesWorker(
                     runCatching {
                         if (file.delete()) {
                             deletedCount++
-                            Log.d(LOG_TAG, "Deleted orphan download file $canonicalPath")
                         } else {
-                            Log.w(LOG_TAG, "Failed to delete orphan download file $canonicalPath")
+                            failedDeleteCount++
+                            Log.w(LOG_TAG, "$tag Failed to delete orphan file path=$canonicalPath")
                         }
                     }.onFailure {
-                        Log.w(LOG_TAG, "Error deleting orphan download file $canonicalPath", it)
+                        failedDeleteCount++
+                        Log.w(LOG_TAG, "$tag Error deleting orphan file path=$canonicalPath", it)
                     }
                 }
             }
@@ -96,11 +99,11 @@ class DeleteAllOrphanDownloadFilesWorker(
                 }
             }
 
-        if (deletedCount == 0) {
-            Log.d(LOG_TAG, "No orphan download files found")
-        } else {
-            Log.d(LOG_TAG, "Finished deleting orphan download files, deleted $deletedCount file(s)")
+        val message = buildString {
+            append("$tag Finished orphan file cleanup: ")
+            append("deleted=$deletedCount failed=$failedDeleteCount")
         }
+        Log.d(LOG_TAG, message)
         Result.success()
     }
 

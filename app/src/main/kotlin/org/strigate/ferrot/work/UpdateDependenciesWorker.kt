@@ -32,17 +32,18 @@ class UpdateDependenciesWorker(
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
+        val tag = "UpdateDependencies:"
         return try {
             enableForeground(
                 notificationText = appContext.getString(R.string.notification_text_updating_dependencies),
             )
             youtubeDlRuntimeInitializer.initializeIfNeeded()
-            Log.d(LOG_TAG, "Updating YoutubeDL")
+            Log.d(LOG_TAG, "$tag Starting YoutubeDL update")
             val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
                 updateChannel = YoutubeDL.UpdateChannel.STABLE,
                 appContext = appContext,
             )
-            Log.d(LOG_TAG, "YoutubeDL update completed: status=$updateStatus")
+            Log.d(LOG_TAG, "$tag Finished YoutubeDL update: status=$updateStatus")
 
             if (isAppInForeground()) {
                 when (updateStatus) {
@@ -61,7 +62,7 @@ class UpdateDependenciesWorker(
             }
             markCheckSuccess()
         } catch (throwable: Throwable) {
-            Log.wtf(LOG_TAG, "An error occurred while updating dependencies", throwable)
+            Log.wtf(LOG_TAG, "$tag Update failed", throwable)
             markCheckFailure()
         }
     }
@@ -78,7 +79,7 @@ class UpdateDependenciesWorker(
         runCatching {
             stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
-            Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
+            Log.w(LOG_TAG, "UpdateDependencies: Failed to save last check timestamp", it)
         }
         return result
     }

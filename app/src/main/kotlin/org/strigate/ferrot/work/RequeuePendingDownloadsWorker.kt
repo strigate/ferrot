@@ -21,10 +21,16 @@ class RequeuePendingDownloadsWorker(
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val pendingDownloads = getPendingDownloadsCombinedUseCase()
+        val tag = "RequeuePendingDownloads:"
+        if (pendingDownloads.isEmpty()) {
+            Log.d(LOG_TAG, "$tag No pending downloads to requeue")
+            return@withContext Result.success()
+        }
+        Log.d(LOG_TAG, "$tag Requeuing ${pendingDownloads.size} pending download(s)")
         pendingDownloads.forEach { download ->
-            Log.d(LOG_TAG, "Re-enqueuing download ${download.id} (${download.status})")
             startDownloadUseCase(download.id)
         }
+        Log.d(LOG_TAG, "$tag Finished requeue")
         Result.success()
     }
 
