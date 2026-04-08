@@ -4,7 +4,6 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathTemplate
 import javax.inject.Inject
 
 class BuildVideoDownloadRequestUseCase @Inject constructor() {
@@ -24,7 +23,7 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
                 addCommands(
                     listOf(
                         "--print-to-file",
-                        finalOutputPathTemplate(),
+                        videoAfterMovePathTemplate(),
                         outputPathFilePath,
                     ),
                 )
@@ -69,3 +68,6 @@ private fun formatSelectorFor(profile: QualityProfile): String = when (profile) 
     QualityProfile.CAP_2160 -> "bv*[height<=2160]+ba/b"
     QualityProfile.COMPAT_2160 -> "bv*[vcodec^=avc1][height<=2160]+ba[acodec^=mp4a]/b[ext=mp4]"
 }
+
+private fun videoAfterMovePathTemplate(): String =
+    "after_move:%(filepath)s"

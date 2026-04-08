@@ -30,12 +30,13 @@ class DeletePendingDownloadsDelayedWorker(
     private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val tag = "DeletePendingDownloadsDelayed:"
         val delayMillis = inputData
             .getLong(KEY_DELAY_MILLIS, DEFAULT_DELAY_MILLIS)
             .coerceAtLeast(0L)
 
         if (delayMillis > 0L) {
-            Log.d(LOG_TAG, "Delayed pending delete worker waiting ${delayMillis}ms")
+            Log.d(LOG_TAG, "$tag Waiting ${delayMillis}ms before delete")
             delay(delayMillis)
         }
 
@@ -47,7 +48,7 @@ class DeletePendingDownloadsDelayedWorker(
             .toList()
 
         if (pendingDeleteIds.isEmpty()) {
-            Log.d(LOG_TAG, "No pending deletes found after delayed wait")
+            Log.d(LOG_TAG, "$tag No pending deletes found after wait")
             return@withContext Result.success()
         }
 
@@ -59,20 +60,23 @@ class DeletePendingDownloadsDelayedWorker(
                     pendingDeleteIds.size,
                 ),
         )
-        val message =
-            "Starting delayed delete worker for ${pendingDeleteIds.size} pending download(s)"
-        Log.d(LOG_TAG, message)
+        Log.d(LOG_TAG, "$tag Starting delete for ${pendingDeleteIds.size} pending download(s)")
 
+        var deletedCount = 0
         pendingDeleteIds.forEach { downloadId ->
             runCatching {
                 stopDownloadUseCase(downloadId)
                 deleteDownloadAndRelatedCombinedUseCase(downloadId)
-                Log.d(LOG_TAG, "Delayed deleted pending downloadId=$downloadId")
+                deletedCount++
             }.onFailure {
-                Log.w(LOG_TAG, "Delayed pending delete failed for downloadId=$downloadId", it)
+                Log.w(LOG_TAG, "$tag Failed to delete pending downloadId=$downloadId", it)
             }
         }
-        Log.d(LOG_TAG, "Finished delayed pending delete worker")
+        val message = buildString {
+            append("$tag Finished delete: ")
+            append("deleted=$deletedCount requested=${pendingDeleteIds.size}")
+        }
+        Log.d(LOG_TAG, message)
         Result.success()
     }
 

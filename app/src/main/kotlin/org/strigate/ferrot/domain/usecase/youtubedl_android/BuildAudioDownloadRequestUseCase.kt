@@ -1,7 +1,6 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathTemplate
 import javax.inject.Inject
 
 class BuildAudioDownloadRequestUseCase @Inject constructor() {
@@ -20,7 +19,7 @@ class BuildAudioDownloadRequestUseCase @Inject constructor() {
                 addCommands(
                     listOf(
                         "--print-to-file",
-                        finalOutputPathTemplate(),
+                        audioAfterMovePathTemplate(),
                         outputPathFilePath,
                     ),
                 )
@@ -43,3 +42,6 @@ class BuildAudioDownloadRequestUseCase @Inject constructor() {
         }
     }
 }
+
+private fun audioAfterMovePathTemplate(): String =
+    "after_move:%(filepath)s"

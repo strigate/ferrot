@@ -82,10 +82,10 @@ class DownloadWorker(
 
         val downloadId = _downloadId
         val tag = "Download[$downloadId]:"
-        Log.d(LOG_TAG, "$tag Starting work")
+        Log.d(LOG_TAG, "$tag Start")
 
         if (runAttemptCount > 20 || downloadId <= 0L) {
-            Log.w(LOG_TAG, "$tag Attempts exhausted or download ID invalid")
+            Log.w(LOG_TAG, "$tag Invalid download ID or attempts exhausted")
             return Result.failure()
         }
 
@@ -109,7 +109,7 @@ class DownloadWorker(
                     if (downloadUseCase.getDownloadByIdUseCase(downloadId) != null) {
                         return
                     }
-                    Log.w(LOG_TAG, "$tag Download record does not exist")
+                    Log.w(LOG_TAG, "$tag Download record no longer exists")
                     wasDownloadDeleted = true
                     throw CancellationException()
                 }
@@ -126,7 +126,7 @@ class DownloadWorker(
                     else -> false
                 }
                 if (!canStart) {
-                    Log.w(LOG_TAG, "$tag Cannot start in status: ${download.status}")
+                    Log.w(LOG_TAG, "$tag Cannot start from status=${download.status}")
                     return@mainScope Result.failure()
                 }
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_STARTED)
@@ -143,19 +143,19 @@ class DownloadWorker(
                     return@mainScope Result.failure()
                 }
 
-                Log.d(LOG_TAG, "$tag Downloading metadata")
+                Log.d(LOG_TAG, "$tag Metadata: fetching")
                 downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     runCatching {
                         youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
                     }.getOrNull()
                 }
-                val message = if (videoInfo != null) {
-                    "Downloaded metadata"
+                val metadataMessage = if (videoInfo != null) {
+                    "$tag Metadata: fetched"
                 } else {
-                    "Unable to download metadata"
+                    "$tag Metadata: unavailable"
                 }
-                Log.d(LOG_TAG, "$tag $message")
+                Log.d(LOG_TAG, metadataMessage)
 
                 val videoInfoTitle = videoInfo?.title?.takeIf { it.isNotBlank() }
                 val videoInfoExtension = videoInfo?.ext?.takeIf { it.isNotBlank() }
@@ -175,7 +175,7 @@ class DownloadWorker(
                     extras = notificationExtras,
                 )
 
-                Log.d(LOG_TAG, "$tag Downloading thumbnail")
+                Log.d(LOG_TAG, "$tag Thumbnail: fetching")
                 if (videoInfo?.id != null) {
                     withContext(Dispatchers.IO) {
                         runCatching {
@@ -196,9 +196,14 @@ class DownloadWorker(
                                     durationSeconds = videoInfo.duration.takeIf { it > 0 },
                                 )
                             )
-                            Log.d(LOG_TAG, "$tag Downloaded thumbnail")
+                            val thumbnailMessage = if (thumbnailFilePath != null) {
+                                "$tag Thumbnail: ready"
+                            } else {
+                                "$tag Thumbnail: unavailable"
+                            }
+                            Log.d(LOG_TAG, thumbnailMessage)
                         }.onFailure {
-                            Log.w(LOG_TAG, "$tag Unable to download thumbnail", it)
+                            Log.w(LOG_TAG, "$tag Thumbnail: failed", it)
                         }
                     }
                 }
@@ -224,9 +229,11 @@ class DownloadWorker(
                 val videoProcessId = "${baseProcessId}_video"
                 val audioProcessId = "${baseProcessId}_audio"
 
-                Log.d(LOG_TAG, "$tag Decided weights: v=${weights.video}, a=${weights.audio}")
-                Log.d(LOG_TAG, "$tag videoProcessId: $videoProcessId")
-                Log.d(LOG_TAG, "$tag audioProcessId: $audioProcessId")
+                val message = buildString {
+                    append("$tag Prepared phases: ")
+                    append("videoWeight=${weights.video} audioWeight=${weights.audio}")
+                }
+                Log.d(LOG_TAG, message)
 
                 var maxBytes = 0L
                 val bytesProviderRaw = {
@@ -245,7 +252,7 @@ class DownloadWorker(
                 )
                 val videoOutputPathFile = File(uidDir, ".video-output-path.txt")
 
-                Log.d(LOG_TAG, "$tag Downloading video")
+                Log.d(LOG_TAG, "$tag Video: downloading")
                 val videoOutputFilePath = withContext(Dispatchers.IO) {
                     collectPhase(
                         processId = videoProcessId,
@@ -264,17 +271,17 @@ class DownloadWorker(
                         onCombined = {},
                     )
                 }
-                Log.d(LOG_TAG, "$tag Downloaded video")
+                Log.d(LOG_TAG, "$tag Video: downloaded")
 
                 throwIfDownloadDeleted()
 
                 if (videoOutputFilePath.isNullOrBlank()) {
-                    Log.w(LOG_TAG, "$tag Video output file path was not reported")
+                    Log.w(LOG_TAG, "$tag Video: output path not reported")
                     return@mainScope handleDownloadFailedResult()
                 }
                 val videoOutputFile = File(videoOutputFilePath)
                 if (!videoOutputFile.exists() || videoOutputFile.length() <= 0L) {
-                    Log.w(LOG_TAG, "$tag Video output file path was reported but file is missing")
+                    Log.w(LOG_TAG, "$tag Video: output file missing or empty")
                     return@mainScope handleDownloadFailedResult()
                 }
 
@@ -282,12 +289,9 @@ class DownloadWorker(
                     .extractFileExtension()
                     .orEmpty()
 
-                Log.d(LOG_TAG, "$tag Video output file exists, calculating hash")
                 val sha256 = withContext(Dispatchers.IO) {
                     sha256(videoOutputFilePath)
                 }
-
-                Log.d(LOG_TAG, "$tag Calculated video file hash, saving download video")
                 downloadVideoUseCase.saveDownloadVideoUseCase(
                     DownloadVideo(
                         downloadId = downloadId,
@@ -312,7 +316,7 @@ class DownloadWorker(
                     )
                 }
 
-                Log.d(LOG_TAG, "$tag Downloading audio")
+                Log.d(LOG_TAG, "$tag Audio: downloading")
                 try {
                     val audioOutputPathFile = File(uidDir, ".audio-output-path.txt")
                     val audioOutputFilePath = withContext(Dispatchers.IO) {
@@ -333,7 +337,7 @@ class DownloadWorker(
                             onCombined = {},
                         )
                     }
-                    Log.d(LOG_TAG, "$tag Downloaded audio")
+                    Log.d(LOG_TAG, "$tag Audio: downloaded")
 
                     if (audioOutputFilePath.isNullOrBlank()) {
                         throw IllegalStateException("Audio output file path was not reported")
@@ -347,7 +351,6 @@ class DownloadWorker(
                         .extractFileExtension()
                         .orEmpty()
 
-                    Log.d(LOG_TAG, "$tag Audio output file exists, saving path")
                     downloadAudioUseCase.saveDownloadAudioUseCase(
                         DownloadAudio(
                             downloadId = downloadId,
@@ -356,7 +359,7 @@ class DownloadWorker(
                         )
                     )
                 } catch (throwable: Throwable) {
-                    val message = "$tag Audio download failed, continuing with video-only"
+                    val message = "$tag Audio: failed, continuing with video only"
                     Log.w(LOG_TAG, message, throwable)
                 }
 
@@ -380,7 +383,7 @@ class DownloadWorker(
                 DeleteAllOrphanDownloadFilesWorker.enqueueDebouncedReplace(appContext)
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
-                Log.d(LOG_TAG, "$tag $downloadComplete")
+                Log.d(LOG_TAG, "$tag Complete")
                 appContext.toast("$downloadComplete: $videoTitle", true)
 
                 notificationService.notifyDownloaded(
@@ -394,7 +397,7 @@ class DownloadWorker(
                 Result.success()
 
             } catch (throwable: Throwable) {
-                Log.w(LOG_TAG, "$tag Caught throwable: $throwable", throwable)
+                Log.w(LOG_TAG, "$tag Failed", throwable)
 
                 suspend fun handleDownloadFailure() = handleDownloadFailure(
                     throwable = throwable,
@@ -415,11 +418,11 @@ class DownloadWorker(
                     return@mainScope handleDownloadFailure()
                 }
 
-                Log.w(LOG_TAG, "$tag stopReason=$stopReason")
+                Log.w(LOG_TAG, "$tag Cancelled: stopReason=$stopReason")
                 return@mainScope when (stopReason) {
                     WorkInfo.STOP_REASON_CANCELLED_BY_APP,
                     WorkInfo.STOP_REASON_USER -> {
-                        Log.w(LOG_TAG, "$tag Cancel came from app or user")
+                        Log.w(LOG_TAG, "$tag Cancelled by app or user")
                         handleDownloadStoppedResult()
                     }
 

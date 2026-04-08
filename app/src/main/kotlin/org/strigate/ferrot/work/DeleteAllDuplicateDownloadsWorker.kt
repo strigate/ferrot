@@ -35,7 +35,8 @@ class DeleteAllDuplicateDownloadsWorker(
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        Log.d(LOG_TAG, "Starting scan for duplicate downloads")
+        val tag = "DeleteAllDuplicateDownloads:"
+        Log.d(LOG_TAG, "$tag Starting duplicate scan")
 
         val downloads = runCatching {
             downloadUseCase
@@ -45,10 +46,12 @@ class DeleteAllDuplicateDownloadsWorker(
                 }
 
         }.getOrElse {
-            Log.w(LOG_TAG, "Failed to load downloads", it)
+            Log.w(LOG_TAG, "$tag Failed to load downloads", it)
             return@withContext Result.failure()
         }
 
+        var deletedCount = 0
+        var failedDeleteCount = 0
         downloads.forEach { download ->
             val downloadMetadata = downloadMetadataUseCase
                 .getDownloadMetadataByIdAsFlowUseCase(download.id)
@@ -70,10 +73,14 @@ class DeleteAllDuplicateDownloadsWorker(
                 .forEach { deleteId ->
                     runCatching {
                         deleteDownloadAndRelatedCombinedUseCase(deleteId)
-                        val message = "Deleted duplicate downloadId=$deleteId for $source:$videoId"
-                        Log.d(LOG_TAG, message)
+                        deletedCount++
                     }.onFailure {
-                        Log.w(LOG_TAG, "Failed deleting identity duplicate $deleteId", it)
+                        failedDeleteCount++
+                        val message = buildString {
+                            append("$tag Failed to delete duplicate by source/videoId ")
+                            append("downloadId=$deleteId")
+                        }
+                        Log.w(LOG_TAG, message, it)
                     }
                 }
         }
@@ -94,15 +101,23 @@ class DeleteAllDuplicateDownloadsWorker(
                 .forEach { deleteId ->
                     runCatching {
                         deleteDownloadAndRelatedCombinedUseCase(deleteId)
-                        val message = "Deleted duplicate downloadId=$deleteId for sha256=$sha256"
-                        Log.d(LOG_TAG, message)
+                        deletedCount++
                     }.onFailure {
-                        Log.w(LOG_TAG, "Failed deleting sha256 duplicate $deleteId", it)
+                        failedDeleteCount++
+                        val message = buildString {
+                            append("$tag Failed to delete duplicate by sha256 ")
+                            append("downloadId=$deleteId")
+                        }
+                        Log.w(LOG_TAG, message, it)
                     }
                 }
         }
 
-        Log.d(LOG_TAG, "Finished scan for duplicate downloads")
+        val message = buildString {
+            append("$tag Finished duplicate scan: ")
+            append("deleted=$deletedCount failed=$failedDeleteCount")
+        }
+        Log.d(LOG_TAG, message)
         Result.success()
     }
 
