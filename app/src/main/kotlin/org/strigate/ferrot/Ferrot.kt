@@ -4,8 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
@@ -28,7 +26,7 @@ import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
 
 @HiltAndroidApp
-class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
+class Ferrot : Application(), Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Inject
@@ -52,8 +50,7 @@ class Ferrot : Application(), Configuration.Provider, DefaultLifecycleObserver {
         }
 
     override fun onCreate() {
-        super<Application>.onCreate()
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        super.onCreate()
         WorkManager.initialize(this, workManagerConfiguration)
         notificationService.initializeNotificationChannels()
         registerReceivers()

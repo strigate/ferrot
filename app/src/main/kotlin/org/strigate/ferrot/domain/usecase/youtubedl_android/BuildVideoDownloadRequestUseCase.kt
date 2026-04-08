@@ -4,7 +4,7 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathPrintTemplate
+import org.strigate.ferrot.domain.usecase.youtubedl_android.internal.finalOutputPathTemplate
 import javax.inject.Inject
 
 class BuildVideoDownloadRequestUseCase @Inject constructor() {
@@ -13,13 +13,22 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         template: String,
         qualityProfile: QualityProfile,
         noProgress: Boolean,
+        outputPathFilePath: String? = null,
         printFilename: Boolean = false,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
             addOption("-o", template)
             addOption("--windows-filenames")
-            addOption("--print", finalOutputPathPrintTemplate())
+            if (!outputPathFilePath.isNullOrBlank()) {
+                addCommands(
+                    listOf(
+                        "--print-to-file",
+                        finalOutputPathTemplate(),
+                        outputPathFilePath,
+                    ),
+                )
+            }
 
             val encoderString = "$NAME ${BuildConfig.VERSION}"
             addOption("--add-metadata")
