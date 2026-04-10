@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.5.4"
-    const val VERSION_CODE = 25
+    const val BASE_VERSION = "1.6.0"
+    const val VERSION_CODE = 26
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
 }
