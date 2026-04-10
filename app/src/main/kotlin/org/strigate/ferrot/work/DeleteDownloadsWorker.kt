@@ -16,6 +16,7 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_DOWNLOADS
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
+import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
 
@@ -23,33 +24,39 @@ class DeleteDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
+    private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val tag = "DeleteDownloads:"
         val downloadIds = inputData
             .getLongArray(KEY_DOWNLOAD_IDS)
             ?.toList()
             ?: emptyList()
 
         if (downloadIds.isEmpty()) {
-            Log.w(LOG_TAG, "No download IDs provided")
+            Log.w(LOG_TAG, "$tag No download IDs provided")
             return@withContext Result.success()
         }
         enableForeground(
-            notificationText = applicationContext.resources.getQuantityString(
-                R.plurals.worker_notification_text_deleting_downloads,
-                downloadIds.size,
-            ),
+            notificationText = applicationContext
+                .resources
+                .getQuantityString(
+                    R.plurals.notification_text_deleting_downloads,
+                    downloadIds.size,
+                ),
         )
-        Log.d(LOG_TAG, "Starting delete worker for ${downloadIds.size} download(s)")
+        Log.d(LOG_TAG, "$tag Starting delete for ${downloadIds.size} download(s)")
+        var deletedCount = 0
         downloadIds.forEach { downloadId ->
             runCatching {
+                stopDownloadUseCase(downloadId)
                 deleteDownloadAndRelatedCombinedUseCase(downloadId)
-                Log.d(LOG_TAG, "Deleted downloadId=$downloadId")
+                deletedCount++
             }.onFailure {
-                Log.w(LOG_TAG, "Failed deleting downloadId=$downloadId", it)
+                Log.w(LOG_TAG, "$tag Failed to delete downloadId=$downloadId", it)
             }
         }
-        Log.d(LOG_TAG, "Finished deleting downloads")
+        Log.d(LOG_TAG, "$tag Finished delete: deleted=$deletedCount requested=${downloadIds.size}")
         Result.success()
     }
 

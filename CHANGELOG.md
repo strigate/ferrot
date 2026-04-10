@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.0 - 2026-04-10
+### Added
+- Active download notifications with thumbnail support and direct notification actions for stopping individual downloads
+- Available update notification actions with cleanup handling and install flow integration
+- Stop all downloads action in the downloads UI
+- Retry failed downloads action with scroll-to-top behavior
+- Delayed pending-delete worker flow for individual downloads
+- Runtime initialization for YoutubeDL with reported output path support
+- Unit tests covering notification action helpers and update scheduling
+
+### Changed
+- Refined downloads screen visuals, progress behavior, install update flow, and conversation item animations
+- Reworked download and update scheduling around WorkManager periodic and trigger-based jobs
+- Simplified foreground notification handling and reorganized notification action infrastructure
+- Improved background work enqueueing, downloads filtering, and delete-check coordination
+- Standardized youtube-dl output handling, runtime setup, and logging
+- Updated Compose BOM, WorkManager, and ByteBuddy dependencies
+
+### Fixed
+- Notifications are now cleared correctly when retrying, marking downloads as seen, and cleaning up update state
+- Download retries preserve foreground notification state more reliably
+- YoutubeDL output file paths are now resolved more reliably without fragile stdout parsing
+
 ## 1.5.4 - 2026-03-24
 ### Added
 - Pending delete flow for downloads with swipe dismiss and undo support

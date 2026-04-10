@@ -12,12 +12,22 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         template: String,
         qualityProfile: QualityProfile,
         noProgress: Boolean,
+        outputPathFilePath: String? = null,
         printFilename: Boolean = false,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
             addOption("-o", template)
             addOption("--windows-filenames")
+            if (!outputPathFilePath.isNullOrBlank()) {
+                addCommands(
+                    listOf(
+                        "--print-to-file",
+                        videoAfterMovePathTemplate(),
+                        outputPathFilePath,
+                    ),
+                )
+            }
 
             val encoderString = "$NAME ${BuildConfig.VERSION}"
             addOption("--add-metadata")
@@ -53,9 +63,11 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
     }
 }
 
-
 private fun formatSelectorFor(profile: QualityProfile): String = when (profile) {
     QualityProfile.MAX -> "bv*+ba/b"
     QualityProfile.CAP_2160 -> "bv*[height<=2160]+ba/b"
     QualityProfile.COMPAT_2160 -> "bv*[vcodec^=avc1][height<=2160]+ba[acodec^=mp4a]/b[ext=mp4]"
 }
+
+private fun videoAfterMovePathTemplate(): String =
+    "after_move:%(filepath)s"

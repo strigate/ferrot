@@ -7,6 +7,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
@@ -21,9 +22,11 @@ import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
 import org.strigate.ferrot.work.DeleteAllOrphanDownloadFilesWorker
 import org.strigate.ferrot.work.DeleteDownloadsWorker
+import org.strigate.ferrot.work.DeletePendingDownloadDelayedWorker
 import org.strigate.ferrot.work.DeletePendingDownloadsDelayedWorker
 import org.strigate.ferrot.work.DeletePendingDownloadsImmediateWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
@@ -38,12 +41,14 @@ class WorkerFactory @Inject constructor(
     private val hiltWorkerFactory: HiltWorkerFactory,
     private val analyticsLogger: AnalyticsLogger,
     private val notificationService: NotificationService,
+    private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
     private val stateUseCase: StateUseCase,
     private val settingsUseCase: SettingsUseCase,
     private val updatePathProvider: UpdatePathProvider,
     private val downloadPathProvider: DownloadPathProvider,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
+    private val stopDownloadUseCase: StopDownloadUseCase,
     private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
@@ -75,6 +80,7 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     stateUseCase = stateUseCase,
+                    youtubeDlRuntimeInitializer = youtubeDlRuntimeInitializer,
                 )
             }
 
@@ -110,6 +116,7 @@ class WorkerFactory @Inject constructor(
                     appContext = appContext,
                     workerParameters = workerParameters,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 
@@ -119,6 +126,7 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 
@@ -128,6 +136,17 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
+                )
+            }
+
+            DeletePendingDownloadDelayedWorker::class.java.name -> {
+                DeletePendingDownloadDelayedWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    downloadUseCase = downloadUseCase,
+                    deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
+                    stopDownloadUseCase = stopDownloadUseCase,
                 )
             }
 

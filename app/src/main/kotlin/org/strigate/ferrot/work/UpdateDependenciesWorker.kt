@@ -17,6 +17,7 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
+import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
@@ -28,18 +29,21 @@ class UpdateDependenciesWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
     private val stateUseCase: StateUseCase,
+    private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
+        val tag = "UpdateDependencies:"
         return try {
             enableForeground(
-                notificationText = appContext.getString(R.string.worker_notification_text_updating_dependencies),
+                notificationText = appContext.getString(R.string.notification_text_updating_dependencies),
             )
-            Log.d(LOG_TAG, "Updating YoutubeDL")
+            youtubeDlRuntimeInitializer.initializeIfNeeded()
+            Log.d(LOG_TAG, "$tag Starting YoutubeDL update")
             val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
                 updateChannel = YoutubeDL.UpdateChannel.STABLE,
                 appContext = appContext,
             )
-            Log.d(LOG_TAG, "YoutubeDL update completed: status=$updateStatus")
+            Log.d(LOG_TAG, "$tag Finished YoutubeDL update: status=$updateStatus")
 
             if (isAppInForeground()) {
                 when (updateStatus) {
@@ -58,7 +62,7 @@ class UpdateDependenciesWorker(
             }
             markCheckSuccess()
         } catch (throwable: Throwable) {
-            Log.wtf(LOG_TAG, "An error occurred while updating dependencies", throwable)
+            Log.wtf(LOG_TAG, "$tag Update failed", throwable)
             markCheckFailure()
         }
     }
@@ -75,7 +79,7 @@ class UpdateDependenciesWorker(
         runCatching {
             stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
-            Log.w(LOG_TAG, "Failed to save dependency update check timestamp", it)
+            Log.w(LOG_TAG, "UpdateDependencies: Failed to save last check timestamp", it)
         }
         return result
     }
@@ -83,17 +87,13 @@ class UpdateDependenciesWorker(
     companion object {
         fun enqueuePeriodicKeep(
             context: Context,
-            repeatIntervalDays: Long = 3,
             targetHour: Int = 4,
+            repeatIntervalDays: Long = 1,
             flexHours: Long = 2,
         ) {
             val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
-
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<UpdateDependenciesWorker>(
@@ -109,7 +109,7 @@ class UpdateDependenciesWorker(
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 PERIODIC_UPDATE_DEPENDENCIES,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 periodicWorkRequest,
             )
         }
@@ -119,9 +119,6 @@ class UpdateDependenciesWorker(
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
                 .build()
 
             val oneTimeWorkRequest = OneTimeWorkRequestBuilder<UpdateDependenciesWorker>()
@@ -138,7 +135,8 @@ class UpdateDependenciesWorker(
         }
 
         fun cancelPeriodic(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_UPDATE_DEPENDENCIES)
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(PERIODIC_UPDATE_DEPENDENCIES)
         }
     }
 }

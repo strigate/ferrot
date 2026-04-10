@@ -19,15 +19,15 @@ import org.json.JSONObject
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants
-import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_AVAILABLE_UPDATE_VERSION_TAG
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD_AVAILABLE_UPDATE
-import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.actions.availableUpdateNotificationExtras
+import org.strigate.ferrot.app.actions.buildDeleteAvailableUpdateNotificationAction
+import org.strigate.ferrot.app.actions.buildInstallAvailableUpdateNotificationAction
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
@@ -53,6 +53,7 @@ class DownloadAvailableUpdateWorker(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
+        val tag = "DownloadAvailableUpdate:"
         try {
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
@@ -63,41 +64,48 @@ class DownloadAvailableUpdateWorker(
             val latestTag = latestRelease.optString("tag_name")
             val isDraft = latestRelease.optBoolean("draft", false)
             val isPre = latestRelease.optBoolean("prerelease", false)
-            Log.d(LOG_TAG, "Latest release: latestTag=$latestTag isDraft=$isDraft isPre=$isPre")
+            Log.d(LOG_TAG, "$tag Latest release: tag=$latestTag draft=$isDraft prerelease=$isPre")
 
             if (latestTag.isBlank() || isDraft || isPre) {
-                Log.d(LOG_TAG, "No valid release to check")
+                Log.d(LOG_TAG, "$tag No valid release to process")
                 clearAvailableUpdate()
                 return markCheckSuccess()
             }
 
             val savedTag = savedAvailableUpdate?.tag
             if (savedTag != null && isNewerVersion(savedTag, latestTag)) {
-                Log.d(LOG_TAG, "Saved update ($savedTag) is newer than latest ($latestTag)")
+                val message = buildString {
+                    append("$tag Saved update is newer than latest release: ")
+                    append("saved=$savedTag latest=$latestTag")
+                }
+                Log.d(LOG_TAG, message)
                 return markCheckSuccess()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
                 if (isAppInForeground()) {
                     appContext.toast(R.string.toast_already_up_to_date, true)
                 }
-                Log.d(LOG_TAG, "Already up to date: latest=$latestTag current=$currentTag")
+                Log.d(LOG_TAG, "$tag Already up to date: latest=$latestTag current=$currentTag")
                 clearAvailableUpdate()
                 return markCheckSuccess()
             }
             if (savedTag != null && isNewerVersion(latestTag, savedTag)) {
-                Log.d(LOG_TAG, "Found newer update: latest=$latestTag replaces saved=$savedTag")
-                deleteIfExists(savedAvailableUpdate.localFilePath)
+                val message = buildString {
+                    append("$tag Found newer update: ")
+                    append("latest=$latestTag replaces saved=$savedTag")
+                }
+                Log.d(LOG_TAG, message)
                 clearAvailableUpdate()
             }
 
             val apkAsset = pickApkAsset(latestRelease.optJSONArray("assets")) ?: run {
-                Log.w(LOG_TAG, "No APK asset found on latest release $latestTag")
+                Log.w(LOG_TAG, "$tag No APK asset found for tag=$latestTag")
                 clearAvailableUpdate()
                 return markCheckSuccess()
             }
             val downloadUrl = apkAsset.optString("browser_download_url")
             if (downloadUrl.isBlank()) {
-                Log.w(LOG_TAG, "APK asset missing browser_download_url")
+                Log.w(LOG_TAG, "$tag APK asset missing browser_download_url")
                 clearAvailableUpdate()
                 return markCheckSuccess()
             }
@@ -110,27 +118,32 @@ class DownloadAvailableUpdateWorker(
                 when {
                     expectedDigest.startsWith("sha256:", true) -> {
                         if (validateSha256(apkFile, expectedDigest)) {
-                            Log.d(LOG_TAG, "Update already downloaded & verified: ${apkFile.name}")
+                            val message = buildString {
+                                append("$tag Update already downloaded and verified: ")
+                                append("file=${apkFile.name}")
+                            }
+                            Log.d(LOG_TAG, message)
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
                             notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                             return markCheckSuccess()
                         }
-                        Log.w(LOG_TAG, "Existing file sha256 mismatch. Re-downloading")
+                        Log.w(LOG_TAG, "$tag Existing file sha256 mismatch, re-downloading")
                         apkFile.delete()
                         clearAvailableUpdate()
                     }
 
                     apkFile.length() > 0L -> {
                         if (expectedSizeBytes != null && apkFile.length() != expectedSizeBytes) {
-                            val message =
-                                "Existing file size mismatch. expected=$expectedSizeBytes " +
-                                        "actual=${apkFile.length()}. Re-downloading"
-
-                            Log.w(LOG_TAG, message)
+                            val message = buildString {
+                                append("Existing file size mismatch. ")
+                                append("expected=$expectedSizeBytes actual=${apkFile.length()}. ")
+                                append("Re-downloading")
+                            }
+                            Log.w(LOG_TAG, "$tag $message")
                             apkFile.delete()
                             clearAvailableUpdate()
                         } else {
-                            Log.d(LOG_TAG, "Update file already present: ${apkFile.name}")
+                            Log.d(LOG_TAG, "$tag Update file already present: file=${apkFile.name}")
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
                             notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                             return markCheckSuccess()
@@ -138,7 +151,7 @@ class DownloadAvailableUpdateWorker(
                     }
 
                     else -> {
-                        Log.w(LOG_TAG, "Existing file empty. Re-downloading")
+                        Log.w(LOG_TAG, "$tag Existing file is empty, re-downloading")
                         apkFile.delete()
                         clearAvailableUpdate()
                     }
@@ -149,11 +162,10 @@ class DownloadAvailableUpdateWorker(
             if (partFile.exists()) {
                 partFile.delete()
             }
-            Log.d(LOG_TAG, "Downloading update to ${partFile.absolutePath}")
+            Log.d(LOG_TAG, "$tag Downloading update to path=${partFile.absolutePath}")
 
             enableForeground(
-                notificationId = NOTIFICATION_ID,
-                notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+                notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
             )
             if (isAppInForeground()) {
                 appContext.toast(R.string.toast_downloading_app_update, true)
@@ -174,39 +186,43 @@ class DownloadAvailableUpdateWorker(
                 }
                 if (apkFile.exists()) apkFile.delete()
                 if (!partFile.renameTo(apkFile)) {
-                    Log.w(LOG_TAG, "Failed to rename part file to final output")
+                    Log.w(LOG_TAG, "$tag Failed to rename part file to final output")
                     partFile.delete()
                     clearAvailableUpdate()
                     return markCheckRetry()
                 }
 
-                Log.d(LOG_TAG, "Update downloaded successfully: ${apkFile.name}")
+                Log.d(LOG_TAG, "$tag Update download completed: file=${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
                 notifyAvailableUpdate(latestTag, apkFile.absolutePath)
                 return markCheckSuccess()
             } catch (throwable: Throwable) {
-                Log.wtf(LOG_TAG, "Download failed", throwable)
+                Log.wtf(LOG_TAG, "$tag Download failed", throwable)
                 partFile.delete()
                 clearAvailableUpdate()
                 return markCheckRetry()
             }
         } catch (throwable: Throwable) {
-            Log.wtf(LOG_TAG, "Update check failed", throwable)
+            Log.wtf(LOG_TAG, "DownloadAvailableUpdate: Update check failed", throwable)
             clearAvailableUpdate()
             return markCheckRetry()
         }
     }
 
     private fun notifyAvailableUpdate(versionTag: String, apkFilePath: String) {
-        val contentTitle = appContext.getString(R.string.notification_app_update_title)
+        val contentTitle = appContext.getString(R.string.notification_title_app_update)
         val contentText = appContext.getString(R.string.available_update_ready, versionTag)
         notificationService.notifyAvailableUpdate(
             contentTitle = contentTitle,
             contentText = contentText,
-            extras = mapOf(
-                EXTRA_ACTION to ACTION_INSTALL_AVAILABLE_UPDATE,
-                EXTRA_AVAILABLE_UPDATE_APK_FILE_PATH to apkFilePath,
-                EXTRA_AVAILABLE_UPDATE_VERSION_TAG to versionTag,
+            extras = availableUpdateNotificationExtras(),
+            actions = listOf(
+                buildInstallAvailableUpdateNotificationAction(
+                    context = appContext,
+                    apkFilePath = apkFilePath,
+                    versionTag = versionTag,
+                ),
+                buildDeleteAvailableUpdateNotificationAction(appContext),
             ),
         )
     }
@@ -230,7 +246,7 @@ class DownloadAvailableUpdateWorker(
                 }.getOrNull()
 
                 val message = "Fetch latest failed with response code"
-                Log.w(LOG_TAG, "$message: $responseCode: $errorMessage")
+                Log.w(LOG_TAG, "DownloadAvailableUpdate: $message: $responseCode: $errorMessage")
                 throw IOException("$message: $responseCode")
             }
             httpUrlConnection.inputStream.bufferedReader().use { bufferedReader ->
@@ -263,7 +279,7 @@ class DownloadAvailableUpdateWorker(
                 }.getOrNull()
 
                 val message = "Download failed with response code"
-                Log.w(LOG_TAG, "$message: $responseCode: $errorMessage")
+                Log.w(LOG_TAG, "DownloadAvailableUpdate: $message: $responseCode: $errorMessage")
                 throw IOException("$message: $responseCode")
             }
             val totalBytes = expectedBytesFromRelease ?: httpUrlConnection
@@ -293,7 +309,7 @@ class DownloadAvailableUpdateWorker(
                     formatBytes(downloadedBytes)
                 }
                 updateForeground(
-                    notificationText = appContext.getString(R.string.worker_notification_text_downloading_app_update),
+                    notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
                     progress = progressPercent.takeIf { it >= 0 },
                     indeterminate = progressPercent < 0,
                     contentText = contentText,
@@ -319,9 +335,11 @@ class DownloadAvailableUpdateWorker(
                 }
             }
             if (totalBytes != null && downloadedBytes != totalBytes) {
-                val message =
-                    "Downloaded bytes mismatch. expected=$totalBytes actual=$downloadedBytes"
-                Log.w(LOG_TAG, message)
+                val message = buildString {
+                    append("Downloaded bytes mismatch. ")
+                    append("expected=$totalBytes actual=$downloadedBytes")
+                }
+                Log.w(LOG_TAG, "DownloadAvailableUpdate: $message")
                 throw IOException("Downloaded bytes mismatch")
             }
             publishProgress(force = true)
@@ -399,7 +417,11 @@ class DownloadAvailableUpdateWorker(
         val actual = calculateSha256(file)
         val ok = expected.equals(actual, ignoreCase = true)
         if (!ok) {
-            Log.w(LOG_TAG, "sha256 mismatch. expected=$expected actual=$actual")
+            val message = buildString {
+                append("DownloadAvailableUpdate: sha256 mismatch: ")
+                append("expected=$expected actual=$actual")
+            }
+            Log.w(LOG_TAG, message)
         }
         return ok
     }
@@ -408,24 +430,17 @@ class DownloadAvailableUpdateWorker(
         try {
             availableUpdateUseCase.saveAvailableUpdateUseCase(tag, path)
         } catch (throwable: Throwable) {
-            Log.w(LOG_TAG, "Failed to persist available update row", throwable)
+            val message = "DownloadAvailableUpdate: Failed to persist available update row"
+            Log.w(LOG_TAG, message, throwable)
         }
     }
 
     private suspend fun clearAvailableUpdate() {
         try {
-            availableUpdateUseCase.clearAvailableUpdateUseCase()
+            availableUpdateUseCase.clearAvailableUpdateFilesAndDataUseCase()
         } catch (throwable: Throwable) {
-            Log.w(LOG_TAG, "Failed to clear available update row", throwable)
-        }
-    }
-
-    private fun deleteIfExists(path: String?) {
-        runCatching {
-            if (!path.isNullOrBlank()) {
-                val file = File(path)
-                if (file.exists()) file.delete()
-            }
+            val message = "DownloadAvailableUpdate: Failed to clear available update data"
+            Log.w(LOG_TAG, message, throwable)
         }
     }
 
@@ -441,25 +456,39 @@ class DownloadAvailableUpdateWorker(
         runCatching {
             stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
-            Log.w(LOG_TAG, "Failed to save last check timestamp", it)
+            Log.w(LOG_TAG, "DownloadAvailableUpdate: Failed to save last check timestamp", it)
         }
         return result
     }
 
     companion object {
-        private const val NOTIFICATION_ID = 2001L
-
         fun enqueuePeriodicKeep(
             context: Context,
-            targetHour: Int = 3,
             flexHours: Long = 1,
+        ) {
+            enqueuePeriodicDailyUpdate(
+                context = context,
+                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST,
+                targetHour = 3,
+                flexHours = flexHours,
+            )
+            enqueuePeriodicDailyUpdate(
+                context = context,
+                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND,
+                targetHour = 12,
+                flexHours = flexHours,
+            )
+        }
+
+        private fun enqueuePeriodicDailyUpdate(
+            context: Context,
+            uniqueWorkName: String,
+            targetHour: Int,
+            flexHours: Long,
         ) {
             val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
                 .build()
 
             val periodicWorkRequest = PeriodicWorkRequestBuilder<DownloadAvailableUpdateWorker>(
@@ -475,8 +504,8 @@ class DownloadAvailableUpdateWorker(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC_DOWNLOAD_AVAILABLE_UPDATE,
-                ExistingPeriodicWorkPolicy.KEEP,
+                uniqueWorkName,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 periodicWorkRequest,
             )
         }
@@ -486,9 +515,6 @@ class DownloadAvailableUpdateWorker(
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresCharging(false)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresStorageNotLow(true)
                 .build()
 
             val oneTimeWorkRequest = OneTimeWorkRequestBuilder<DownloadAvailableUpdateWorker>()
@@ -506,7 +532,10 @@ class DownloadAvailableUpdateWorker(
         }
 
         fun cancelPeriodic(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE)
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST)
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND)
         }
     }
 }

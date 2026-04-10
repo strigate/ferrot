@@ -32,6 +32,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.SaveDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
@@ -116,6 +117,34 @@ class MainViewModelTest {
     }
 
     @Test
+    fun navigateToDownload_clearsPendingDeleteBeforeNavigation_whenDownloadIsPendingDelete() =
+        runTest(testDispatcher) {
+            val download = Download(
+                id = 42L,
+                uid = "uid-42",
+                url = "https://example.com",
+                status = DownloadStatus.COMPLETED,
+                seen = false,
+                pendingDelete = true,
+            )
+            val viewModel = createViewModel()
+            `when`(downloadRepository.getById(42L))
+                .thenReturn(download)
+
+            viewModel.navigateToDownload(42L)
+            advanceUntilIdle()
+
+            verify(downloadRepository).updatePendingDeleteByIds(setOf(42L), false)
+            assertEquals(
+                NavigationEvent.Route(
+                    route = Screen.Download.route(42L),
+                    popUpToDownloads = true,
+                ),
+                viewModel.navigateRoute.value,
+            )
+        }
+
+    @Test
     fun navigateToDownload_keepsNavigationEmpty_whenDownloadDoesNotExist() =
         runTest(testDispatcher) {
             val viewModel = createViewModel()
@@ -180,11 +209,15 @@ class MainViewModelTest {
     private fun createViewModel(): MainViewModel {
         val saveDownloadUseCase = SaveDownloadUseCase(downloadRepository)
         val getDownloadByIdUseCase = GetDownloadByIdUseCase(downloadRepository)
+        val updateDownloadsPendingDeleteUseCase =
+            UpdateDownloadsPendingDeleteUseCase(downloadRepository)
 
         `when`(downloadUseCase.saveDownloadUseCase)
             .thenReturn(saveDownloadUseCase)
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
+        `when`(downloadUseCase.updateDownloadsPendingDeleteUseCase)
+            .thenReturn(updateDownloadsPendingDeleteUseCase)
 
         return MainViewModel(
             downloadUseCase = downloadUseCase,

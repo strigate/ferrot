@@ -10,16 +10,24 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.strigate.ferrot.presentation.MainActivity
 import kotlin.reflect.KClass
 
 object NotificationOps {
     private fun notificationManager(context: Context): NotificationManager {
         return context.getSystemService(NotificationManager::class.java)
+    }
+
+    private fun findActiveNotification(
+        context: Context,
+        tag: String?,
+        id: Int,
+    ): StatusBarNotification? {
+        return notificationManager(context)
+            .activeNotifications
+            .firstOrNull { it.id == id && it.tag == tag }
     }
 
     fun createNotificationChannelGroup(
@@ -90,10 +98,17 @@ object NotificationOps {
         contentTitle: String? = null,
         contentText: String? = null,
         largeIcon: Bitmap? = null,
+        bigPicture: Bitmap? = null,
         groupId: String? = null,
         tag: String? = null,
         extras: Map<String, String> = emptyMap(),
-    ) = CoroutineScope(Dispatchers.Main).launch {
+        actions: List<NotificationCompat.Action> = emptyList(),
+        notificationId: Int? = null,
+        autoCancel: Boolean = true,
+        ongoing: Boolean = false,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+    ) {
         notifyInternal(
             context = context,
             channelId = channelId,
@@ -105,8 +120,15 @@ object NotificationOps {
             colorResource = colorResource,
             iconResource = iconResource,
             largeIcon = largeIcon,
+            bigPicture = bigPicture,
             priority = priority,
             extras = extras,
+            actions = actions,
+            notificationId = notificationId,
+            autoCancel = autoCancel,
+            ongoing = ongoing,
+            progress = progress,
+            indeterminate = indeterminate,
             activityClass = MainActivity::class,
         )
     }
@@ -122,11 +144,24 @@ object NotificationOps {
         colorResource: Int,
         iconResource: Int,
         largeIcon: Bitmap?,
+        bigPicture: Bitmap?,
         priority: Int,
         extras: Map<String, String>,
+        actions: List<NotificationCompat.Action>,
+        notificationId: Int?,
+        autoCancel: Boolean,
+        ongoing: Boolean,
+        progress: Int?,
+        indeterminate: Boolean,
         activityClass: KClass<out Activity>,
     ) {
-        val id = tag?.hashCode() ?: (System.currentTimeMillis() + System.nanoTime()).toInt()
+        val id = notificationId ?: tag?.hashCode()
+        ?: (System.currentTimeMillis() + System.nanoTime()).toInt()
+        val existingNotification = findActiveNotification(
+            context = context,
+            tag = tag,
+            id = id,
+        )?.notification
         val notification = buildNotification(
             context = context,
             notificationId = id,
@@ -137,8 +172,17 @@ object NotificationOps {
             colorResource = colorResource,
             iconResource = iconResource,
             largeIcon = largeIcon,
+            bigPicture = bigPicture,
             priority = priority,
             extras = extras,
+            actions = actions,
+            autoCancel = autoCancel,
+            ongoing = ongoing,
+            progress = progress,
+            indeterminate = indeterminate,
+            whenMillis = existingNotification?.`when`,
+            sortKey = existingNotification?.sortKey,
+            showWhen = existingNotification?.`when`?.let { it > 0L } ?: true,
             activityClass = activityClass,
         )
         val notificationManager = notificationManager(context)
@@ -172,8 +216,17 @@ object NotificationOps {
         colorResource: Int,
         iconResource: Int,
         largeIcon: Bitmap?,
+        bigPicture: Bitmap?,
         priority: Int,
         extras: Map<String, String>,
+        actions: List<NotificationCompat.Action>,
+        autoCancel: Boolean,
+        ongoing: Boolean,
+        progress: Int?,
+        indeterminate: Boolean,
+        whenMillis: Long?,
+        sortKey: String?,
+        showWhen: Boolean,
         activityClass: KClass<out Activity>,
     ): Notification {
         val notificationIntent = Intent(context, activityClass.java).apply {
@@ -198,12 +251,17 @@ object NotificationOps {
             .setLargeIcon(largeIcon)
             .setOnlyAlertOnce(true)
             .setPriority(priority)
-            .setAutoCancel(true)
+            .setAutoCancel(autoCancel)
+            .setOngoing(ongoing)
             .setGroup(groupId)
+            .setShowWhen(showWhen)
             .apply {
-                if (largeIcon != null) {
+                whenMillis?.takeIf { it > 0L }?.let(::setWhen)
+                sortKey?.let(::setSortKey)
+                if (bigPicture != null) {
                     setStyle(
                         NotificationCompat.BigPictureStyle()
+                            .bigPicture(bigPicture)
                             .setSummaryText(contentText)
                             .bigLargeIcon(largeIcon)
                     )
@@ -217,6 +275,10 @@ object NotificationOps {
 
         extras.forEach { (key, value) ->
             notificationBuilder.extras.putString(key, value)
+        }
+        actions.forEach(notificationBuilder::addAction)
+        if (progress != null || indeterminate) {
+            notificationBuilder.setProgress(100, progress?.coerceIn(0, 100) ?: 0, indeterminate)
         }
         return notificationBuilder.build()
     }
@@ -254,9 +316,13 @@ object NotificationOps {
     fun clearNotificationsByExtraValue(
         context: Context,
         stringExtras: Map<String, String>,
+        channelId: String? = null,
     ) {
         val notificationManager = notificationManager(context)
         for (statusBarNotification in notificationManager.activeNotifications) {
+            if (channelId != null && statusBarNotification.notification.channelId != channelId) {
+                continue
+            }
             val extras = statusBarNotification.notification.extras
             var match = true
             for ((key, value) in stringExtras) {
@@ -272,6 +338,19 @@ object NotificationOps {
                     notificationManager.cancel(statusBarNotification.id)
                 }
             }
+        }
+    }
+
+    fun cancel(
+        context: Context,
+        notificationId: Int,
+        tag: String? = null,
+    ) {
+        val notificationManager = notificationManager(context)
+        if (tag != null) {
+            notificationManager.cancel(tag, notificationId)
+        } else {
+            notificationManager.cancel(notificationId)
         }
     }
 }

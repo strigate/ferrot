@@ -2,6 +2,8 @@ package org.strigate.ferrot.app
 
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.strigate.ferrot.R
@@ -13,11 +15,16 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_ACTIV
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_UPDATES
 import org.strigate.ferrot.app.Constants.Notifications.Groups.GROUP_ID_DOWNLOADED
+import org.strigate.ferrot.app.actions.availableUpdateNotificationExtras
+import org.strigate.ferrot.app.actions.availableUpdateNotificationTag
+import org.strigate.ferrot.util.NotificationOps.cancel
+import org.strigate.ferrot.util.NotificationOps.clearNotificationsByExtraValue
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannel
 import org.strigate.ferrot.util.NotificationOps.createNotificationChannelGroup
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelGroupsOtherThan
 import org.strigate.ferrot.util.NotificationOps.deleteNotificationChannelsOtherThan
 import org.strigate.ferrot.util.NotificationOps.notify
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -77,13 +84,14 @@ class NotificationService @Inject constructor(
         contentTitle: String,
         contentText: String,
         extras: Map<String, String> = emptyMap(),
-        tag: String? = "update_available",
+        actions: List<NotificationCompat.Action> = emptyList(),
+        tag: String? = availableUpdateNotificationTag(),
     ) {
         notify(
             context = appContext,
             channelId = CHANNEL_ID_UPDATES,
             groupId = null,
-            summaryTitleResource = R.string.notification_summary_title,
+            summaryTitleResource = R.string.notification_title_summary,
             contentTitle = contentTitle,
             contentText = contentText,
             colorResource = R.color.coral,
@@ -92,28 +100,68 @@ class NotificationService @Inject constructor(
             priority = NotificationCompat.PRIORITY_HIGH,
             tag = tag,
             extras = extras,
+            actions = actions,
         )
     }
 
     fun notifyDownloaded(
         contentTitle: String,
         contentText: String,
+        thumbnailFilePath: String? = null,
         extras: Map<String, String> = emptyMap(),
         tag: String? = null,
+        actions: List<NotificationCompat.Action> = emptyList(),
+        notificationId: Int? = null,
+        autoCancel: Boolean = true,
+        ongoing: Boolean = false,
     ) {
+        val thumbnailBitmap = thumbnailFilePath.toNotificationBitmap()
         notify(
             context = appContext,
             channelId = CHANNEL_ID_DOWNLOADED,
             groupId = GROUP_ID_DOWNLOADED,
-            summaryTitleResource = R.string.notification_summary_title,
+            summaryTitleResource = R.string.notification_title_summary,
             contentTitle = contentTitle,
             contentText = contentText,
             colorResource = R.color.coral,
             iconResource = R.drawable.ic_logo,
             largeIcon = null,
+            bigPicture = thumbnailBitmap,
             priority = NotificationCompat.PRIORITY_HIGH,
             tag = tag,
             extras = extras,
+            actions = actions,
+            notificationId = notificationId,
+            autoCancel = autoCancel,
+            ongoing = ongoing,
         )
+    }
+
+    fun clearNotification(
+        notificationId: Int,
+        tag: String? = null,
+    ) {
+        cancel(
+            context = appContext,
+            notificationId = notificationId,
+            tag = tag,
+        )
+    }
+
+    fun clearAvailableUpdateNotification() {
+        clearNotificationsByExtraValue(
+            context = appContext,
+            stringExtras = availableUpdateNotificationExtras(),
+            channelId = CHANNEL_ID_UPDATES,
+        )
+    }
+
+    private fun String?.toNotificationBitmap(): Bitmap? {
+        val thumbnailPath = this?.takeIf { it.isNotBlank() } ?: return null
+        val thumbnailFile = File(thumbnailPath)
+        if (!thumbnailFile.exists()) {
+            return null
+        }
+        return BitmapFactory.decodeFile(thumbnailFile.absolutePath)
     }
 }

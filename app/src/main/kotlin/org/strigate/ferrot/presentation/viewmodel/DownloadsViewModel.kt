@@ -8,11 +8,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -24,9 +28,13 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
+import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
+import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import javax.inject.Inject
 
@@ -40,11 +48,18 @@ class DownloadsViewModel @Inject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
+    private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow(
         TextFieldValue(text = "", selection = TextRange(0))
     )
     val searchQuery: StateFlow<TextFieldValue> = _searchQuery
+
+    private val _events = MutableSharedFlow<DownloadsEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+    )
+    val events = _events.asSharedFlow()
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -53,6 +68,9 @@ class DownloadsViewModel @Inject constructor(
     )
 
     private fun getUiState(): Flow<DownloadsUiState> {
+        val searchTextFlow = searchQuery
+            .map { it.text }
+            .distinctUntilChanged()
         val downloadsWithMetadataFlow = downloadWithMetadataUseCase
             .getDownloadsWithMetadataAsFlowUseCase()
         val availableUpdateFlow = availableUpdateUseCase
@@ -61,20 +79,21 @@ class DownloadsViewModel @Inject constructor(
         return combine(
             downloadsWithMetadataFlow,
             availableUpdateFlow,
-            _searchQuery,
+            searchTextFlow,
         ) { downloadsWithMetadata, availableUpdate, query ->
-            val text = query.text
             val pendingDeleteIds = downloadsWithMetadata
                 .asSequence()
                 .filter { it.pendingDelete }
                 .map { it.id }
                 .toSet()
             val filteredDownloads = downloadsWithMetadata
+                .asSequence()
                 .filter { !it.pendingDelete }
-                .map { it.toUiData() }
                 .filter {
-                    text.isBlank() || it.title.contains(text, ignoreCase = true)
+                    query.isBlank() || it.title.contains(query, ignoreCase = true)
                 }
+                .map { it.toUiData() }
+                .toList()
 
             val availableUpdateUiData = availableUpdate?.let {
                 AvailableUpdateUiData(
@@ -96,27 +115,58 @@ class DownloadsViewModel @Inject constructor(
 
     fun updateSearchQuery(value: TextFieldValue) {
         val trimmed = value.text.take(MAX_SEARCH_LENGTH)
-        _searchQuery.value = TextFieldValue(
+        val normalizedValue = TextFieldValue(
             text = trimmed,
             selection = TextRange(trimmed.length),
         )
+        if (_searchQuery.value == normalizedValue) {
+            return
+        }
+        _searchQuery.value = normalizedValue
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
-        runCatching {
-            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
-            downloadProgressUseCase.updateDownloadProgressUseCase(
-                id = downloadId,
-                progressPercent = 0F,
-                bytesDownloaded = 0L,
-                etaSeconds = null,
-            )
+        stopDownloadAndResetProgress(downloadId)
+    }
+
+    fun stopAllDownloads() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val activeDownloadIds = data.data.downloads
+            .asSequence()
+            .filter { it.status.isActive }
+            .map { it.id }
+            .toList()
+
+        if (activeDownloadIds.isEmpty()) {
+            return
         }
-        stopDownloadsUseCase(downloadId)
+        viewModelScope.launch {
+            activeDownloadIds.forEach { downloadId ->
+                stopDownloadAndResetProgress(downloadId)
+            }
+        }
     }
 
     fun retryDownload(downloadId: Long) = viewModelScope.launch {
         startDownloadUseCase(downloadId)
+    }
+
+    fun retryFailedDownloads() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val failedDownloadIds = data.data.downloads
+            .asSequence()
+            .filter { it.status == DownloadStatusUiData.FAILED }
+            .map { it.id }
+            .toList()
+
+        if (failedDownloadIds.isEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            failedDownloadIds.forEach { downloadId ->
+                startDownloadUseCase(downloadId)
+            }
+        }
     }
 
     fun toggleDownloadsSeen(downloadIds: Set<Long>) {
@@ -128,6 +178,9 @@ class DownloadsViewModel @Inject constructor(
         val shouldMarkSeen = selectedDownloads.any { !it.seen }
         viewModelScope.launch {
             downloadUseCase.updateDownloadsSeenUseCase(downloadIds, shouldMarkSeen)
+            if (shouldMarkSeen) {
+                downloadIds.forEach(clearNotificationsByDownloadIdUseCase::invoke)
+            }
         }
     }
 
@@ -144,6 +197,30 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             downloadUseCase.requestDeletePendingDownloadsImmediateUseCase()
         }
+    }
+
+    fun installAvailableUpdate() {
+        val data = uiState.value as? DownloadsUiState.Data ?: return
+        val localFilePath = data.data.availableUpdate?.localFilePath
+        if (localFilePath.isNullOrBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            _events.emit(DownloadsEvent.InstallUpdate(localFilePath))
+        }
+    }
+
+    private suspend fun stopDownloadAndResetProgress(downloadId: Long) {
+        runCatching {
+            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
+            downloadProgressUseCase.updateDownloadProgressUseCase(
+                id = downloadId,
+                progressPercent = 0F,
+                bytesDownloaded = 0L,
+                etaSeconds = null,
+            )
+        }
+        stopDownloadsUseCase(downloadId)
     }
 
     companion object {

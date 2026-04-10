@@ -7,6 +7,7 @@ import org.strigate.ferrot.R
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
@@ -75,18 +76,9 @@ object UiFormatter {
         context: Context,
         millis: Long,
     ): String {
-        val zoned = Instant
-            .ofEpochMilli(millis)
-            .atZone(ZoneId.systemDefault())
-
+        val zoned = millis.toZonedDateTime()
         val locale = Locale.getDefault()
-        val is24Hour = DateFormat.is24HourFormat(context)
-        val timePattern = if (is24Hour) {
-            "HH:mm"
-        } else {
-            "hh:mm a"
-        }
-        val timeFormatter = DateTimeFormatter.ofPattern(timePattern, locale)
+        val timeFormatter = completedAtTimeFormatter(context, locale)
         val bestDatePattern = DateFormat.getBestDateTimePattern(locale, "EEE, MMM d")
         val dateFormatter = DateTimeFormatter.ofPattern(bestDatePattern, locale)
         val today = LocalDate.now()
@@ -101,16 +93,25 @@ object UiFormatter {
         context: Context,
         millis: Long,
     ): String {
-        val zoned = Instant
-            .ofEpochMilli(millis)
-            .atZone(ZoneId.systemDefault())
-
-        val is24Hour = DateFormat.is24HourFormat(context)
+        val zoned = millis.toZonedDateTime()
         val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
-        val timeFormatter = DateTimeFormatter.ofPattern(
-            if (is24Hour) "HH:mm" else "hh:mm a",
-            Locale.getDefault(),
-        )
+        val timeFormatter = completedAtTimeFormatter(context)
         return "${zoned.format(dateFormatter)} ${zoned.format(timeFormatter)}"
     }
+
+    private fun completedAtTimeFormatter(
+        context: Context,
+        locale: Locale = Locale.getDefault(),
+    ): DateTimeFormatter {
+        val timePattern = if (DateFormat.is24HourFormat(context)) {
+            "HH:mm"
+        } else {
+            "hh:mm a"
+        }
+        return DateTimeFormatter.ofPattern(timePattern, locale)
+    }
+
+    private fun Long.toZonedDateTime(): ZonedDateTime = Instant
+        .ofEpochMilli(this)
+        .atZone(ZoneId.systemDefault())
 }

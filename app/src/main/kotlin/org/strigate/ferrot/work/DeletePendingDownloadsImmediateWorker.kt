@@ -16,6 +16,7 @@ import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_PENDING_DOWNLO
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
+import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
 
@@ -24,8 +25,10 @@ class DeletePendingDownloadsImmediateWorker(
     workerParameters: WorkerParameters,
     private val downloadUseCase: DownloadUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
+    private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val tag = "DeletePendingDownloadsImmediate:"
         val pendingDeleteIds = downloadUseCase
             .getAllDownloadsUseCase()
             .asSequence()
@@ -34,29 +37,35 @@ class DeletePendingDownloadsImmediateWorker(
             .toList()
 
         if (pendingDeleteIds.isEmpty()) {
-            Log.d(LOG_TAG, "No pending deletes found for immediate worker")
+            Log.d(LOG_TAG, "$tag No pending deletes found")
             return@withContext Result.success()
         }
 
         enableForeground(
-            notificationText = applicationContext.resources.getQuantityString(
-                R.plurals.worker_notification_text_deleting_downloads,
-                pendingDeleteIds.size,
-            ),
+            notificationText = applicationContext
+                .resources
+                .getQuantityString(
+                    R.plurals.notification_text_deleting_downloads,
+                    pendingDeleteIds.size,
+                ),
         )
-        val message =
-            "Starting immediate delete worker for ${pendingDeleteIds.size} pending download(s)"
-        Log.d(LOG_TAG, message)
+        Log.d(LOG_TAG, "$tag Starting delete for ${pendingDeleteIds.size} pending download(s)")
 
+        var deletedCount = 0
         pendingDeleteIds.forEach { downloadId ->
             runCatching {
+                stopDownloadUseCase(downloadId)
                 deleteDownloadAndRelatedCombinedUseCase(downloadId)
-                Log.d(LOG_TAG, "Immediately deleted pending downloadId=$downloadId")
+                deletedCount++
             }.onFailure {
-                Log.w(LOG_TAG, "Immediate pending delete failed for downloadId=$downloadId", it)
+                Log.w(LOG_TAG, "$tag Failed to delete pending downloadId=$downloadId", it)
             }
         }
-        Log.d(LOG_TAG, "Finished immediate pending delete worker")
+        val message = buildString {
+            append("$tag Finished delete: ")
+            append("deleted=$deletedCount requested=${pendingDeleteIds.size}")
+        }
+        Log.d(LOG_TAG, message)
         Result.success()
     }
 

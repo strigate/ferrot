@@ -4,8 +4,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -44,6 +46,8 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteU
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import kotlin.time.Duration.Companion.seconds
 
@@ -96,6 +100,9 @@ class DownloadsViewModelTest {
 
     @Mock
     private lateinit var updateDownloadsSeenUseCase: UpdateDownloadsSeenUseCase
+
+    @Mock
+    private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
     @Before
     fun setUp() {
@@ -271,6 +278,44 @@ class DownloadsViewModelTest {
     }
 
     @Test
+    fun stopAllDownloads_stopsOnlyActiveDownloads() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Queued", status = DownloadStatus.QUEUED),
+                    createDownload(
+                        id = 2L,
+                        title = "Downloading",
+                        status = DownloadStatus.DOWNLOADING
+                    ),
+                    createDownload(id = 3L, title = "Failed", status = DownloadStatus.FAILED),
+                    createDownload(id = 4L, title = "Stopped", status = DownloadStatus.STOPPED),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.stopAllDownloads()
+        advanceUntilIdle()
+
+        verify(updateDownloadStatusUseCase).invoke(1L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase).invoke(2L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never()).invoke(3L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never()).invoke(4L, DownloadStatus.STOPPED)
+        verify(stopDownloadUseCase).invoke(1L)
+        verify(stopDownloadUseCase).invoke(2L)
+        verify(stopDownloadUseCase, never()).invoke(3L)
+        verify(stopDownloadUseCase, never()).invoke(4L)
+
+        collector.cancel()
+    }
+
+    @Test
     fun retryDownload_startsDownload() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
@@ -281,6 +326,35 @@ class DownloadsViewModelTest {
         advanceUntilIdle()
 
         verify(startDownloadUseCase).invoke(11L)
+    }
+
+    @Test
+    fun retryFailedDownloads_startsOnlyFailedDownloads() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Failed", status = DownloadStatus.FAILED),
+                    createDownload(id = 2L, title = "Stopped", status = DownloadStatus.STOPPED),
+                    createDownload(id = 3L, title = "Completed", status = DownloadStatus.COMPLETED),
+                    createDownload(id = 4L, title = "Failed 2", status = DownloadStatus.FAILED),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.retryFailedDownloads()
+        advanceUntilIdle()
+
+        verify(startDownloadUseCase).invoke(1L)
+        verify(startDownloadUseCase).invoke(4L)
+        verify(startDownloadUseCase, never()).invoke(2L)
+        verify(startDownloadUseCase, never()).invoke(3L)
+        collector.cancel()
     }
 
     @Test
@@ -306,6 +380,9 @@ class DownloadsViewModelTest {
             advanceUntilIdle()
 
             verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L, 3L), true)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(1L)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(2L)
+            verify(clearNotificationsByDownloadIdUseCase).invoke(3L)
             collector.cancel()
         }
 
@@ -331,6 +408,8 @@ class DownloadsViewModelTest {
             advanceUntilIdle()
 
             verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L), false)
+            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(1L)
+            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(2L)
             collector.cancel()
         }
 
@@ -379,6 +458,70 @@ class DownloadsViewModelTest {
         verify(requestDeletePendingDownloadsImmediateUseCase).invoke()
     }
 
+    @Test
+    fun installAvailableUpdate_emitsInstallEvent() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(
+                AvailableUpdate(
+                    tag = "v1.2.3",
+                    localFilePath = "/tmp/update.apk",
+                )
+            ),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+            data.data.availableUpdate?.localFilePath == "/tmp/update.apk"
+        }
+
+        val eventDeferred = backgroundScope.async { viewModel.events.first() }
+
+        viewModel.installAvailableUpdate()
+        advanceUntilIdle()
+
+        assertEquals(
+            DownloadsEvent.InstallUpdate("/tmp/update.apk"),
+            eventDeferred.await(),
+        )
+        collector.cancel()
+    }
+
+    @Test
+    fun installAvailableUpdate_doesNothingWithoutLocalFilePath() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(
+                AvailableUpdate(
+                    tag = "v1.2.3",
+                    localFilePath = null,
+                )
+            ),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        var emittedEvent: DownloadsEvent? = null
+        val eventCollector = backgroundScope.launch {
+            viewModel.events.collect { event ->
+                emittedEvent = event
+            }
+        }
+
+        viewModel.installAvailableUpdate()
+        advanceUntilIdle()
+
+        assertNull(emittedEvent)
+        eventCollector.cancel()
+        collector.cancel()
+    }
+
     private fun createViewModel(
         downloadsFlow: MutableStateFlow<List<DownloadWithMetadata>>,
         updateFlow: MutableStateFlow<AvailableUpdate?>,
@@ -412,6 +555,7 @@ class DownloadsViewModelTest {
             availableUpdateUseCase = availableUpdateUseCase,
             downloadProgressUseCase = downloadProgressUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
+            clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
         )
     }
 
@@ -430,6 +574,7 @@ class DownloadsViewModelTest {
         id: Long,
         title: String,
         url: String = "https://example.com/$id",
+        status: DownloadStatus = DownloadStatus.DOWNLOADING,
         seen: Boolean = false,
         pendingDelete: Boolean = false,
     ) = DownloadWithMetadata(
@@ -437,7 +582,7 @@ class DownloadsViewModelTest {
         url = url,
         title = title,
         thumbnailFilePath = null,
-        status = DownloadStatus.DOWNLOADING,
+        status = status,
         seen = seen,
         pendingDelete = pendingDelete,
         progressPercent = 50f,

@@ -6,8 +6,10 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
+import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
@@ -15,6 +17,7 @@ import kotlin.math.max
 class DownloadWithProgressUseCase @Inject constructor(
     private val buildVideoDownloadRequestUseCase: BuildVideoDownloadRequestUseCase,
     private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
+    private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) {
     operator fun invoke(
         url: String,
@@ -23,9 +26,13 @@ class DownloadWithProgressUseCase @Inject constructor(
         processId: String,
         bytesProvider: () -> Long,
         downloadMediaType: DownloadMediaType = DownloadMediaType.VIDEO,
+        outputPathFile: File? = null,
+        onOutputFilePath: ((String) -> Unit)? = null,
     ) = callbackFlow {
         val progressMappingPolicy = ProgressMappingPolicy()
         val job = launch {
+            youtubeDlRuntimeInitializer.initializeIfNeeded()
+            outputPathFile?.delete()
             val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
                 DownloadMediaType.VIDEO -> {
                     buildVideoDownloadRequestUseCase(
@@ -33,6 +40,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         template = template,
                         qualityProfile = profile,
                         noProgress = false,
+                        outputPathFilePath = outputPathFile?.absolutePath,
                     )
                 }
 
@@ -41,6 +49,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         url = url,
                         template = template,
                         noProgress = false,
+                        outputPathFilePath = outputPathFile?.absolutePath,
                     )
                 }
             }
@@ -59,12 +68,16 @@ class DownloadWithProgressUseCase @Inject constructor(
                     ),
                 )
             }
+            readAfterMoveOutputFilePath(outputPathFile ?: File(""))?.let { outputPath ->
+                onOutputFilePath?.invoke(outputPath)
+            }
             if (youtubeDlResponse.exitCode != 0) {
                 throw IllegalStateException("Exit code ${youtubeDlResponse.exitCode}")
             }
             close()
         }
         awaitClose {
+            outputPathFile?.delete()
             runCatching {
                 YoutubeDL.getInstance().destroyProcessById(processId)
             }
@@ -121,4 +134,17 @@ class DownloadWithProgressUseCase @Inject constructor(
         val etaSeconds: Long?,
         val bytesDownloaded: Long,
     )
+}
+
+private fun readAfterMoveOutputFilePath(file: File): String? {
+    if (!file.exists()) {
+        return null
+    }
+    return runCatching {
+        file.readLines()
+            .asReversed()
+            .firstOrNull { it.isNotBlank() }
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }.getOrNull()
 }

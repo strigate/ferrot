@@ -3,6 +3,7 @@ package org.strigate.ferrot.work
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
@@ -21,15 +22,16 @@ import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
-import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
-import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.actions.DownloadNotificationActionType
+import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
+import org.strigate.ferrot.app.actions.downloadNotificationExtras
+import org.strigate.ferrot.app.actions.downloadNotificationTag
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMediaType
@@ -72,7 +74,6 @@ class DownloadWorker(
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
 
-    private var videoTitle: String? = null
     private var lastForegroundProgress: Int = -1
     private val qualityProfile: QualityProfile = QualityProfile.MAX
 
@@ -81,23 +82,20 @@ class DownloadWorker(
 
         val downloadId = _downloadId
         val tag = "Download[$downloadId]:"
-        Log.d(LOG_TAG, "$tag Starting work")
+        Log.d(LOG_TAG, "$tag Start")
 
         if (runAttemptCount > 20 || downloadId <= 0L) {
-            Log.w(LOG_TAG, "$tag Attempts exhausted or download ID invalid")
+            Log.w(LOG_TAG, "$tag Invalid download ID or attempts exhausted")
             return Result.failure()
         }
 
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
             ?: return handleDownloadFailedResult()
 
-        val notificationExtras = mapOf(
-            EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
-            EXTRA_DOWNLOAD_ID to download.id.toString(),
-        )
-        enableForeground(
-            notificationId = downloadId,
-            notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
+        val notificationExtras = downloadNotificationExtras(download.id)
+        enableDownloadForeground(
+            downloadId = downloadId,
+            notificationText = appContext.getString(R.string.notification_text_downloading),
             indeterminate = true,
             contentText = download.url,
             extras = notificationExtras,
@@ -106,6 +104,16 @@ class DownloadWorker(
         var wasDownloadDeleted = false
         return coroutineScope mainScope@{
             try {
+                var thumbnailFilePath: String? = null
+                suspend fun throwIfDownloadDeleted() {
+                    if (downloadUseCase.getDownloadByIdUseCase(downloadId) != null) {
+                        return
+                    }
+                    Log.w(LOG_TAG, "$tag Download record no longer exists")
+                    wasDownloadDeleted = true
+                    throw CancellationException()
+                }
+
                 val canStart = when (download.status) {
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
@@ -118,10 +126,9 @@ class DownloadWorker(
                     else -> false
                 }
                 if (!canStart) {
-                    Log.w(LOG_TAG, "$tag Cannot start in status: ${download.status}")
+                    Log.w(LOG_TAG, "$tag Cannot start from status=${download.status}")
                     return@mainScope Result.failure()
                 }
-
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_STARTED)
 
                 resetProgressAndCleanup()
@@ -136,21 +143,20 @@ class DownloadWorker(
                     return@mainScope Result.failure()
                 }
 
-                Log.d(LOG_TAG, "$tag Downloading metadata")
+                Log.d(LOG_TAG, "$tag Metadata: fetching")
                 downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     runCatching {
                         youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
                     }.getOrNull()
                 }
-                val message = if (videoInfo != null) {
-                    "Downloaded metadata"
+                val metadataMessage = if (videoInfo != null) {
+                    "$tag Metadata: fetched"
                 } else {
-                    "Unable to download metadata"
+                    "$tag Metadata: unavailable"
                 }
-                Log.d(LOG_TAG, "$tag $message")
+                Log.d(LOG_TAG, metadataMessage)
 
-                val videoInfoId = videoInfo?.id
                 val videoInfoTitle = videoInfo?.title?.takeIf { it.isNotBlank() }
                 val videoInfoExtension = videoInfo?.ext?.takeIf { it.isNotBlank() }
                 val videoInfoDuration = videoInfo?.duration ?: -1
@@ -161,29 +167,25 @@ class DownloadWorker(
                         ?.fileSizeApproximate
                         ?.takeIf { it > 0L }
 
-                videoTitle = videoInfoTitle ?: "Download_$downloadId"
-
-                updateForeground(
-                    notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
+                val videoTitle = videoInfoTitle ?: "Download_$downloadId"
+                updateDownloadForeground(
+                    notificationText = appContext.getString(R.string.notification_text_downloading),
                     indeterminate = true,
                     contentText = videoTitle,
                     extras = notificationExtras,
                 )
 
-                Log.d(LOG_TAG, "$tag Downloading thumbnail")
+                Log.d(LOG_TAG, "$tag Thumbnail: fetching")
                 if (videoInfo?.id != null) {
                     withContext(Dispatchers.IO) {
                         runCatching {
-                            val thumbnailFilePath = youtubeDlAndroidUseCase
+                            thumbnailFilePath = youtubeDlAndroidUseCase
                                 .downloadThumbnailUseCase(
                                     url = download.url,
                                     outputDir = uidDir,
                                     videoId = videoInfo.id,
                                 )
-                            if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                                wasDownloadDeleted = true
-                                throw CancellationException()
-                            }
+                            throwIfDownloadDeleted()
                             downloadMetadataUseCase.saveDownloadMetadataUseCase(
                                 DownloadMetadata(
                                     downloadId = downloadId,
@@ -194,9 +196,14 @@ class DownloadWorker(
                                     durationSeconds = videoInfo.duration.takeIf { it > 0 },
                                 )
                             )
-                            Log.d(LOG_TAG, "$tag Downloaded thumbnail")
+                            val thumbnailMessage = if (thumbnailFilePath != null) {
+                                "$tag Thumbnail: ready"
+                            } else {
+                                "$tag Thumbnail: unavailable"
+                            }
+                            Log.d(LOG_TAG, thumbnailMessage)
                         }.onFailure {
-                            Log.w(LOG_TAG, "$tag Unable to download thumbnail", it)
+                            Log.w(LOG_TAG, "$tag Thumbnail: failed", it)
                         }
                     }
                 }
@@ -207,10 +214,7 @@ class DownloadWorker(
                         expectedBytes = videoInfoVideoBytes,
                     )
                 }
-                if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                    wasDownloadDeleted = true
-                    throw CancellationException()
-                }
+                throwIfDownloadDeleted()
                 downloadUseCase.updateDownloadStatusUseCase(
                     downloadId = downloadId,
                     status = DownloadStatus.DOWNLOADING,
@@ -225,33 +229,37 @@ class DownloadWorker(
                 val videoProcessId = "${baseProcessId}_video"
                 val audioProcessId = "${baseProcessId}_audio"
 
-                Log.d(LOG_TAG, "$tag Decided weights: v=${weights.video}, a=${weights.audio}")
-                Log.d(LOG_TAG, "$tag videoProcessId: $videoProcessId")
-                Log.d(LOG_TAG, "$tag audioProcessId: $audioProcessId")
+                val message = buildString {
+                    append("$tag Prepared phases: ")
+                    append("videoWeight=${weights.video} audioWeight=${weights.audio}")
+                }
+                Log.d(LOG_TAG, message)
 
                 var maxBytes = 0L
                 val bytesProviderRaw = {
                     maxBytes = max(maxBytes, directoryBytesSum(uidDir))
                     maxBytes
                 }
-                val title = (videoInfoTitle ?: videoTitle ?: "Download").toSafeFileName()
+                val title = videoTitle.toSafeFileName()
                 val videoTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Video.%(ext)s"
                 val audioTemplate = "${uidDir.absolutePath}/${title} [%(id)s] - Audio.%(ext)s"
 
                 val phaseContext = PhaseContext(
                     phase = DownloadMediaType.VIDEO,
                     weights = weights,
-                    title = videoTitle ?: download.url,
+                    title = videoTitle,
                     notificationExtras = notificationExtras,
                 )
+                val videoOutputPathFile = File(uidDir, ".video-output-path.txt")
 
-                Log.d(LOG_TAG, "$tag Downloading video")
-                withContext(Dispatchers.IO) {
+                Log.d(LOG_TAG, "$tag Video: downloading")
+                val videoOutputFilePath = withContext(Dispatchers.IO) {
                     collectPhase(
                         processId = videoProcessId,
                         url = download.url,
                         template = videoTemplate,
                         qualityProfile = qualityProfile,
+                        outputPathFile = videoOutputPathFile,
                         bytesProviderRaw = bytesProviderRaw,
                         phaseContext = phaseContext.copy(
                             phase = DownloadMediaType.VIDEO,
@@ -263,31 +271,27 @@ class DownloadWorker(
                         onCombined = {},
                     )
                 }
-                Log.d(LOG_TAG, "$tag Downloaded video")
+                Log.d(LOG_TAG, "$tag Video: downloaded")
 
-                if (downloadUseCase.getDownloadByIdUseCase(downloadId) == null) {
-                    Log.w(LOG_TAG, "$tag Download record was deleted during download")
-                    wasDownloadDeleted = true
-                    throw CancellationException()
+                throwIfDownloadDeleted()
+
+                if (videoOutputFilePath.isNullOrBlank()) {
+                    Log.w(LOG_TAG, "$tag Video: output path not reported")
+                    return@mainScope handleDownloadFailedResult()
                 }
-
-                val videoOutputFile = locateOutputFileByInfoId(uidDir, videoInfoId)
-                if (videoOutputFile == null || !videoOutputFile.exists()) {
-                    Log.w(LOG_TAG, "$tag Video output file could not be located or does not exist")
+                val videoOutputFile = File(videoOutputFilePath)
+                if (!videoOutputFile.exists() || videoOutputFile.length() <= 0L) {
+                    Log.w(LOG_TAG, "$tag Video: output file missing or empty")
                     return@mainScope handleDownloadFailedResult()
                 }
 
-                val videoOutputFilePath = videoOutputFile.absolutePath
                 val videoOutputFileExtension = videoInfoExtension ?: videoOutputFilePath
                     .extractFileExtension()
                     .orEmpty()
 
-                Log.d(LOG_TAG, "$tag Video output file exists, calculating hash")
                 val sha256 = withContext(Dispatchers.IO) {
                     sha256(videoOutputFilePath)
                 }
-
-                Log.d(LOG_TAG, "$tag Calculated video file hash, saving download video")
                 downloadVideoUseCase.saveDownloadVideoUseCase(
                     DownloadVideo(
                         downloadId = downloadId,
@@ -312,14 +316,16 @@ class DownloadWorker(
                     )
                 }
 
-                Log.d(LOG_TAG, "$tag Downloading audio")
+                Log.d(LOG_TAG, "$tag Audio: downloading")
                 try {
-                    withContext(Dispatchers.IO) {
+                    val audioOutputPathFile = File(uidDir, ".audio-output-path.txt")
+                    val audioOutputFilePath = withContext(Dispatchers.IO) {
                         collectPhase(
                             processId = audioProcessId,
                             url = download.url,
                             template = audioTemplate,
                             qualityProfile = qualityProfile,
+                            outputPathFile = audioOutputPathFile,
                             bytesProviderRaw = bytesProviderRaw,
                             phaseContext = phaseContext.copy(
                                 phase = DownloadMediaType.AUDIO,
@@ -331,26 +337,20 @@ class DownloadWorker(
                             onCombined = {},
                         )
                     }
-                    Log.d(LOG_TAG, "$tag Downloaded audio")
-                } catch (throwable: Throwable) {
-                    val message = "$tag Audio download failed, continuing with video-only"
-                    Log.w(LOG_TAG, message, throwable)
-                }
+                    Log.d(LOG_TAG, "$tag Audio: downloaded")
 
-                val audioOutputFile = locateOutputFileByInfoId(
-                    dir = uidDir,
-                    videoInfoId = videoInfoId,
-                    audio = true,
-                )
-                if (audioOutputFile == null || !audioOutputFile.exists()) {
-                    Log.w(LOG_TAG, "$tag Audio output file could not be located or does not exist")
-                } else {
-                    val audioOutputFilePath = audioOutputFile.absolutePath
+                    if (audioOutputFilePath.isNullOrBlank()) {
+                        throw IllegalStateException("Audio output file path was not reported")
+                    }
+                    val audioOutputFile = File(audioOutputFilePath)
+                    if (!audioOutputFile.exists() || audioOutputFile.length() <= 0L) {
+                        throw IllegalStateException("Audio output file path was reported but file is missing")
+                    }
+
                     val audioOutputFileExtension = audioOutputFilePath
                         .extractFileExtension()
                         .orEmpty()
 
-                    Log.d(LOG_TAG, "$tag Audio output file exists, saving path")
                     downloadAudioUseCase.saveDownloadAudioUseCase(
                         DownloadAudio(
                             downloadId = downloadId,
@@ -358,16 +358,10 @@ class DownloadWorker(
                             fileExtension = audioOutputFileExtension,
                         )
                     )
+                } catch (throwable: Throwable) {
+                    val message = "$tag Audio: failed, continuing with video only"
+                    Log.w(LOG_TAG, message, throwable)
                 }
-
-                val finalPercent = 100
-                updateForeground(
-                    notificationText = appContext.getString(R.string.download_complete),
-                    progress = finalPercent,
-                    indeterminate = false,
-                    contentText = videoTitle ?: download.url,
-                    extras = notificationExtras,
-                )
 
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
                 downloadUseCase.updateDownloadStatusUseCase(
@@ -389,19 +383,21 @@ class DownloadWorker(
                 DeleteAllOrphanDownloadFilesWorker.enqueueDebouncedReplace(appContext)
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
-                val contentText = videoTitle ?: download.url
+                Log.d(LOG_TAG, "$tag Complete")
+                appContext.toast("$downloadComplete: $videoTitle", true)
 
-                Log.d(LOG_TAG, "$tag $downloadComplete")
-                appContext.toast("$downloadComplete: $contentText", true)
                 notificationService.notifyDownloaded(
-                    contentText = contentText,
+                    contentText = videoTitle,
                     contentTitle = downloadComplete,
                     extras = notificationExtras,
+                    tag = downloadNotificationTag(downloadId),
+                    actions = buildCompletedNotificationActions(downloadId),
+                    thumbnailFilePath = thumbnailFilePath,
                 )
                 Result.success()
 
             } catch (throwable: Throwable) {
-                Log.w(LOG_TAG, "$tag Caught throwable: $throwable", throwable)
+                Log.w(LOG_TAG, "$tag Failed", throwable)
 
                 suspend fun handleDownloadFailure() = handleDownloadFailure(
                     throwable = throwable,
@@ -422,11 +418,11 @@ class DownloadWorker(
                     return@mainScope handleDownloadFailure()
                 }
 
-                Log.w(LOG_TAG, "$tag stopReason=$stopReason")
+                Log.w(LOG_TAG, "$tag Cancelled: stopReason=$stopReason")
                 return@mainScope when (stopReason) {
                     WorkInfo.STOP_REASON_CANCELLED_BY_APP,
                     WorkInfo.STOP_REASON_USER -> {
-                        Log.w(LOG_TAG, "$tag Cancel came from app or user")
+                        Log.w(LOG_TAG, "$tag Cancelled by app or user")
                         handleDownloadStoppedResult()
                     }
 
@@ -459,7 +455,8 @@ class DownloadWorker(
             contentTitle = downloadFailed,
             contentText = notificationText,
             extras = notificationExtras,
-            tag = notificationText,
+            tag = downloadNotificationTag(downloadId),
+            actions = buildFailedNotificationActions(downloadId),
         )
         return handleDownloadFailedResult()
     }
@@ -517,6 +514,84 @@ class DownloadWorker(
         return Result.success()
     }
 
+    private suspend fun enableDownloadForeground(
+        downloadId: Long,
+        notificationText: String,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+        contentText: String? = null,
+        extras: Map<String, String>? = null,
+    ) {
+        enableForeground(
+            notificationId = downloadId.toInt(),
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+            actions = buildActiveNotificationActions(),
+        )
+    }
+
+    private fun updateDownloadForeground(
+        notificationText: String,
+        progress: Int? = null,
+        indeterminate: Boolean = false,
+        contentText: String? = null,
+        extras: Map<String, String>? = null,
+    ) {
+        updateForeground(
+            notificationText = notificationText,
+            progress = progress,
+            indeterminate = indeterminate,
+            contentText = contentText,
+            extras = extras,
+            actions = buildActiveNotificationActions(),
+        )
+    }
+
+    private fun buildActiveNotificationActions(): List<NotificationCompat.Action> {
+        return listOf(
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = _downloadId,
+                actionType = DownloadNotificationActionType.STOP,
+            ),
+        )
+    }
+
+    private fun buildCompletedNotificationActions(downloadId: Long): List<NotificationCompat.Action> {
+        val actions = mutableListOf<NotificationCompat.Action>()
+        actions += buildDownloadNotificationAction(
+            context = appContext,
+            downloadId = downloadId,
+            actionType = DownloadNotificationActionType.MARK_SEEN,
+        )
+        actions += buildDownloadNotificationAction(
+            context = appContext,
+            downloadId = downloadId,
+            actionType = DownloadNotificationActionType.DELETE,
+        )
+        return actions
+    }
+
+    private fun buildFailedNotificationActions(
+        downloadId: Long,
+    ): List<NotificationCompat.Action> {
+        return listOf(
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = downloadId,
+                actionType = DownloadNotificationActionType.RETRY,
+            ),
+            buildDownloadNotificationAction(
+                context = appContext,
+                downloadId = downloadId,
+                actionType = DownloadNotificationActionType.DELETE,
+            ),
+        )
+    }
+
     private suspend fun resetProgressAndCleanup() {
         val downloadId = _downloadId
         if (downloadId > 0L) {
@@ -544,35 +619,6 @@ class DownloadWorker(
         runCatching {
             YoutubeDL.getInstance().destroyProcessById(processId)
         }
-    }
-
-    private fun locateOutputFileByInfoId(
-        dir: File,
-        videoInfoId: String?,
-        audio: Boolean = false,
-    ): File? {
-        if (!dir.exists()) {
-            return null
-        }
-        val extensions = if (audio) {
-            listOf("mp3", "m4a", "opus")
-        } else {
-            listOf("mp4", "mkv", "webm")
-        }
-        if (!videoInfoId.isNullOrBlank()) {
-            extensions
-                .map { File(dir, "$videoInfoId.$it") }
-                .firstOrNull { it.exists() && it.length() > 0L }
-                ?.let { return it }
-        }
-        return dir.listFiles()
-            ?.filter {
-                it.isFile && !it.name.startsWith("thumb_") && it.length() > 0L
-            }
-            ?.filter {
-                extensions.any { extension -> it.name.endsWith(".$extension") }
-            }
-            ?.maxByOrNull { it.lastModified() }
     }
 
     private fun decideWeights(videoBytes: Long?, audioBytes: Long?): Weights {
@@ -634,13 +680,16 @@ class DownloadWorker(
         url: String,
         template: String,
         qualityProfile: QualityProfile,
+        outputPathFile: File,
         bytesProviderRaw: () -> Long,
         phaseContext: PhaseContext,
         initialVideoPercent: Float,
         onCanceled: () -> Unit,
         onCombined: (Float) -> Unit,
-    ) {
+    ): String? {
         val throttle = ProgressThrottle()
+        var outputFilePath: String? = null
+
         val downloadTickFlow = youtubeDlAndroidUseCase.downloadWithProgressUseCase(
             url = url,
             template = template,
@@ -648,6 +697,8 @@ class DownloadWorker(
             processId = processId,
             bytesProvider = { throttle.throttledBytes(bytesProviderRaw) },
             downloadMediaType = phaseContext.phase,
+            outputPathFile = outputPathFile,
+            onOutputFilePath = { outputFilePath = it },
         )
         try {
             downloadTickFlow.collect { tick ->
@@ -693,8 +744,8 @@ class DownloadWorker(
                 if (throttle.shouldNotify(percentInt)) {
                     val etaLine = formatEta(tick.etaSeconds)
                     val contentLine = buildNotifLine(percentInt, etaLine, phaseContext.title)
-                    updateForeground(
-                        notificationText = appContext.getString(R.string.worker_notification_text_download_in_progress),
+                    updateDownloadForeground(
+                        notificationText = appContext.getString(R.string.notification_text_downloading),
                         progress = percentInt,
                         indeterminate = false,
                         contentText = contentLine,
@@ -703,6 +754,7 @@ class DownloadWorker(
                     lastForegroundProgress = percentInt
                 }
             }
+            return outputFilePath
         } finally {
             destroyYoutubeDlProcess(processId)
         }

@@ -17,7 +17,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
-import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
@@ -26,9 +25,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MyPackageReplacedReceiver : BroadcastReceiver() {
-    @Inject
-    lateinit var updatePathProvider: UpdatePathProvider
-
     @Inject
     lateinit var availableUpdateUseCase: AvailableUpdateUseCase
 
@@ -40,8 +36,7 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
-                availableUpdateUseCase.clearAvailableUpdateUseCase()
-                updatePathProvider.updatesDir().deleteRecursively()
+                availableUpdateUseCase.clearAvailableUpdateFilesAndDataUseCase()
 
                 val constraints = Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)

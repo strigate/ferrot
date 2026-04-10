@@ -22,3 +22,15 @@ internal fun calculateDailyInitialDelayMillis(
     }
     return between(now, firstRun).toMillis()
 }
+
+internal fun calculateDailyTriggerAtMillis(
+    targetHour: Int,
+    zoneId: ZoneId = ZoneId.systemDefault(),
+    now: ZonedDateTime = ZonedDateTime.now(zoneId),
+): Long {
+    return now.toInstant().toEpochMilli() + calculateDailyInitialDelayMillis(
+        targetHour = targetHour,
+        zoneId = zoneId,
+        now = now,
+    )
+}

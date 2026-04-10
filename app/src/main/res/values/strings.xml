@@ -8,14 +8,23 @@
     <string name="notification_channel_description_downloaded">Downloaded</string>
     <string name="notification_channel_description_updates">Updates</string>
 
-    <string name="notification_summary_title">You have new notifications</string>
-    <string name="notification_download_title">Downloading</string>
-    <string name="notification_app_update_title">App update</string>
+    <string name="notification_title_summary">You have new notifications</string>
+    <string name="notification_title_download">Downloading</string>
+    <string name="notification_title_downloads_in_progress">Downloads in progress</string>
+    <string name="notification_title_app_update">App update</string>
+    <string name="notification_title_deleted">Deleted</string>
+    <string name="notification_action_install">Install</string>
+    <string name="notification_action_mark_seen">Mark as seen</string>
+    <string name="notification_action_delete">Delete</string>
+    <string name="notification_action_retry">Retry</string>
+    <string name="notification_action_stop">Stop</string>
+    <string name="notification_action_stop_all">Stop all</string>
+    <string name="notification_action_undo">Undo</string>
 
-    <string name="worker_notification_text_updating_dependencies">Updating dependencies</string>
-    <string name="worker_notification_text_downloading_app_update">Downloading app update</string>
-    <string name="worker_notification_text_download_in_progress">Download in progress</string>
-    <plurals name="worker_notification_text_deleting_downloads">
+    <string name="notification_text_updating_dependencies">Updating dependencies</string>
+    <string name="notification_text_downloading_app_update">Downloading app update</string>
+    <string name="notification_text_downloading">Downloading</string>
+    <plurals name="notification_text_deleting_downloads">
         <item quantity="one">Deleting download</item>
         <item quantity="other">Deleting downloads</item>
     </plurals>
@@ -55,6 +64,7 @@
     <string name="percent_0">0%</string>
     <string name="share_to">Share to…</string>
     <string name="select_all">Select all</string>
+    <string name="retry_failed">Retry failed</string>
     <string name="never">Never</string>
     <string name="video">Video</string>
     <string name="audio">Audio</string>
@@ -118,6 +128,7 @@
     <string name="content_description_back">Back</string>
     <string name="content_description_thumbnail">Preview</string>
     <string name="content_description_retry">Retry</string>
+    <string name="content_description_retry_failed">Retry failed</string>
     <string name="content_description_play">Play</string>
     <string name="content_description_stop_download">Stop download</string>
     <string name="content_description_resume_download">Resume download</string>

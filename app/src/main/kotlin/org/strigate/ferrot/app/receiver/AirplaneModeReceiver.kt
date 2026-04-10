@@ -17,7 +17,7 @@ class AirplaneModeReceiver : BroadcastReceiver() {
         val state = intent.getBooleanExtra("state", false)
         Log.d(LOG_TAG, "Airplane mode: $state")
         if (!state) {
-            RequeuePendingDownloadsWorker.enqueueOneItem(context)
+            RequeuePendingDownloadsWorker.enqueueOneTime(context)
         }
     }
 }

@@ -41,10 +41,11 @@ object NetworkOps {
             .map(::evaluateNetwork)
             .firstOrNull { it.first } ?: primaryResult
 
-        Log.d(
-            LOG_TAG,
-            "[quickNetworkProbe] active=${capabilities.describeCapabilities()} -> $fallbackResult"
-        )
+        val message = buildString {
+            append("[quickNetworkProbe] active=${capabilities.describeCapabilities()} -> ")
+            append(fallbackResult)
+        }
+        Log.d(LOG_TAG, message)
         return fallbackResult
     }
 

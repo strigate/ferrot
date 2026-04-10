@@ -5,8 +5,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
@@ -37,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -48,7 +52,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,8 +97,11 @@ import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.EmptyState
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
+import org.strigate.ferrot.presentation.model.isActive
+import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
@@ -105,6 +111,7 @@ import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import kotlin.math.abs
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
+private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,6 +121,7 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val dimens = LocalDimens.current
+    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val lazyListState = rememberLazyListState()
@@ -156,10 +164,19 @@ fun DownloadsScreen(
     val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
     val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
 
+    val hasFailedDownloads = remember(uiState) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads.any { it.status.isFailed }
+    }
+    val hasActiveDownloads = remember(uiState) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads.any { it.status.isActive }
+    }
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.id in selectedIds && !it.seen }
     }
+
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
 
     BackHandler(enabled = selectionMode) {
@@ -167,6 +184,15 @@ fun DownloadsScreen(
     }
     LaunchedEffect(Unit) {
         viewModel.logShown()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is DownloadsEvent.InstallUpdate -> {
+                    InstallHelper.requestInstallApkIfExists(context, event.path)
+                }
+            }
+        }
     }
     LifecycleEffect {
         on(Lifecycle.Event.ON_START) {
@@ -267,8 +293,6 @@ fun DownloadsScreen(
                 TopAppBar(
                     navigationIcon = {
                         IconButton(
-                            modifier = Modifier
-                                .padding(dimens.spacingXSmall),
                             onClick = {},
                         ) {
                             Icon(
@@ -281,8 +305,7 @@ fun DownloadsScreen(
                     title = {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(TopAppBarDefaults.TopAppBarExpandedHeight),
+                                .fillMaxWidth(),
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             AnimatedVisibility(
@@ -395,6 +418,48 @@ fun DownloadsScreen(
                                     },
                                 )
                             }
+                            if (hasFailedDownloads) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.retry_failed),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Refresh,
+                                            contentDescription = stringResource(R.string.content_description_retry_failed),
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.retryFailedDownloads()
+                                        coroutineScope.launch {
+                                            delay(RETRY_FAILED_SCROLL_DELAY_MILLIS)
+                                            lazyListState.animateScrollToItem(0)
+                                        }
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
+                            if (hasActiveDownloads) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.notification_action_stop_all),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.notification_action_stop_all),
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.stopAllDownloads()
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -418,7 +483,15 @@ fun DownloadsScreen(
             }
         },
         snackbarHost = {
-            SnackbarHost(snackbarHostState)
+            SnackbarHost(snackbarHostState) { snackbarData ->
+                Snackbar(
+                    snackbarData = snackbarData,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                    actionColor = MaterialTheme.colorScheme.inversePrimary,
+                    dismissActionContentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+            }
         },
     ) { contentPadding ->
         Surface(
@@ -442,16 +515,13 @@ fun DownloadsScreen(
                                 .fillMaxSize(),
                         ) {
                             availableUpdate?.let {
-                                val context = LocalContext.current
                                 AvailableUpdateBanner(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = dimens.spacingMedium)
-                                        .padding(bottom = dimens.spacingSmall),
+                                        .fillMaxWidth(),
                                     tag = it.tag,
                                     localFilePath = it.localFilePath,
-                                    onClick = { filePath ->
-                                        InstallHelper.requestInstallApkIfExists(context, filePath)
+                                    onClick = {
+                                        viewModel.installAvailableUpdate()
                                     },
                                 )
                             }
@@ -460,6 +530,7 @@ fun DownloadsScreen(
                                 selectedIds = selectedIds,
                                 dismissingIds = dismissingIds,
                                 pendingDeleteIds = pendingDeleteIds,
+                                hasAvailableUpdateBanner = availableUpdate != null,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
                                 onItemClick = { item ->
@@ -561,6 +632,7 @@ private fun DownloadsList(
     selectedIds: Set<Long>,
     dismissingIds: Set<Long>,
     pendingDeleteIds: Set<Long>,
+    hasAvailableUpdateBanner: Boolean,
     searchQuery: String,
     lazyListState: LazyListState,
     onItemClick: (DownloadItemUiData) -> Unit,
@@ -569,9 +641,16 @@ private fun DownloadsList(
     onBulkDismissAnimationFinished: (Long) -> Unit,
     onMarkPendingDelete: (Set<Long>) -> Unit,
 ) {
+    val dimens = LocalDimens.current
     val coroutineScope = rememberCoroutineScope()
     val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
+    var trackedAutoScrollDownloadId by remember {
+        mutableStateOf<Long?>(null)
+    }
+    var trackedAutoScrollWasActive by remember {
+        mutableStateOf(false)
+    }
 
     val showScrollToBottom by remember {
         derivedStateOf {
@@ -599,10 +678,34 @@ private fun DownloadsList(
     }
     LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
         if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
+            trackedAutoScrollDownloadId =
+                itemIds.firstOrNull { it !in previousItemIds && it !in previousPendingDeleteIds }
+            trackedAutoScrollWasActive = items
+                .firstOrNull { it.id == trackedAutoScrollDownloadId }
+                ?.status
+                ?.isActive == true
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
         previousPendingDeleteIds = pendingDeleteIds
+    }
+    LaunchedEffect(items.map { it.id to it.status }, trackedAutoScrollDownloadId) {
+        val trackedId = trackedAutoScrollDownloadId ?: return@LaunchedEffect
+        val trackedIndex = items.indexOfFirst { it.id == trackedId }
+        if (trackedIndex < 0) {
+            trackedAutoScrollDownloadId = null
+            trackedAutoScrollWasActive = false
+            return@LaunchedEffect
+        }
+        val currentStatus = items[trackedIndex].status
+        val isActive = currentStatus.isActive
+        if (trackedAutoScrollWasActive && !isActive) {
+            lazyListState.animateScrollToItem(trackedIndex)
+            trackedAutoScrollDownloadId = null
+            trackedAutoScrollWasActive = false
+            return@LaunchedEffect
+        }
+        trackedAutoScrollWasActive = isActive
     }
     Box(
         modifier = Modifier
@@ -637,6 +740,11 @@ private fun DownloadsList(
             modifier = Modifier
                 .fillMaxSize(),
             state = lazyListState,
+            contentPadding = PaddingValues(
+                top = if (hasAvailableUpdateBanner) dimens.spacingXSmall else dimens.zero,
+                bottom = dimens.spacingXSmall,
+            ),
+            verticalArrangement = Arrangement.spacedBy(dimens.spacingXXSmall),
         ) {
             items(
                 items = items,
@@ -744,67 +852,64 @@ private fun DownloadsListRow(
         enter = Transitions.listItemEnter,
         exit = Transitions.listItemExit,
     ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coordinates ->
-                        rowWidthPx = coordinates.size.width.toFloat()
-                    },
-            ) {
-                SwipeToDismissBox(
-                    state = dismissState,
-                    enableDismissFromStartToEnd = false,
-                    enableDismissFromEndToStart = swipeEnabled,
-                    backgroundContent = {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.medium,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    rowWidthPx = coordinates.size.width.toFloat()
+                },
+        ) {
+            SwipeToDismissBox(
+                state = dismissState,
+                enableDismissFromStartToEnd = false,
+                enableDismissFromEndToStart = swipeEnabled,
+                backgroundContent = {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.CenterEnd,
                         ) {
-                            Box(
+                            Icon(
                                 modifier = Modifier
-                                    .fillMaxSize(),
-                                contentAlignment = Alignment.CenterEnd,
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .padding(end = dimens.spacingMedium),
-                                    imageVector = Icons.Filled.Delete,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    contentDescription = null,
-                                )
-                            }
+                                    .padding(end = dimens.spacingMedium),
+                                imageVector = Icons.Filled.Delete,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                },
+            ) {
+                DownloadItem(
+                    item = item,
+                    isSelected = isSelected,
+                    longClickEnabled = swipeEnabled,
+                    onClick = {
+                        if (selectedIds.isNotEmpty()) {
+                            onSelectionChange(toggleSelection(selectedIds, item.id))
+                        } else {
+                            onItemClick(item)
                         }
                     },
-                ) {
-                    DownloadItem(
-                        item = item,
-                        isSelected = isSelected,
-                        longClickEnabled = swipeEnabled,
-                        onClick = {
-                            if (selectedIds.isNotEmpty()) {
-                                onSelectionChange(toggleSelection(selectedIds, item.id))
-                            } else {
-                                onItemClick(item)
-                            }
-                        },
-                        onLongClick = {
-                            onSelectionChange(selectedIds + item.id)
-                        },
-                        onPauseResume = {
-                            onPauseResume(item)
-                        },
-                        onOpen = {
-                            if (selectedIds.isNotEmpty()) {
-                                onSelectionChange(toggleSelection(selectedIds, item.id))
-                            } else {
-                                onItemClick(item)
-                            }
-                        },
-                    )
-                }
+                    onLongClick = {
+                        onSelectionChange(selectedIds + item.id)
+                    },
+                    onPauseResume = {
+                        onPauseResume(item)
+                    },
+                    onOpen = {
+                        if (selectedIds.isNotEmpty()) {
+                            onSelectionChange(toggleSelection(selectedIds, item.id))
+                        } else {
+                            onItemClick(item)
+                        }
+                    },
+                )
             }
-            Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
         }
     }
 
@@ -907,6 +1012,13 @@ private fun DownloadItem(
                 modifier = Modifier
                     .weight(1f),
             ) {
+                val showInlineProgressBar = when (item.status) {
+                    DownloadStatusUiData.QUEUED,
+                    DownloadStatusUiData.METADATA,
+                    DownloadStatusUiData.DOWNLOADING -> true
+
+                    else -> false
+                }
                 val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -937,13 +1049,22 @@ private fun DownloadItem(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+                Spacer(
+                    modifier = Modifier.height(
+                        if (showInlineProgressBar) {
+                            dimens.spacingMediumAlt
+                        } else {
+                            dimens.spacingXXSmall
+                        },
+                    ),
+                )
                 DownloadProgressSection(
                     status = item.status,
                     progressFraction = item.progressFraction,
                     etaSeconds = item.etaSeconds,
                     bytesDownloaded = item.bytesDownloaded,
                     completedAtMillis = item.completedAtMillis,
+                    alwaysShowBar = false,
                 )
             }
         }

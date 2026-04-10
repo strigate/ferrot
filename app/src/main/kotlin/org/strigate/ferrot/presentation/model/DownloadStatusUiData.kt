@@ -11,3 +11,20 @@ enum class DownloadStatusUiData {
     FAILED,
     STOPPED,
 }
+
+val DownloadStatusUiData.isActive: Boolean
+    get() = when (this) {
+        DownloadStatusUiData.QUEUED,
+        DownloadStatusUiData.WAITING_FOR_NETWORK,
+        DownloadStatusUiData.WAITING_FOR_WIFI,
+        DownloadStatusUiData.METADATA,
+        DownloadStatusUiData.DOWNLOADING -> true
+
+        DownloadStatusUiData.PAUSED,
+        DownloadStatusUiData.COMPLETED,
+        DownloadStatusUiData.FAILED,
+        DownloadStatusUiData.STOPPED -> false
+    }
+
+val DownloadStatusUiData.isFailed: Boolean
+    get() = this == DownloadStatusUiData.FAILED
