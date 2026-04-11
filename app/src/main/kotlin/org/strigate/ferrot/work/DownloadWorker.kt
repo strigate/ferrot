@@ -30,6 +30,7 @@ import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType
 import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
+import org.strigate.ferrot.app.actions.buildShareDownloadNotificationAction
 import org.strigate.ferrot.app.actions.downloadNotificationExtras
 import org.strigate.ferrot.app.actions.downloadNotificationTag
 import org.strigate.ferrot.app.provider.DownloadPathProvider
@@ -391,8 +392,12 @@ class DownloadWorker(
                     contentTitle = downloadComplete,
                     extras = notificationExtras,
                     tag = downloadNotificationTag(downloadId),
-                    actions = buildCompletedNotificationActions(downloadId),
+                    actions = buildCompletedNotificationActions(
+                        downloadId = downloadId,
+                        shareFilePath = videoOutputFilePath,
+                    ),
                     thumbnailFilePath = thumbnailFilePath,
+                    autoCancel = false,
                 )
                 Result.success()
 
@@ -560,8 +565,21 @@ class DownloadWorker(
         )
     }
 
-    private fun buildCompletedNotificationActions(downloadId: Long): List<NotificationCompat.Action> {
+    private fun buildCompletedNotificationActions(
+        downloadId: Long,
+        shareFilePath: String?,
+    ): List<NotificationCompat.Action> {
         val actions = mutableListOf<NotificationCompat.Action>()
+        shareFilePath?.let { filePath ->
+            val shareFile = File(filePath)
+            if (shareFile.exists() && shareFile.length() > 0L) {
+                actions += buildShareDownloadNotificationAction(
+                    context = appContext,
+                    downloadId = downloadId,
+                    filePath = filePath,
+                )
+            }
+        }
         actions += buildDownloadNotificationAction(
             context = appContext,
             downloadId = downloadId,
