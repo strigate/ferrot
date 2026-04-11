@@ -15,6 +15,7 @@
     <string name="notification_title_deleted">Deleted</string>
     <string name="notification_action_install">Install</string>
     <string name="notification_action_mark_seen">Mark as seen</string>
+    <string name="notification_action_share">Share</string>
     <string name="notification_action_delete">Delete</string>
     <string name="notification_action_retry">Retry</string>
     <string name="notification_action_stop">Stop</string>

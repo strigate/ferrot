@@ -18,20 +18,25 @@ import org.strigate.ferrot.app.actions.DownloadNotificationActionType
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.DELETE
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.MARK_SEEN
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.RETRY
+import org.strigate.ferrot.app.actions.DownloadNotificationActionType.SHARE
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.STOP
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.UNDO_DELETE
 import org.strigate.ferrot.app.actions.activeDownloadNotificationTag
 import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
+import org.strigate.ferrot.app.actions.buildShareDownloadNotificationAction
 import org.strigate.ferrot.app.actions.downloadNotificationExtras
 import org.strigate.ferrot.app.actions.downloadNotificationTag
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.model.DownloadVideo
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -51,6 +56,9 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var downloadProgressUseCase: DownloadProgressUseCase
+
+    @Inject
+    lateinit var downloadVideoUseCase: DownloadVideoUseCase
 
     @Inject
     lateinit var startDownloadUseCase: StartDownloadUseCase
@@ -81,6 +89,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                     UNDO_DELETE -> handleUndoDelete(downloadId)
                     RETRY -> handleRetry(downloadId)
                     STOP -> handleStop(downloadId)
+                    SHARE -> Unit
                 }
             } finally {
                 pendingResult.finish()
@@ -155,6 +164,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
             extras = downloadNotificationExtras(download.id),
             tag = downloadNotificationTag(download.id),
             actions = buildCompletedActions(download),
+            autoCancel = false,
         )
     }
 
@@ -188,7 +198,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
         )
     }
 
-    private fun buildCompletedActions(download: Download): List<NotificationCompat.Action> {
+    private suspend fun buildCompletedActions(download: Download): List<NotificationCompat.Action> {
         if (download.pendingDelete) {
             return listOf(
                 buildDownloadNotificationAction(
@@ -199,6 +209,13 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
             )
         }
         val actions = mutableListOf<NotificationCompat.Action>()
+        resolveSharePathIfPresent(download.id)?.let { sharePath ->
+            actions += buildShareDownloadNotificationAction(
+                context = appContext,
+                downloadId = download.id,
+                filePath = sharePath,
+            )
+        }
         if (!download.seen) {
             actions += buildDownloadNotificationAction(
                 context = appContext,
@@ -243,4 +260,19 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
             .getDownloadMetadataByIdAsFlowUseCase(download.id).first()
         return metadata?.title?.takeIf { it.isNotBlank() } ?: download.url
     }
+
+    private suspend fun resolveSharePath(downloadId: Long): String? {
+        return downloadVideoUseCase
+            .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
+            .first()
+            .pathOrNull()
+    }
+
+    private suspend fun resolveSharePathIfPresent(downloadId: Long): String? {
+        val filePath = resolveSharePath(downloadId) ?: return null
+        val file = File(filePath)
+        return filePath.takeIf { file.exists() && file.length() > 0L }
+    }
+
+    private fun DownloadVideo?.pathOrNull(): String? = this?.filePath?.takeIf { it.isNotBlank() }
 }

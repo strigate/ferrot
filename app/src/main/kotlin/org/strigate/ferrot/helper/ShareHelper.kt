@@ -23,22 +23,25 @@ object ShareHelper {
             Log.w(LOG_TAG, "File does not exist: ${file.absolutePath}")
             return false
         }
-        val authority = "${context.packageName}.${context.getString(R.string.file_provider)}"
-        val uri: Uri = FileProvider.getUriForFile(context, authority, file)
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = filePath.guessMimeType()
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(context.contentResolver, file.name, uri)
-        }
-        val chooser = Intent.createChooser(send, context.getString(R.string.share_to))
-        if (context !is Activity) {
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
         return try {
+            val authority = "${context.packageName}.${context.getString(R.string.file_provider)}"
+            val uri: Uri = FileProvider.getUriForFile(context, authority, file)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = filePath.guessMimeType()
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newUri(context.contentResolver, file.name, uri)
+            }
+            val chooser = Intent.createChooser(send, context.getString(R.string.share_to))
+            if (context !is Activity) {
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             context.startActivity(chooser)
             true
         } catch (_: ActivityNotFoundException) {
+            false
+        } catch (throwable: Throwable) {
+            Log.w(LOG_TAG, "Failed to share file: ${file.absolutePath}", throwable)
             false
         }
     }

@@ -10,9 +10,12 @@ import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_NOTIFICATION_ACTION
+import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARE_FILE_PATH
+import org.strigate.ferrot.app.ShareDownloadActivity
 import org.strigate.ferrot.app.receiver.DownloadNotificationActionReceiver
 
 enum class DownloadNotificationActionType {
+    SHARE,
     MARK_SEEN,
     DELETE,
     UNDO_DELETE,
@@ -35,6 +38,7 @@ fun buildDownloadNotificationAction(
     actionType: DownloadNotificationActionType,
 ): NotificationCompat.Action {
     val titleResource = when (actionType) {
+        DownloadNotificationActionType.SHARE -> R.string.notification_action_share
         DownloadNotificationActionType.MARK_SEEN -> R.string.notification_action_mark_seen
         DownloadNotificationActionType.DELETE -> R.string.notification_action_delete
         DownloadNotificationActionType.UNDO_DELETE -> R.string.notification_action_undo
@@ -55,6 +59,28 @@ fun buildDownloadNotificationAction(
     return NotificationCompat.Action.Builder(
         R.drawable.ic_logo,
         context.getString(titleResource),
+        pendingIntent,
+    ).build()
+}
+
+fun buildShareDownloadNotificationAction(
+    context: Context,
+    downloadId: Long,
+    filePath: String,
+): NotificationCompat.Action {
+    val intent = Intent(context, ShareDownloadActivity::class.java).apply {
+        putExtra(EXTRA_DOWNLOAD_ID, downloadId.toString())
+        putExtra(EXTRA_SHARE_FILE_PATH, filePath)
+    }
+    val pendingIntent = PendingIntent.getActivity(
+        context,
+        (downloadId.toString() + DownloadNotificationActionType.SHARE.name).hashCode(),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+    return NotificationCompat.Action.Builder(
+        R.drawable.ic_logo,
+        context.getString(R.string.notification_action_share),
         pendingIntent,
     ).build()
 }
