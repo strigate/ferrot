@@ -84,12 +84,12 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                     return@launch
                 }
                 when (action) {
+                    SHARE -> Unit
                     MARK_SEEN -> handleMarkSeen(downloadId)
                     DELETE -> handleDelete(downloadId)
                     UNDO_DELETE -> handleUndoDelete(downloadId)
                     RETRY -> handleRetry(downloadId)
                     STOP -> handleStop(downloadId)
-                    SHARE -> Unit
                 }
             } finally {
                 pendingResult.finish()
