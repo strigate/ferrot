@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -89,6 +90,7 @@ import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
+import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
@@ -233,6 +235,7 @@ fun DownloadScreen(
                         onSaveClick = viewModel::saveDownload,
                         onShareClick = viewModel::shareDownload,
                         onRetryClick = viewModel::retryDownload,
+                        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
                             vertical = dimens.zero,
@@ -263,6 +266,7 @@ private fun DownloadPager(
     onSaveClick: (Long) -> Unit,
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
+    onRefreshMetadataClick: (Long) -> Unit,
     pagePadding: PaddingValues,
     pageSpacing: Dp,
 ) {
@@ -350,6 +354,9 @@ private fun DownloadPager(
                         onRetryClick = {
                             onRetryClick(download.id)
                         },
+                        onRefreshMetadataClick = {
+                            onRefreshMetadataClick(download.id)
+                        },
                     )
                 } ?: LoadingState(
                     modifier = Modifier
@@ -373,6 +380,7 @@ private fun DownloadPageContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     with(data) {
@@ -431,16 +439,23 @@ private fun DownloadPageContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
-                    !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
+                    && !selectedPath.isNullOrBlank()
+
+            val isMetadataIncomplete = metadata?.thumbnailFilePath.isNullOrBlank()
+            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED
+                    && !status.isActive
+                    && isMetadataIncomplete
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
                 durationSeconds = metadata?.durationSeconds,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
+                showMetadataRefresh = needsMetadataRefresh,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
+                onRefreshMetadataClick = onRefreshMetadataClick,
             )
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Row(
@@ -578,9 +593,11 @@ private fun ThumbnailCard(
     thumbnailFilePath: String?,
     durationSeconds: Int?,
     showRetry: Boolean,
+    showMetadataRefresh: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     val thumbnailFile = thumbnailFilePath
@@ -669,6 +686,37 @@ private fun ThumbnailCard(
                         contentDescription = overlayContentDescription,
                         imageVector = overlayIcon,
                     )
+                }
+            }
+            if (showMetadataRefresh) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(dimens.spacingSmall)
+                        .size(dimens.overlayButtonSmall)
+                        .clip(CircleShape)
+                        .background(overlayBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(dimens.overlayButtonSmall)
+                            .clip(CircleShape)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = LocalIndication.current,
+                                onClick = onRefreshMetadataClick,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            modifier = Modifier
+                                .size(dimens.iconXXSmall),
+                            imageVector = Icons.Filled.Download,
+                            contentDescription = stringResource(R.string.content_description_refresh_metadata),
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
             if (durationText != null) {

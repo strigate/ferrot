@@ -52,6 +52,7 @@ import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadaudio.GetDownloadAudioByDownloadIdAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.GetDownloadProgressByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadVideoByDownloadIdAsFlowUseCase
@@ -91,6 +92,9 @@ class DownloadViewModelTest {
 
     @Mock
     private lateinit var startDownloadUseCase: StartDownloadUseCase
+
+    @Mock
+    private lateinit var refreshDownloadMetadataCombinedUseCase: RefreshDownloadMetadataCombinedUseCase
 
     @Mock
     private lateinit var downloadWithMetadataUseCase: DownloadWithMetadataUseCase
@@ -164,6 +168,7 @@ class DownloadViewModelTest {
                 downloadMetadataUseCase = downloadMetadataUseCase,
                 clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
                 startDownloadUseCase = startDownloadUseCase,
+                refreshDownloadMetadataCombinedUseCase = refreshDownloadMetadataCombinedUseCase,
                 downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             )
             fail("Expected IllegalStateException")
@@ -769,6 +774,7 @@ class DownloadViewModelTest {
             downloadMetadataUseCase = downloadMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
             startDownloadUseCase = startDownloadUseCase,
+            refreshDownloadMetadataCombinedUseCase = refreshDownloadMetadataCombinedUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
         )
     }
