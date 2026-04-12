@@ -301,10 +301,13 @@ class DownloadAvailableUpdateWorker(
                     return
                 }
                 val contentText = if (totalBytes != null && totalBytes > 0L) {
-                    val percentText = progressPercent
-                        .takeIf { it >= 0 }?.let { " ($it%)" }.orEmpty()
+                    buildString {
+                        progressPercent
+                            .takeIf { it >= 0 }
+                            ?.let { append("$it% - ") }
 
-                    "${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}$percentText"
+                        append("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
+                    }
                 } else {
                     formatBytes(downloadedBytes)
                 }
