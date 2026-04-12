@@ -91,6 +91,9 @@ class DownloadViewModel @Inject constructor(
         initialValue = DownloadMediaType.VIDEO,
     )
 
+    private val _refreshingMetadataIds = MutableStateFlow<Set<Long>>(emptySet())
+    val refreshingMetadataIds: StateFlow<Set<Long>> = _refreshingMetadataIds
+
     private val _events = MutableSharedFlow<DownloadEvent>(
         replay = 0,
         extraBufferCapacity = 1,
@@ -256,7 +259,12 @@ class DownloadViewModel @Inject constructor(
 
     fun refreshDownloadMetadata(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
-        refreshDownloadMetadataCombinedUseCase(downloadId)
+        _refreshingMetadataIds.value += downloadId
+        try {
+            refreshDownloadMetadataCombinedUseCase(downloadId)
+        } finally {
+            _refreshingMetadataIds.value -= downloadId
+        }
     }
 
     private fun getSelectedMediaFilePath(

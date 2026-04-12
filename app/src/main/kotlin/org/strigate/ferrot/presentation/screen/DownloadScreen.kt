@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -111,6 +112,7 @@ fun DownloadScreen(
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
+    val refreshingMetadataIds by viewModel.refreshingMetadataIds.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
@@ -225,6 +227,7 @@ fun DownloadScreen(
                         pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
+                        refreshingMetadataIds = refreshingMetadataIds,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
                         onDownloadPageSelected = viewModel::selectDownload,
                         onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
@@ -258,6 +261,7 @@ private fun DownloadPager(
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
+    refreshingMetadataIds: Set<Long>,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
     onVisibleCompletedUnseenDownload: (Long) -> Unit,
@@ -335,6 +339,7 @@ private fun DownloadPager(
                         data = download,
                         isCurrentPage = isCurrentPage,
                         selectedMedia = selectedMedia,
+                        isRefreshingMetadata = download.id in refreshingMetadataIds,
                         onCompletedUnseenVisible = onVisibleCompletedUnseenDownload,
                         onMediaChange = { mediaType ->
                             onSelectedMedia(download.id, mediaType)
@@ -373,6 +378,7 @@ private fun DownloadPageContent(
     data: DownloadPageUiData,
     isCurrentPage: Boolean,
     selectedMedia: DownloadMediaType,
+    isRefreshingMetadata: Boolean,
     onCompletedUnseenVisible: (Long) -> Unit,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -446,12 +452,14 @@ private fun DownloadPageContent(
             val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED
                     && !status.isActive
                     && isMetadataIncomplete
+                    && !isRefreshingMetadata
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
                 durationSeconds = metadata?.durationSeconds,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
                 showMetadataRefresh = needsMetadataRefresh,
+                showMetadataRefreshLoading = isRefreshingMetadata,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
@@ -594,6 +602,7 @@ private fun ThumbnailCard(
     durationSeconds: Int?,
     showRetry: Boolean,
     showMetadataRefresh: Boolean,
+    showMetadataRefreshLoading: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
@@ -688,7 +697,7 @@ private fun ThumbnailCard(
                     )
                 }
             }
-            if (showMetadataRefresh) {
+            if (showMetadataRefresh || showMetadataRefreshLoading) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -698,24 +707,33 @@ private fun ThumbnailCard(
                         .background(overlayBackgroundColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(dimens.overlayButtonSmall)
-                            .clip(CircleShape)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = LocalIndication.current,
-                                onClick = onRefreshMetadataClick,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
+                    if (showMetadataRefreshLoading) {
+                        CircularProgressIndicator(
                             modifier = Modifier
                                 .size(dimens.iconXXSmall),
-                            imageVector = Icons.Filled.Download,
-                            contentDescription = stringResource(R.string.content_description_refresh_metadata),
-                            tint = Color.White,
+                            color = Color.White,
+                            strokeWidth = dimens.spacingXXSmall,
                         )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(dimens.overlayButtonSmall)
+                                .clip(CircleShape)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = LocalIndication.current,
+                                    onClick = onRefreshMetadataClick,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(dimens.iconXXSmall),
+                                imageVector = Icons.Filled.Download,
+                                contentDescription = stringResource(R.string.content_description_refresh_metadata),
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
             }
