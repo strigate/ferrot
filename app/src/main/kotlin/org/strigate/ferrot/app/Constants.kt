@@ -67,9 +67,14 @@ object Constants {
             private const val ONETIME = "$NAME.onetime"
             private const val PERIODIC = "$NAME.periodic"
 
-            const val ONETIME_DOWNLOAD = "$ONETIME.DOWNLOAD"
-            const val ONETIME_DOWNLOAD_AVAILABLE_UPDATE = "$ONETIME.DOWNLOAD_AVAILABLE_UPDATE"
-            const val ONETIME_UPDATE_DEPENDENCIES = "$ONETIME.UPDATE_DEPENDENCIES"
+            const val ONETIME_DOWNLOAD =
+                "$ONETIME.DOWNLOAD"
+            const val ONETIME_REFRESH_DOWNLOAD_METADATA =
+                "$ONETIME.REFRESH_DOWNLOAD_METADATA"
+            const val ONETIME_DOWNLOAD_AVAILABLE_UPDATE =
+                "$ONETIME.DOWNLOAD_AVAILABLE_UPDATE"
+            const val ONETIME_UPDATE_DEPENDENCIES =
+                "$ONETIME.UPDATE_DEPENDENCIES"
 
             const val ONETIME_DELETE_DOWNLOADS =
                 "$ONETIME.DELETE_DOWNLOADS"

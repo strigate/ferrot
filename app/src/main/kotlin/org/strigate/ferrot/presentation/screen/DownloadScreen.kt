@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -26,14 +27,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -91,7 +92,6 @@ import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
-import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
@@ -104,6 +104,7 @@ fun DownloadScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
+    val view = LocalView.current
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
@@ -112,7 +113,6 @@ fun DownloadScreen(
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
-    val refreshingMetadataIds by viewModel.refreshingMetadataIds.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
@@ -227,7 +227,6 @@ fun DownloadScreen(
                         pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
-                        refreshingMetadataIds = refreshingMetadataIds,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
                         onDownloadPageSelected = viewModel::selectDownload,
                         onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
@@ -237,7 +236,10 @@ fun DownloadScreen(
                         onPlayClick = viewModel::playDownload,
                         onSaveClick = viewModel::saveDownload,
                         onShareClick = viewModel::shareDownload,
-                        onRetryClick = viewModel::retryDownload,
+                        onRetryClick = { downloadId ->
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            viewModel.retryDownload(downloadId)
+                        },
                         onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
@@ -261,7 +263,6 @@ private fun DownloadPager(
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
-    refreshingMetadataIds: Set<Long>,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
     onVisibleCompletedUnseenDownload: (Long) -> Unit,
@@ -339,7 +340,6 @@ private fun DownloadPager(
                         data = download,
                         isCurrentPage = isCurrentPage,
                         selectedMedia = selectedMedia,
-                        isRefreshingMetadata = download.id in refreshingMetadataIds,
                         onCompletedUnseenVisible = onVisibleCompletedUnseenDownload,
                         onMediaChange = { mediaType ->
                             onSelectedMedia(download.id, mediaType)
@@ -378,7 +378,6 @@ private fun DownloadPageContent(
     data: DownloadPageUiData,
     isCurrentPage: Boolean,
     selectedMedia: DownloadMediaType,
-    isRefreshingMetadata: Boolean,
     onCompletedUnseenVisible: (Long) -> Unit,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -448,22 +447,29 @@ private fun DownloadPageContent(
             val canActOnSelected = status == DownloadStatusUiData.COMPLETED
                     && !selectedPath.isNullOrBlank()
 
-            val isMetadataIncomplete = metadata?.thumbnailFilePath.isNullOrBlank()
-            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED
-                    && !status.isActive
-                    && isMetadataIncomplete
-                    && !isRefreshingMetadata
+            val hasThumbnailFile = (
+                    metadata?.thumbnailFilePath
+                        ?.let(::File)
+                        ?.let { it.exists() && it.length() > 0L }
+                    ) == true
+
+            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED &&
+                    !hasThumbnailFile
+
+            LaunchedEffect(id, isCurrentPage, needsMetadataRefresh) {
+                if (isCurrentPage && needsMetadataRefresh) {
+                    onRefreshMetadataClick()
+                }
+            }
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
                 durationSeconds = metadata?.durationSeconds,
+                isCompleted = status == DownloadStatusUiData.COMPLETED,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
-                showMetadataRefresh = needsMetadataRefresh,
-                showMetadataRefreshLoading = isRefreshingMetadata,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
-                onRefreshMetadataClick = onRefreshMetadataClick,
             )
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Row(
@@ -600,13 +606,11 @@ private fun MediaSwitcherSegmentedButtonRow(
 private fun ThumbnailCard(
     thumbnailFilePath: String?,
     durationSeconds: Int?,
+    isCompleted: Boolean,
     showRetry: Boolean,
-    showMetadataRefresh: Boolean,
-    showMetadataRefreshLoading: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
-    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     val thumbnailFile = thumbnailFilePath
@@ -669,7 +673,11 @@ private fun ThumbnailCard(
                     Icon(
                         modifier = Modifier
                             .size(dimens.overlayIcon),
-                        imageVector = Icons.Filled.Image,
+                        imageVector = if (isCompleted) {
+                            Icons.Filled.ImageNotSupported
+                        } else {
+                            Icons.Filled.Image
+                        },
                         contentDescription = thumbnailContentDescription,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -695,46 +703,6 @@ private fun ThumbnailCard(
                         contentDescription = overlayContentDescription,
                         imageVector = overlayIcon,
                     )
-                }
-            }
-            if (showMetadataRefresh || showMetadataRefreshLoading) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(dimens.spacingSmall)
-                        .size(dimens.overlayButtonSmall)
-                        .clip(CircleShape)
-                        .background(overlayBackgroundColor),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (showMetadataRefreshLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(dimens.iconXXSmall),
-                            color = Color.White,
-                            strokeWidth = dimens.spacingXXSmall,
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(dimens.overlayButtonSmall)
-                                .clip(CircleShape)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = LocalIndication.current,
-                                    onClick = onRefreshMetadataClick,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                modifier = Modifier
-                                    .size(dimens.iconXXSmall),
-                                imageVector = Icons.Filled.Download,
-                                contentDescription = stringResource(R.string.content_description_refresh_metadata),
-                                tint = Color.White,
-                            )
-                        }
-                    }
                 }
             }
             if (durationText != null) {
