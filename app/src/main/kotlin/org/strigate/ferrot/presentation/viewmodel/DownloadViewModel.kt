@@ -28,6 +28,7 @@ import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.Screen
@@ -49,6 +50,7 @@ class DownloadViewModel @Inject constructor(
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
+    private val refreshDownloadMetadataCombinedUseCase: RefreshDownloadMetadataCombinedUseCase,
     downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
@@ -88,6 +90,9 @@ class DownloadViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = DownloadMediaType.VIDEO,
     )
+
+    private val _refreshingMetadataIds = MutableStateFlow<Set<Long>>(emptySet())
+    val refreshingMetadataIds: StateFlow<Set<Long>> = _refreshingMetadataIds
 
     private val _events = MutableSharedFlow<DownloadEvent>(
         replay = 0,
@@ -250,6 +255,16 @@ class DownloadViewModel @Inject constructor(
     fun retryDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
         startDownloadUseCase(downloadId)
+    }
+
+    fun refreshDownloadMetadata(id: Long? = null) = viewModelScope.launch {
+        val downloadId = id ?: _selectedId.value
+        _refreshingMetadataIds.value += downloadId
+        try {
+            refreshDownloadMetadataCombinedUseCase(downloadId)
+        } finally {
+            _refreshingMetadataIds.value -= downloadId
+        }
     }
 
     private fun getSelectedMediaFilePath(

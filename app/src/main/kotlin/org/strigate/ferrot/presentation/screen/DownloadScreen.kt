@@ -26,12 +26,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -89,6 +91,7 @@ import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
+import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
@@ -109,6 +112,7 @@ fun DownloadScreen(
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
+    val refreshingMetadataIds by viewModel.refreshingMetadataIds.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
@@ -223,6 +227,7 @@ fun DownloadScreen(
                         pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
+                        refreshingMetadataIds = refreshingMetadataIds,
                         onEnsureDefaults = viewModel::setDefaultsForIds,
                         onDownloadPageSelected = viewModel::selectDownload,
                         onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
@@ -233,6 +238,7 @@ fun DownloadScreen(
                         onSaveClick = viewModel::saveDownload,
                         onShareClick = viewModel::shareDownload,
                         onRetryClick = viewModel::retryDownload,
+                        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
                             vertical = dimens.zero,
@@ -255,6 +261,7 @@ private fun DownloadPager(
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
+    refreshingMetadataIds: Set<Long>,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
     onVisibleCompletedUnseenDownload: (Long) -> Unit,
@@ -263,6 +270,7 @@ private fun DownloadPager(
     onSaveClick: (Long) -> Unit,
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
+    onRefreshMetadataClick: (Long) -> Unit,
     pagePadding: PaddingValues,
     pageSpacing: Dp,
 ) {
@@ -331,6 +339,7 @@ private fun DownloadPager(
                         data = download,
                         isCurrentPage = isCurrentPage,
                         selectedMedia = selectedMedia,
+                        isRefreshingMetadata = download.id in refreshingMetadataIds,
                         onCompletedUnseenVisible = onVisibleCompletedUnseenDownload,
                         onMediaChange = { mediaType ->
                             onSelectedMedia(download.id, mediaType)
@@ -350,6 +359,9 @@ private fun DownloadPager(
                         onRetryClick = {
                             onRetryClick(download.id)
                         },
+                        onRefreshMetadataClick = {
+                            onRefreshMetadataClick(download.id)
+                        },
                     )
                 } ?: LoadingState(
                     modifier = Modifier
@@ -366,6 +378,7 @@ private fun DownloadPageContent(
     data: DownloadPageUiData,
     isCurrentPage: Boolean,
     selectedMedia: DownloadMediaType,
+    isRefreshingMetadata: Boolean,
     onCompletedUnseenVisible: (Long) -> Unit,
     onMediaChange: (DownloadMediaType) -> Unit,
     onEnsureValidSelection: (DownloadMediaType) -> Unit,
@@ -373,6 +386,7 @@ private fun DownloadPageContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     with(data) {
@@ -431,16 +445,25 @@ private fun DownloadPageContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
-                    !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
+                    && !selectedPath.isNullOrBlank()
+
+            val isMetadataIncomplete = metadata?.thumbnailFilePath.isNullOrBlank()
+            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED
+                    && !status.isActive
+                    && isMetadataIncomplete
+                    && !isRefreshingMetadata
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
                 durationSeconds = metadata?.durationSeconds,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
+                showMetadataRefresh = needsMetadataRefresh,
+                showMetadataRefreshLoading = isRefreshingMetadata,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
                 onRetryClick = onRetryClick,
+                onRefreshMetadataClick = onRefreshMetadataClick,
             )
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Row(
@@ -578,9 +601,12 @@ private fun ThumbnailCard(
     thumbnailFilePath: String?,
     durationSeconds: Int?,
     showRetry: Boolean,
+    showMetadataRefresh: Boolean,
+    showMetadataRefreshLoading: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     val thumbnailFile = thumbnailFilePath
@@ -669,6 +695,46 @@ private fun ThumbnailCard(
                         contentDescription = overlayContentDescription,
                         imageVector = overlayIcon,
                     )
+                }
+            }
+            if (showMetadataRefresh || showMetadataRefreshLoading) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(dimens.spacingSmall)
+                        .size(dimens.overlayButtonSmall)
+                        .clip(CircleShape)
+                        .background(overlayBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (showMetadataRefreshLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(dimens.iconXXSmall),
+                            color = Color.White,
+                            strokeWidth = dimens.spacingXXSmall,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(dimens.overlayButtonSmall)
+                                .clip(CircleShape)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = LocalIndication.current,
+                                    onClick = onRefreshMetadataClick,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(dimens.iconXXSmall),
+                                imageVector = Icons.Filled.Download,
+                                contentDescription = stringResource(R.string.content_description_refresh_metadata),
+                                tint = Color.White,
+                            )
+                        }
+                    }
                 }
             }
             if (durationText != null) {

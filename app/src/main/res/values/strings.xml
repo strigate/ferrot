@@ -131,6 +131,7 @@
     <string name="content_description_retry">Retry</string>
     <string name="content_description_retry_failed">Retry failed</string>
     <string name="content_description_play">Play</string>
+    <string name="content_description_refresh_metadata">Refresh metadata</string>
     <string name="content_description_stop_download">Stop download</string>
     <string name="content_description_resume_download">Resume download</string>
     <string name="content_description_open_download">Open download</string>
