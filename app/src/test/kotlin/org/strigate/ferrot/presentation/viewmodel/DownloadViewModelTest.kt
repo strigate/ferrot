@@ -48,11 +48,11 @@ import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestRefreshDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadaudio.GetDownloadAudioByDownloadIdAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.GetDownloadProgressByDownloadIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadvideo.GetDownloadVideoByDownloadIdAsFlowUseCase
@@ -94,7 +94,7 @@ class DownloadViewModelTest {
     private lateinit var startDownloadUseCase: StartDownloadUseCase
 
     @Mock
-    private lateinit var refreshDownloadMetadataCombinedUseCase: RefreshDownloadMetadataCombinedUseCase
+    private lateinit var requestRefreshDownloadMetadataUseCase: RequestRefreshDownloadMetadataUseCase
 
     @Mock
     private lateinit var downloadWithMetadataUseCase: DownloadWithMetadataUseCase
@@ -168,7 +168,7 @@ class DownloadViewModelTest {
                 downloadMetadataUseCase = downloadMetadataUseCase,
                 clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
                 startDownloadUseCase = startDownloadUseCase,
-                refreshDownloadMetadataCombinedUseCase = refreshDownloadMetadataCombinedUseCase,
+                requestRefreshDownloadMetadataUseCase = requestRefreshDownloadMetadataUseCase,
                 downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             )
             fail("Expected IllegalStateException")
@@ -461,8 +461,6 @@ class DownloadViewModelTest {
     fun refreshDownloadMetadata_refreshesExplicitOrSelectedDownload() =
         runTest(testDispatcher) {
             val viewModel = createViewModel(initialId = 20L)
-            `when`(refreshDownloadMetadataCombinedUseCase.invoke(88L)).thenReturn(true)
-            `when`(refreshDownloadMetadataCombinedUseCase.invoke(20L)).thenReturn(true)
 
             viewModel.refreshDownloadMetadata(88L)
             advanceUntilIdle()
@@ -470,24 +468,19 @@ class DownloadViewModelTest {
             viewModel.refreshDownloadMetadata()
             advanceUntilIdle()
 
-            verify(refreshDownloadMetadataCombinedUseCase).invoke(88L)
-            verify(refreshDownloadMetadataCombinedUseCase).invoke(20L)
+            verify(requestRefreshDownloadMetadataUseCase).invoke(88L)
+            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
         }
 
     @Test
-    fun refreshDownloadMetadata_tracksRefreshingDownloadId_whileWorkRuns() =
+    fun refreshDownloadMetadata_enqueuesWithoutAdditionalUiTracking() =
         runTest(testDispatcher) {
             val viewModel = createViewModel(initialId = 20L)
-
-            `when`(refreshDownloadMetadataCombinedUseCase.invoke(20L)).thenAnswer {
-                assertEquals(setOf(20L), viewModel.refreshingMetadataIds.value)
-                true
-            }
 
             viewModel.refreshDownloadMetadata()
             advanceUntilIdle()
 
-            assertEquals(emptySet<Long>(), viewModel.refreshingMetadataIds.value)
+            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
         }
 
     @Test
@@ -807,7 +800,7 @@ class DownloadViewModelTest {
             downloadMetadataUseCase = downloadMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
             startDownloadUseCase = startDownloadUseCase,
-            refreshDownloadMetadataCombinedUseCase = refreshDownloadMetadataCombinedUseCase,
+            requestRefreshDownloadMetadataUseCase = requestRefreshDownloadMetadataUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
         )
     }

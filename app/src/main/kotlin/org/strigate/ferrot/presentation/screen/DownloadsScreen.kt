@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
@@ -75,6 +76,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -120,6 +122,7 @@ fun DownloadsScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
+    val view = LocalView.current
     val dimens = LocalDimens.current
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -432,6 +435,7 @@ fun DownloadsScreen(
                                         )
                                     },
                                     onClick = {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                         viewModel.retryFailedDownloads()
                                         coroutineScope.launch {
                                             delay(RETRY_FAILED_SCROLL_DELAY_MILLIS)
@@ -547,10 +551,12 @@ fun DownloadsScreen(
                                         DownloadStatusUiData.WAITING_FOR_WIFI,
                                         DownloadStatusUiData.DOWNLOADING,
                                         DownloadStatusUiData.METADATA -> {
+                                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                             viewModel.stopDownload(item.id)
                                         }
 
                                         else -> {
+                                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                             viewModel.retryDownload(item.id)
                                         }
                                     }
