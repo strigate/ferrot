@@ -33,12 +33,12 @@ object BuildInfo {
 
 android {
     namespace = BuildInfo.PACKAGE_NAME
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "org.strigate.ferrot"
         minSdk = 30
-        targetSdk = 36
+        targetSdk = 37
         versionCode = BuildInfo.VERSION_CODE
         versionName = BuildInfo.VERSION_NAME
         stringField("VERSION", BuildInfo.BASE_VERSION)
