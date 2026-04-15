@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.1 - 2026-04-15
+### Added
+- Share action in download notifications
+- Download metadata refresh flow, loading state in the downloads UI, and a dedicated background refresh worker
+
+### Changed
+- Download progress text format refinement
+- More reliable thumbnail writes during metadata refresh handling
+- Updated compileSdk and targetSdk to 37
+- Updated Android Gradle Plugin, Gradle wrapper, and Firebase BOM
+
 ## 1.6.0 - 2026-04-10
 ### Added
 - Active download notifications with thumbnail support and direct notification actions for stopping individual downloads
