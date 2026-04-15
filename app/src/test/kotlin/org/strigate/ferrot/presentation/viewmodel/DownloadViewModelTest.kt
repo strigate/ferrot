@@ -48,6 +48,7 @@ import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestRefreshDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
@@ -91,6 +92,9 @@ class DownloadViewModelTest {
 
     @Mock
     private lateinit var startDownloadUseCase: StartDownloadUseCase
+
+    @Mock
+    private lateinit var requestRefreshDownloadMetadataUseCase: RequestRefreshDownloadMetadataUseCase
 
     @Mock
     private lateinit var downloadWithMetadataUseCase: DownloadWithMetadataUseCase
@@ -164,6 +168,7 @@ class DownloadViewModelTest {
                 downloadMetadataUseCase = downloadMetadataUseCase,
                 clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
                 startDownloadUseCase = startDownloadUseCase,
+                requestRefreshDownloadMetadataUseCase = requestRefreshDownloadMetadataUseCase,
                 downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             )
             fail("Expected IllegalStateException")
@@ -451,6 +456,32 @@ class DownloadViewModelTest {
         verify(startDownloadUseCase).invoke(88L)
         verify(startDownloadUseCase).invoke(20L)
     }
+
+    @Test
+    fun refreshDownloadMetadata_refreshesExplicitOrSelectedDownload() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(initialId = 20L)
+
+            viewModel.refreshDownloadMetadata(88L)
+            advanceUntilIdle()
+
+            viewModel.refreshDownloadMetadata()
+            advanceUntilIdle()
+
+            verify(requestRefreshDownloadMetadataUseCase).invoke(88L)
+            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
+        }
+
+    @Test
+    fun refreshDownloadMetadata_enqueuesWithoutAdditionalUiTracking() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(initialId = 20L)
+
+            viewModel.refreshDownloadMetadata()
+            advanceUntilIdle()
+
+            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
+        }
 
     @Test
     fun shareSaveAndPlay_emitEventsUsingSelectedMediaPath() = runTest(testDispatcher) {
@@ -769,6 +800,7 @@ class DownloadViewModelTest {
             downloadMetadataUseCase = downloadMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
             startDownloadUseCase = startDownloadUseCase,
+            requestRefreshDownloadMetadataUseCase = requestRefreshDownloadMetadataUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
         )
     }

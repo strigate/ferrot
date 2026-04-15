@@ -21,6 +21,7 @@ import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
+import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
@@ -31,6 +32,7 @@ import org.strigate.ferrot.work.DeletePendingDownloadsDelayedWorker
 import org.strigate.ferrot.work.DeletePendingDownloadsImmediateWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
+import org.strigate.ferrot.work.RefreshDownloadMetadataWorker
 import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
@@ -51,6 +53,7 @@ class WorkerFactory @Inject constructor(
     private val stopDownloadUseCase: StopDownloadUseCase,
     private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
+    private val refreshDownloadMetadataCombinedUseCase: RefreshDownloadMetadataCombinedUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
@@ -108,6 +111,14 @@ class WorkerFactory @Inject constructor(
                     workerParameters = workerParameters,
                     getPendingDownloadsCombinedUseCase = getPendingDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
+                )
+            }
+
+            RefreshDownloadMetadataWorker::class.java.name -> {
+                RefreshDownloadMetadataWorker(
+                    appContext = appContext,
+                    workerParameters = workerParameters,
+                    refreshDownloadMetadataCombinedUseCase = refreshDownloadMetadataCombinedUseCase,
                 )
             }
 

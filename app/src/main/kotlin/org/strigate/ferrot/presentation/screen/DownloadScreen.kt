@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
@@ -57,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -101,6 +104,7 @@ fun DownloadScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
+    val view = LocalView.current
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
@@ -232,7 +236,11 @@ fun DownloadScreen(
                         onPlayClick = viewModel::playDownload,
                         onSaveClick = viewModel::saveDownload,
                         onShareClick = viewModel::shareDownload,
-                        onRetryClick = viewModel::retryDownload,
+                        onRetryClick = { downloadId ->
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            viewModel.retryDownload(downloadId)
+                        },
+                        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
                             vertical = dimens.zero,
@@ -263,6 +271,7 @@ private fun DownloadPager(
     onSaveClick: (Long) -> Unit,
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
+    onRefreshMetadataClick: (Long) -> Unit,
     pagePadding: PaddingValues,
     pageSpacing: Dp,
 ) {
@@ -350,6 +359,9 @@ private fun DownloadPager(
                         onRetryClick = {
                             onRetryClick(download.id)
                         },
+                        onRefreshMetadataClick = {
+                            onRefreshMetadataClick(download.id)
+                        },
                     )
                 } ?: LoadingState(
                     modifier = Modifier
@@ -373,6 +385,7 @@ private fun DownloadPageContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onRefreshMetadataClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
     with(data) {
@@ -431,12 +444,28 @@ private fun DownloadPageContent(
                 DownloadMediaType.VIDEO -> video?.filePath
                 DownloadMediaType.AUDIO -> audio?.filePath
             }
-            val canActOnSelected = status == DownloadStatusUiData.COMPLETED &&
-                    !selectedPath.isNullOrBlank()
+            val canActOnSelected = status == DownloadStatusUiData.COMPLETED
+                    && !selectedPath.isNullOrBlank()
+
+            val hasThumbnailFile = (
+                    metadata?.thumbnailFilePath
+                        ?.let(::File)
+                        ?.let { it.exists() && it.length() > 0L }
+                    ) == true
+
+            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED &&
+                    !hasThumbnailFile
+
+            LaunchedEffect(id, isCurrentPage, needsMetadataRefresh) {
+                if (isCurrentPage && needsMetadataRefresh) {
+                    onRefreshMetadataClick()
+                }
+            }
 
             ThumbnailCard(
                 thumbnailFilePath = metadata?.thumbnailFilePath,
                 durationSeconds = metadata?.durationSeconds,
+                isCompleted = status == DownloadStatusUiData.COMPLETED,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
                 showPlay = canActOnSelected,
                 onPlayClick = onPlayClick,
@@ -577,6 +606,7 @@ private fun MediaSwitcherSegmentedButtonRow(
 private fun ThumbnailCard(
     thumbnailFilePath: String?,
     durationSeconds: Int?,
+    isCompleted: Boolean,
     showRetry: Boolean,
     showPlay: Boolean,
     onPlayClick: () -> Unit,
@@ -643,7 +673,11 @@ private fun ThumbnailCard(
                     Icon(
                         modifier = Modifier
                             .size(dimens.overlayIcon),
-                        imageVector = Icons.Filled.Image,
+                        imageVector = if (isCompleted) {
+                            Icons.Filled.ImageNotSupported
+                        } else {
+                            Icons.Filled.Image
+                        },
                         contentDescription = thumbnailContentDescription,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

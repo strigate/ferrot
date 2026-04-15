@@ -25,20 +25,20 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.6.0"
-    const val VERSION_CODE = 26
+    const val BASE_VERSION = "1.6.1"
+    const val VERSION_CODE = 27
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
 }
 
 android {
     namespace = BuildInfo.PACKAGE_NAME
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "org.strigate.ferrot"
         minSdk = 30
-        targetSdk = 36
+        targetSdk = 37
         versionCode = BuildInfo.VERSION_CODE
         versionName = BuildInfo.VERSION_NAME
         stringField("VERSION", BuildInfo.BASE_VERSION)
