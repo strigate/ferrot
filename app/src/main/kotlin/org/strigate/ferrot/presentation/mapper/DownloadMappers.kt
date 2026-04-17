@@ -95,6 +95,7 @@ fun Download.toPageUiData(
         audio = downloadAudioUiData,
         progress = progressUiData,
         seen = seen,
+        archived = archived,
         errorMessage = errorMessage,
         completedAtMillis = completedAtMillis,
     )

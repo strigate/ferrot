@@ -8,7 +8,11 @@ import javax.inject.Inject
 class GetDownloadsWithMetadataAsFlowUseCase @Inject constructor(
     private val downloadWithMetadataRepository: DownloadWithMetadataRepository,
 ) {
-    operator fun invoke(): Flow<List<DownloadWithMetadata>> {
-        return downloadWithMetadataRepository.getAllDownloadsWithMetadataAsFlow()
+    operator fun invoke(archived: Boolean = false): Flow<List<DownloadWithMetadata>> {
+        return if (archived) {
+            downloadWithMetadataRepository.getArchivedDownloadsWithMetadataAsFlow()
+        } else {
+            downloadWithMetadataRepository.getDownloadsWithMetadataAsFlow()
+        }
     }
 }

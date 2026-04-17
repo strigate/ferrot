@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -51,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -113,6 +116,7 @@ fun DownloadScreen(
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
+    val selectedPageData by viewModel.selectedPageData.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
 
@@ -193,6 +197,25 @@ fun DownloadScreen(
                     }
                     IconButton(
                         onClick = {
+                            val archived = selectedPageData?.archived ?: false
+                            viewModel.updateArchived(archived = !archived)
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (selectedPageData?.archived == true) {
+                                Icons.Filled.Unarchive
+                            } else {
+                                Icons.Filled.Archive
+                            },
+                            contentDescription = if (selectedPageData?.archived == true) {
+                                stringResource(R.string.content_description_unarchive)
+                            } else {
+                                stringResource(R.string.content_description_archive)
+                            },
+                        )
+                    }
+                    IconButton(
+                        onClick = {
                             showConfirmDeleteDialog.value = true
                         },
                     ) {
@@ -224,6 +247,7 @@ fun DownloadScreen(
                             .padding(contentPadding)
                             .fillMaxSize(),
                         data = state.data,
+                        selectedPageData = selectedPageData,
                         pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
@@ -260,6 +284,7 @@ fun DownloadScreen(
 private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
+    selectedPageData: DownloadPageUiData?,
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
@@ -322,10 +347,16 @@ private fun DownloadPager(
             key = { page -> downloadIds[page] },
         ) { page ->
             val downloadId = downloadIds[page]
-            val pageData by remember(downloadId) {
-                pageDataForId(downloadId)
-            }.collectAsStateWithLifecycle(initialValue = null)
             val isCurrentPage = pagerState.currentPage == page
+            val pageData by if (isCurrentPage) {
+                rememberUpdatedState(
+                    newValue = selectedPageData?.takeIf { it.id == downloadId },
+                )
+            } else {
+                remember(downloadId) {
+                    pageDataForId(downloadId)
+                }.collectAsStateWithLifecycle(initialValue = null)
+            }
 
             Surface(
                 modifier = Modifier

@@ -7,6 +7,7 @@ data class Download(
     val status: DownloadStatus,
     val seen: Boolean,
     val pendingDelete: Boolean = false,
+    val archived: Boolean = false,
     val errorMessage: String? = null,
     val completedAtMillis: Long? = null,
 )

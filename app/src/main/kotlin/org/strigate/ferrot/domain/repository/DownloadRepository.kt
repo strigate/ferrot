@@ -13,6 +13,7 @@ interface DownloadRepository {
     suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int
     suspend fun updateSeenByIds(ids: Collection<Long>, seen: Boolean): Int
     suspend fun updatePendingDeleteByIds(ids: Collection<Long>, pendingDelete: Boolean): Int
+    suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int
     suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int
     suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int
     suspend fun deleteById(id: Long): Int

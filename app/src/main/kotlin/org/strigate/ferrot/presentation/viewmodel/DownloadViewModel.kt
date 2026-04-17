@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -39,6 +41,7 @@ import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -54,9 +57,10 @@ class DownloadViewModel @Inject constructor(
     downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
     private val initialId: Long = checkNotNull(savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID])
+    private val archived: Boolean = savedStateHandle[Screen.ARG_ARCHIVED] ?: false
 
     private val downloadIds = downloadWithMetadataUseCase
-        .getDownloadsWithMetadataAsFlowUseCase()
+        .getDownloadsWithMetadataAsFlowUseCase(archived = archived)
         .map { downloads ->
             downloads
                 .asSequence()
@@ -90,6 +94,16 @@ class DownloadViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = DownloadMediaType.VIDEO,
     )
+
+    val selectedPageData: StateFlow<DownloadPageUiData?> = selectedId
+        .flatMapLatest { downloadId ->
+            getDownloadPageUiData(downloadId)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+            initialValue = null,
+        )
 
     private val _events = MutableSharedFlow<DownloadEvent>(
         replay = 0,
@@ -224,6 +238,19 @@ class DownloadViewModel @Inject constructor(
             downloadIds = listOf(downloadId),
         )
         if (isLastDownload) {
+            _events.emit(DownloadEvent.NavigateBack)
+        }
+    }
+
+    fun updateArchived(archived: Boolean, id: Long? = null) = viewModelScope.launch {
+        val downloadId = id ?: _selectedId.value
+        val isLastDownload = downloadIds.value.count { it != downloadId } == 0
+        val removesFromCurrentList = this@DownloadViewModel.archived != archived
+        downloadUseCase.updateDownloadsArchivedUseCase(setOf(downloadId), archived = archived)
+        if (archived) {
+            clearNotificationsByDownloadIdUseCase(downloadId)
+        }
+        if (removesFromCurrentList && isLastDownload) {
             _events.emit(DownloadEvent.NavigateBack)
         }
     }

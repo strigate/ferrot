@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
     tableName = "download",
     indices = [
         Index("pendingDelete"),
+        Index("archived"),
         Index("status"),
         Index("enqueuedAtMillis"),
         Index("uid"),
@@ -21,6 +22,7 @@ data class DownloadEntity(
     val status: DownloadStatus = DownloadStatus.QUEUED,
     val seen: Boolean = false,
     val pendingDelete: Boolean = false,
+    val archived: Boolean = false,
     val errorMessage: String? = null,
     val enqueuedAtMillis: Long = System.currentTimeMillis(),
     val startedAtMillis: Long? = null,
