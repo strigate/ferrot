@@ -31,6 +31,9 @@ interface DownloadDao {
     @Query("UPDATE download SET pendingDelete = :pendingDelete WHERE id IN (:ids)")
     suspend fun updatePendingDeleteByIds(ids: Collection<Long>, pendingDelete: Boolean): Int
 
+    @Query("UPDATE download SET archived = :archived WHERE id IN (:ids)")
+    suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int
+
     @Query("UPDATE download SET errorMessage = :errorMessage WHERE id = :id")
     suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int
 

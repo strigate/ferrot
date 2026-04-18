@@ -2,6 +2,7 @@ package org.strigate.ferrot.presentation.viewmodel
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -526,7 +527,7 @@ class DownloadsViewModelTest {
         downloadsFlow: MutableStateFlow<List<DownloadWithMetadata>>,
         updateFlow: MutableStateFlow<AvailableUpdate?>,
     ): DownloadsViewModel {
-        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke())
+        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(false))
             .thenReturn(downloadsFlow)
         `when`(getAvailableUpdateAsFlowUseCase.invoke())
             .thenReturn(updateFlow)
@@ -548,6 +549,7 @@ class DownloadsViewModelTest {
             .thenReturn(updateDownloadProgressUseCase)
 
         return DownloadsViewModel(
+            savedStateHandle = SavedStateHandle(),
             analyticsLogger = analyticsLogger,
             downloadUseCase = downloadUseCase,
             stopDownloadsUseCase = stopDownloadUseCase,

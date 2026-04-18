@@ -13,9 +13,17 @@ import javax.inject.Singleton
 class DownloadWithMetadataRepositoryImpl @Inject constructor(
     private val downloadWithMetadataViewDao: DownloadWithMetadataViewDao,
 ) : DownloadWithMetadataRepository {
-    override fun getAllDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>> {
+    override fun getDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>> {
         return downloadWithMetadataViewDao
-            .getAllAsFlow()
+            .getDownloadsAsFlow()
+            .map { views ->
+                views.map { it.toDomain() }
+            }
+    }
+
+    override fun getArchivedDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>> {
+        return downloadWithMetadataViewDao
+            .getArchivedDownloadsAsFlow()
             .map { views ->
                 views.map { it.toDomain() }
             }

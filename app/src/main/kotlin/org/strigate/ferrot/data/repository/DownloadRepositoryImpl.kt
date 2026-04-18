@@ -54,6 +54,10 @@ class DownloadRepositoryImpl @Inject constructor(
         return downloadDao.updatePendingDeleteByIds(ids, pendingDelete)
     }
 
+    override suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int {
+        return downloadDao.updateArchivedByIds(ids, archived)
+    }
+
     override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int {
         return downloadDao.updateStartedAtById(id, startedAtMillis)
     }

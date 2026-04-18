@@ -4,5 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import org.strigate.ferrot.domain.model.DownloadWithMetadata
 
 interface DownloadWithMetadataRepository {
-    fun getAllDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>>
+    fun getDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>>
+    fun getArchivedDownloadsWithMetadataAsFlow(): Flow<List<DownloadWithMetadata>>
 }

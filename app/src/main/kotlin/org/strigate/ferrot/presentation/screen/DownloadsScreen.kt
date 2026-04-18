@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -32,6 +34,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
@@ -119,6 +122,7 @@ private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 @Composable
 fun DownloadsScreen(
     navController: NavController,
+    archived: Boolean,
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
@@ -132,6 +136,7 @@ fun DownloadsScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isArchived by viewModel.isArchived.collectAsStateWithLifecycle()
 
     val searchFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -139,6 +144,7 @@ fun DownloadsScreen(
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var dismissingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    var archivingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
 
     val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
@@ -187,6 +193,9 @@ fun DownloadsScreen(
     }
     LaunchedEffect(Unit) {
         viewModel.logShown()
+    }
+    LaunchedEffect(archived) {
+        viewModel.setArchived(archived)
     }
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -278,6 +287,36 @@ fun DownloadsScreen(
                                     visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
                                 )
                                 val hiddenSelectedIds = selectedIds - visibleSelectedIds
+                                archivingIds = archivingIds + visibleSelectedIds
+                                if (hiddenSelectedIds.isNotEmpty()) {
+                                    viewModel.updateDownloadsArchived(
+                                        downloadIds = hiddenSelectedIds,
+                                        archived = !isArchived,
+                                    )
+                                }
+                                selectedIds = emptySet()
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (isArchived) {
+                                    Icons.Filled.Unarchive
+                                } else {
+                                    Icons.Filled.Archive
+                                },
+                                contentDescription = if (isArchived) {
+                                    stringResource(R.string.content_description_unarchive)
+                                } else {
+                                    stringResource(R.string.content_description_archive)
+                                },
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val visibleSelectedIds = getBulkDeleteVisibleIds(
+                                    selectedIds = selectedIds,
+                                    visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                                )
+                                val hiddenSelectedIds = selectedIds - visibleSelectedIds
                                 dismissingIds = dismissingIds + visibleSelectedIds
                                 if (hiddenSelectedIds.isNotEmpty()) {
                                     viewModel.markDownloadsPendingDelete(hiddenSelectedIds)
@@ -295,14 +334,27 @@ fun DownloadsScreen(
             } else {
                 TopAppBar(
                     navigationIcon = {
-                        IconButton(
-                            onClick = {},
-                        ) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(id = R.drawable.ic_logo_appbar),
-                                contentDescription = stringResource(R.string.app_name),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+                        if (isArchived) {
+                            IconButton(
+                                onClick = {
+                                    navController.navigateUp()
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.content_description_back),
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {},
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_logo_appbar),
+                                    contentDescription = stringResource(R.string.app_name),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                     },
                     title = {
@@ -325,7 +377,11 @@ fun DownloadsScreen(
                                         },
                                     color = MaterialTheme.colorScheme.onSurface,
                                     style = TextStyles.downloadsTitle(),
-                                    text = stringResource(R.string.app_name),
+                                    text = if (isArchived) {
+                                        stringResource(R.string.screen_title_archived)
+                                    } else {
+                                        stringResource(R.string.app_name)
+                                    },
                                     maxLines = 1,
                                 )
                             }
@@ -464,6 +520,25 @@ fun DownloadsScreen(
                                     },
                                 )
                             }
+                            if (!isArchived) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.screen_title_archived),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Archive,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        navController.navigate(Screen.Archived.route)
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -533,7 +608,9 @@ fun DownloadsScreen(
                                 items = downloads,
                                 selectedIds = selectedIds,
                                 dismissingIds = dismissingIds,
+                                archivingIds = archivingIds,
                                 pendingDeleteIds = pendingDeleteIds,
+                                archived = isArchived,
                                 hasAvailableUpdateBanner = availableUpdate != null,
                                 searchQuery = searchQuery.text,
                                 lazyListState = lazyListState,
@@ -542,7 +619,12 @@ fun DownloadsScreen(
                                         viewModel.requestDeletePendingDownloadsImmediate()
                                     }
                                     keyboardController?.hide()
-                                    navController.navigate(Screen.Download.route(item.id))
+                                    navController.navigate(
+                                        Screen.Download.route(
+                                            id = item.id,
+                                            archived = isArchived,
+                                        )
+                                    )
                                 },
                                 onPauseResume = { item ->
                                     when (item.status) {
@@ -567,6 +649,13 @@ fun DownloadsScreen(
                                 onBulkDismissAnimationFinished = { itemId ->
                                     dismissingIds = dismissingIds - itemId
                                     viewModel.markDownloadsPendingDelete(setOf(itemId))
+                                },
+                                onBulkArchiveAnimationFinished = { itemId ->
+                                    archivingIds = archivingIds - itemId
+                                    viewModel.updateDownloadsArchived(
+                                        downloadIds = setOf(itemId),
+                                        archived = !isArchived,
+                                    )
                                 },
                                 onMarkPendingDelete = viewModel::markDownloadsPendingDelete,
                             )
@@ -637,7 +726,9 @@ private fun DownloadsList(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
     dismissingIds: Set<Long>,
+    archivingIds: Set<Long>,
     pendingDeleteIds: Set<Long>,
+    archived: Boolean,
     hasAvailableUpdateBanner: Boolean,
     searchQuery: String,
     lazyListState: LazyListState,
@@ -645,6 +736,7 @@ private fun DownloadsList(
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
     onBulkDismissAnimationFinished: (Long) -> Unit,
+    onBulkArchiveAnimationFinished: (Long) -> Unit,
     onMarkPendingDelete: (Set<Long>) -> Unit,
 ) {
     val dimens = LocalDimens.current
@@ -739,6 +831,7 @@ private fun DownloadsList(
                 DownloadsIntro(
                     modifier = Modifier
                         .fillMaxSize(),
+                    archived = archived,
                 )
             }
         }
@@ -775,7 +868,9 @@ private fun DownloadsList(
                         }
                     },
                     onSelectionChange = onSelectionChange,
-                    isPendingDismiss = animatingOutIds[item.id] == true || item.id in dismissingIds,
+                    isPendingDismiss = animatingOutIds[item.id] == true
+                            || item.id in dismissingIds
+                            || item.id in archivingIds,
                     onSwipeActionPerformed = { itemId ->
                         animatingOutIds[itemId] = true
                         onSelectionChange(selectedIds - itemId)
@@ -786,6 +881,9 @@ private fun DownloadsList(
                         }
                         if (itemId in dismissingIds) {
                             onBulkDismissAnimationFinished(itemId)
+                        }
+                        if (itemId in archivingIds) {
+                            onBulkArchiveAnimationFinished(itemId)
                         }
                     },
                 )
@@ -1080,13 +1178,26 @@ private fun DownloadItem(
 @Composable
 private fun DownloadsIntro(
     modifier: Modifier = Modifier,
+    archived: Boolean = false,
 ) {
     val appName = stringResource(R.string.app_name)
     EmptyState(
         modifier = modifier,
-        icon = ImageVector.vectorResource(id = R.drawable.ic_logo),
-        title = stringResource(R.string.downloads_intro_title, appName),
-        body = stringResource(R.string.downloads_intro_body, appName),
+        icon = if (archived) {
+            Icons.Filled.Archive
+        } else {
+            ImageVector.vectorResource(id = R.drawable.ic_logo)
+        },
+        title = if (archived) {
+            stringResource(R.string.archived_intro_title)
+        } else {
+            stringResource(R.string.downloads_intro_title, appName)
+        },
+        body = if (archived) {
+            stringResource(R.string.archived_intro_body)
+        } else {
+            stringResource(R.string.downloads_intro_body, appName)
+        },
     )
 }
 
