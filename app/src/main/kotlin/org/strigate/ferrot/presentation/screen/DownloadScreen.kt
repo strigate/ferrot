@@ -1,7 +1,7 @@
 package org.strigate.ferrot.presentation.screen
 
 import android.view.HapticFeedbackConstants
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -72,6 +72,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -86,6 +87,7 @@ import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.helper.PlayHelper
 import org.strigate.ferrot.helper.SaveHelper
 import org.strigate.ferrot.helper.ShareHelper
+import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.ActionIconButton
 import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
@@ -104,12 +106,12 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadScreen(
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
     val view = LocalView.current
     val context = LocalContext.current
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
@@ -119,6 +121,16 @@ fun DownloadScreen(
     val selectedPageData by viewModel.selectedPageData.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
+    val onNavigateBack = {
+        navigateBackToParent(
+            navController = navController,
+            archived = selectedPageData?.archived == true,
+        )
+    }
+
+    BackHandler {
+        onNavigateBack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -127,7 +139,7 @@ fun DownloadScreen(
         viewModel.events.collect { event ->
             when (event) {
                 DownloadEvent.NavigateBack -> {
-                    backDispatcher?.onBackPressed()
+                    onNavigateBack()
                 }
 
                 is DownloadEvent.Play -> {
@@ -170,7 +182,7 @@ fun DownloadScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            backDispatcher?.onBackPressed()
+                            onNavigateBack()
                         },
                     ) {
                         Icon(
@@ -277,6 +289,34 @@ fun DownloadScreen(
             }
         },
     )
+}
+
+private fun navigateBackToParent(
+    navController: NavController,
+    archived: Boolean,
+) {
+    val parentRoute = if (archived) {
+        Screen.Archived.route
+    } else {
+        Screen.Downloads.route
+    }
+    val previousRoute = navController.previousBackStackEntry?.destination?.route
+    if (previousRoute == parentRoute) {
+        navController.popBackStack()
+        return
+    }
+    val parentAlreadyInBackStack = navController.popBackStack(parentRoute, false)
+    if (parentAlreadyInBackStack) {
+        return
+    }
+    navController.navigate(parentRoute) {
+        popUpTo(Screen.Downloads.route) {
+            inclusive = false
+            saveState = false
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)

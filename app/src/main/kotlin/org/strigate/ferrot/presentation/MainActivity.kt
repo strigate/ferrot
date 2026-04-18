@@ -134,9 +134,9 @@ class MainActivity : ComponentActivity() {
                     try {
                         navController.currentBackStackEntryFlow.first()
                         navController.navigate(targetRoute) {
-                            event.popUpToRoute?.let { popUpToRoute ->
-                                popUpTo(popUpToRoute) {
-                                    inclusive = targetRoute == popUpToRoute
+                            event.popUpToRoute?.let { route ->
+                                popUpTo(route) {
+                                    inclusive = targetRoute == route
                                     saveState = false
                                 }
                             }
