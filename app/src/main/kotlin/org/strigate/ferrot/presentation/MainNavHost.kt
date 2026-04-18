@@ -54,7 +54,9 @@ fun MainNavHost(
                 },
             ),
         ) {
-            DownloadScreen()
+            DownloadScreen(
+                navController = navController,
+            )
         }
         composable(Screen.Settings.route) {
             SettingsScreen(

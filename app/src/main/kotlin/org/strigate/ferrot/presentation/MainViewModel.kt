@@ -24,9 +24,9 @@ class MainViewModel @Inject constructor(
     private val _navigateRoute = MutableStateFlow<NavigationEvent?>(null)
     val navigateRoute: StateFlow<NavigationEvent?> = _navigateRoute.asStateFlow()
 
-    fun navigateTo(route: String, popUpToDownloads: Boolean = false) {
+    fun navigateTo(route: String, popUpToRoute: String? = null) {
         _navigateRoute.value = NavigationEvent.Route(
-            popUpToDownloads = popUpToDownloads,
+            popUpToRoute = popUpToRoute,
             route = route,
         )
     }
@@ -41,8 +41,15 @@ class MainViewModel @Inject constructor(
                     )
                 }
                 navigateTo(
-                    route = Screen.Download.route(download.id),
-                    popUpToDownloads = true,
+                    route = Screen.Download.route(
+                        id = download.id,
+                        archived = download.archived,
+                    ),
+                    popUpToRoute = if (download.archived) {
+                        Screen.Archived.route
+                    } else {
+                        Screen.Downloads.route
+                    },
                 )
             }
         }
@@ -75,6 +82,6 @@ class MainViewModel @Inject constructor(
 sealed class NavigationEvent {
     data class Route(
         val route: String,
-        val popUpToDownloads: Boolean = false,
+        val popUpToRoute: String? = null,
     ) : NavigationEvent()
 }
