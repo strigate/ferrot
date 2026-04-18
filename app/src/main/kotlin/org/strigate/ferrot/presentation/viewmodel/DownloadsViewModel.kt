@@ -62,10 +62,7 @@ class DownloadsViewModel @Inject constructor(
     )
     val searchQuery: StateFlow<TextFieldValue> = _searchQuery
 
-    private val _events = MutableSharedFlow<DownloadsEvent>(
-        replay = 0,
-        extraBufferCapacity = 1,
-    )
+    private val _events = MutableSharedFlow<DownloadsEvent>()
     val events = _events.asSharedFlow()
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(

@@ -83,7 +83,7 @@ class DownloadAvailableUpdateWorker(
             }
             if (!isNewerVersion(latestTag, currentTag)) {
                 if (isAppInForeground()) {
-                    appContext.toast(R.string.toast_already_up_to_date, true)
+                    appContext.toast(R.string.toast_no_updates_available, true)
                 }
                 Log.d(LOG_TAG, "$tag Already up to date: latest=$latestTag current=$currentTag")
                 clearAvailableUpdate()
@@ -168,7 +168,7 @@ class DownloadAvailableUpdateWorker(
                 notificationText = appContext.getString(R.string.notification_text_downloading_app_update),
             )
             if (isAppInForeground()) {
-                appContext.toast(R.string.toast_downloading_app_update, true)
+                appContext.toast(R.string.toast_downloading_update, true)
             }
 
             try {
