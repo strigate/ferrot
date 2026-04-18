@@ -128,7 +128,7 @@ fun DownloadScreen(
         )
     }
 
-    BackHandler {
+    BackHandler(enabled = !showConfirmDeleteDialog.value) {
         onNavigateBack()
     }
 
@@ -305,8 +305,7 @@ private fun navigateBackToParent(
         navController.popBackStack()
         return
     }
-    val parentAlreadyInBackStack = navController.popBackStack(parentRoute, false)
-    if (parentAlreadyInBackStack) {
+    if (navController.popBackStack(parentRoute, false)) {
         return
     }
     navController.navigate(parentRoute) {
