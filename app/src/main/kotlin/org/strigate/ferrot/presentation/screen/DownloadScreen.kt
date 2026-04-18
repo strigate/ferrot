@@ -53,7 +53,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -259,7 +258,6 @@ fun DownloadScreen(
                             .padding(contentPadding)
                             .fillMaxSize(),
                         data = state.data,
-                        selectedPageData = selectedPageData,
                         pageDataForId = viewModel::getDownloadPageUiData,
                         selectedId = selectedId,
                         selectedMedia = selectedMedia,
@@ -323,7 +321,6 @@ private fun navigateBackToParent(
 private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
-    selectedPageData: DownloadPageUiData?,
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
     selectedId: Long,
     selectedMedia: DownloadMediaType,
@@ -387,15 +384,9 @@ private fun DownloadPager(
         ) { page ->
             val downloadId = downloadIds[page]
             val isCurrentPage = pagerState.currentPage == page
-            val pageData by if (isCurrentPage) {
-                rememberUpdatedState(
-                    newValue = selectedPageData?.takeIf { it.id == downloadId },
-                )
-            } else {
-                remember(downloadId) {
-                    pageDataForId(downloadId)
-                }.collectAsStateWithLifecycle(initialValue = null)
-            }
+            val pageData by remember(downloadId) {
+                pageDataForId(downloadId)
+            }.collectAsStateWithLifecycle(initialValue = null)
 
             Surface(
                 modifier = Modifier

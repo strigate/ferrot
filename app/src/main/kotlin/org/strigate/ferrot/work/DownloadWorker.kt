@@ -387,18 +387,23 @@ class DownloadWorker(
                 Log.d(LOG_TAG, "$tag Complete")
                 appContext.toast("$downloadComplete: $videoTitle", true)
 
-                notificationService.notifyDownloaded(
-                    contentText = videoTitle,
-                    contentTitle = downloadComplete,
-                    extras = notificationExtras,
-                    tag = downloadNotificationTag(downloadId),
-                    actions = buildCompletedNotificationActions(
-                        downloadId = downloadId,
-                        shareFilePath = videoOutputFilePath,
-                    ),
-                    thumbnailFilePath = thumbnailFilePath,
-                    autoCancel = false,
-                )
+                val latestDownload = downloadUseCase.getDownloadByIdUseCase(downloadId)
+                if (latestDownload?.archived == true) {
+                    Log.d(LOG_TAG, "$tag Complete notification skipped for archived download")
+                } else {
+                    notificationService.notifyDownloaded(
+                        contentText = videoTitle,
+                        contentTitle = downloadComplete,
+                        extras = notificationExtras,
+                        tag = downloadNotificationTag(downloadId),
+                        actions = buildCompletedNotificationActions(
+                            downloadId = downloadId,
+                            shareFilePath = videoOutputFilePath,
+                        ),
+                        thumbnailFilePath = thumbnailFilePath,
+                        autoCancel = false,
+                    )
+                }
                 Result.success()
 
             } catch (throwable: Throwable) {

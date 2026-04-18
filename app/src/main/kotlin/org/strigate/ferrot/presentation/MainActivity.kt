@@ -122,10 +122,11 @@ class MainActivity : ComponentActivity() {
                     .collectAsStateWithLifecycle(initialValue = null)
 
                 LaunchedEffect(navigateRoute) {
-                    val event = navigateRoute ?: return@LaunchedEffect
-                    val targetRoute = when (event) {
-                        is NavigationEvent.Route -> event.route
-                    }
+                    val routeEvent =
+                        navigateRoute as? NavigationEvent.Route ?: return@LaunchedEffect
+
+                    val targetRoute = routeEvent.route
+                    val popUpToRoute = routeEvent.popUpToRoute
                     val currentRoute = navController.currentDestination?.route
                     if (targetRoute == currentRoute) {
                         viewModel.resetNavigate()
@@ -133,8 +134,18 @@ class MainActivity : ComponentActivity() {
                     }
                     try {
                         navController.currentBackStackEntryFlow.first()
+                        val resolvedPopUpToRoute = when {
+                            popUpToRoute == null -> null
+                            runCatching { navController.getBackStackEntry(popUpToRoute) }
+                                .isSuccess -> popUpToRoute
+
+                            runCatching { navController.getBackStackEntry(Screen.Downloads.route) }
+                                .isSuccess -> Screen.Downloads.route
+
+                            else -> null
+                        }
                         navController.navigate(targetRoute) {
-                            event.popUpToRoute?.let { route ->
+                            resolvedPopUpToRoute?.let { route ->
                                 popUpTo(route) {
                                     inclusive = targetRoute == route
                                     saveState = false
