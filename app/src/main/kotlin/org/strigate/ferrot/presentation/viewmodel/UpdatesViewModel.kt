@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -16,7 +18,7 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
-import org.strigate.ferrot.extensions.toast
+import org.strigate.ferrot.presentation.event.UpdatesEvent
 import org.strigate.ferrot.presentation.model.UpdatesInfoUiData
 import org.strigate.ferrot.presentation.model.UpdatesSettingsUiData
 import org.strigate.ferrot.presentation.model.UpdatesUiData
@@ -32,6 +34,9 @@ class UpdatesViewModel @Inject constructor(
     private val settingsUseCase: SettingsUseCase,
     private val stateUseCase: StateUseCase,
 ) : ViewModel() {
+    private val _event = MutableSharedFlow<UpdatesEvent>()
+    val event = _event.asSharedFlow()
+
     val uiState: StateFlow<UpdatesUiState> = getUiState().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
@@ -75,7 +80,7 @@ class UpdatesViewModel @Inject constructor(
 
     fun checkForAvailableUpdate() {
         viewModelScope.launch {
-            appContext.toast(appContext.getString(R.string.toast_checking_for_available_update))
+            _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_updates))
             DownloadAvailableUpdateWorker.enqueueOneTimeReplace(appContext)
         }
     }
@@ -93,7 +98,7 @@ class UpdatesViewModel @Inject constructor(
 
     fun checkForDependencyUpdates() {
         viewModelScope.launch {
-            appContext.toast(appContext.getString(R.string.toast_checking_for_dependency_updates))
+            _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_dependency_updates))
             UpdateDependenciesWorker.enqueueOneTimeReplace(appContext)
         }
     }

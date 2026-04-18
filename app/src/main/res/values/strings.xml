@@ -84,15 +84,15 @@
     <string name="snackbar_delete_undo">Undo</string>
     <string name="bulk_selected">selected</string>
 
-    <string name="toast_checking_for_available_update">Checking for available update</string>
-    <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_already_saved">Already saved in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
-    <string name="toast_dependencies_update_complete">Dependencies update complete</string>
-    <string name="toast_dependencies_already_up_to_date">Dependencies already up to date</string>
-    <string name="toast_downloading_app_update">Downloading app update</string>
-    <string name="toast_already_up_to_date">Already up to date</string>
+    <string name="toast_checking_for_updates">Checking for updates</string>
+    <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
+    <string name="toast_downloading_update">Downloading update</string>
+    <string name="toast_dependencies_updated">Dependencies updated</string>
+    <string name="toast_no_updates_available">No updates available</string>
+    <string name="toast_no_dependency_updates_available">No dependency updates available</string>
 
     <string name="settings_section_general">General</string>
     <string name="settings_section_app_info">App info</string>

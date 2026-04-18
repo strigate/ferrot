@@ -28,11 +28,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import org.strigate.ferrot.R
+import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.SwitchSetting
 import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.event.UpdatesEvent
 import org.strigate.ferrot.presentation.state.UpdatesUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
@@ -51,6 +53,15 @@ fun UpdatesScreen(
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            when (event) {
+                is UpdatesEvent.ShowToast -> {
+                    context.toast(event.textRes)
+                }
+            }
+        }
     }
 
     Scaffold(
