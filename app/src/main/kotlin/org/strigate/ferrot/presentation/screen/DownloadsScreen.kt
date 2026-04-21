@@ -787,6 +787,17 @@ private fun DownloadsList(
         previousItemIds = itemIds
         previousPendingDeleteIds = pendingDeleteIds
     }
+    LaunchedEffect(restoringItemIds, itemIds) {
+        if (shouldScrollToTopOnRestore(
+                restoredItemIds = restoringItemIds,
+                currentItemIds = itemIds,
+                firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
+                firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset,
+            )
+        ) {
+            lazyListState.scrollToItem(0)
+        }
+    }
     LaunchedEffect(items.map { it.id to it.status }, trackedAutoScrollDownloadId) {
         val trackedId = trackedAutoScrollDownloadId ?: return@LaunchedEffect
         val trackedIndex = items.indexOfFirst { it.id == trackedId }
@@ -1272,6 +1283,19 @@ internal fun getRestoredItemIds(
     return previousPendingDeleteIds
         .intersect(currentItemIds.toSet())
         .minus(currentPendingDeleteIds)
+}
+
+internal fun shouldScrollToTopOnRestore(
+    restoredItemIds: Set<Long>,
+    currentItemIds: List<Long>,
+    firstVisibleItemIndex: Int,
+    firstVisibleItemScrollOffset: Int,
+): Boolean {
+    if (restoredItemIds.isEmpty() || currentItemIds.isEmpty()) {
+        return false
+    }
+    val userWasNearTop = firstVisibleItemIndex <= 1 || firstVisibleItemScrollOffset == 0
+    return userWasNearTop && currentItemIds.first() in restoredItemIds
 }
 
 private fun getPendingDeleteSnackbarMessage(
