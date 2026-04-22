@@ -31,6 +31,7 @@
     </plurals>
 
     <string name="screen_title_download">Download</string>
+    <string name="screen_title_archived_download">Archived download</string>
     <string name="screen_title_archived">Archived</string>
     <string name="screen_title_settings">Settings</string>
     <string name="screen_title_updates">Updates</string>
