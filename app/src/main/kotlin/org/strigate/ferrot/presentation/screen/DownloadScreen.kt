@@ -192,7 +192,11 @@ fun DownloadScreen(
                 },
                 title = {
                     Text(
-                        text = stringResource(R.string.screen_title_download),
+                        text = if (selectedPageData?.archived == true) {
+                            stringResource(R.string.screen_title_archived_download)
+                        } else {
+                            stringResource(R.string.screen_title_download)
+                        },
                     )
                 },
                 actions = {
