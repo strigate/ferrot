@@ -35,6 +35,7 @@ import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.state.SettingsUiState
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
 
@@ -56,6 +57,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = FerrotTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -79,7 +81,7 @@ fun SettingsScreen(
             Surface(
                 modifier = modifier
                     .padding(contentPadding),
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.background,
             ) {
                 when (val state = uiState) {
                     is SettingsUiState.Loading -> {
