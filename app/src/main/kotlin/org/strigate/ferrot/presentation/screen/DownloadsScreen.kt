@@ -108,6 +108,7 @@ import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
 import org.strigate.ferrot.presentation.transitions.Transitions
@@ -229,9 +230,11 @@ fun DownloadsScreen(
     Scaffold(
         modifier = modifier
             .fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (selectionMode) {
                 TopAppBar(
+                    colors = FerrotTopAppBarDefaults.colors(),
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -333,6 +336,7 @@ fun DownloadsScreen(
                 )
             } else {
                 TopAppBar(
+                    colors = FerrotTopAppBarDefaults.colors(),
                     navigationIcon = {
                         if (isArchived) {
                             IconButton(
@@ -577,6 +581,7 @@ fun DownloadsScreen(
             modifier = Modifier
                 .padding(contentPadding)
                 .fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
         ) {
             when (val state = uiState) {
                 is DownloadsUiState.Loading -> {
@@ -1095,7 +1100,7 @@ private fun DownloadItem(
         color = if (isSelected) {
             MaterialTheme.colorScheme.secondaryContainer
         } else {
-            MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme.background
         },
     ) {
         Row(

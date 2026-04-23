@@ -36,6 +36,7 @@ import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.event.UpdatesEvent
 import org.strigate.ferrot.presentation.state.UpdatesUiState
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.UpdatesViewModel
@@ -67,6 +68,7 @@ fun UpdatesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = FerrotTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = { backDispatcher?.onBackPressed() },
@@ -87,7 +89,7 @@ fun UpdatesScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(contentPadding),
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.background,
             ) {
                 when (val state = uiState) {
                     is UpdatesUiState.Loading -> {

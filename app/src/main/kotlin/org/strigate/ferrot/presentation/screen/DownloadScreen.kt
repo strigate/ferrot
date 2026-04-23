@@ -97,6 +97,7 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
@@ -176,8 +177,10 @@ fun DownloadScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = FerrotTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -397,6 +400,7 @@ private fun DownloadPager(
                     .fillMaxSize()
                     .padding(bottom = dimens.spacingSmall),
                 shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = dimens.tonalElevationLow,
                 shadowElevation = dimens.shadowElevationLow,
             ) {
@@ -645,6 +649,14 @@ private fun MediaSwitcherSegmentedButtonRow(
         SegmentedButton(
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             selected = selected == DownloadMediaType.VIDEO,
+            colors = SegmentedButtonDefaults.colors(
+                activeContainerColor = MaterialTheme.colorScheme.primary,
+                activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                activeBorderColor = Color.Transparent,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                inactiveBorderColor = Color.Transparent,
+            ),
             onClick = {
                 onSelect(DownloadMediaType.VIDEO)
             },
@@ -656,6 +668,14 @@ private fun MediaSwitcherSegmentedButtonRow(
         SegmentedButton(
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             selected = selected == DownloadMediaType.AUDIO,
+            colors = SegmentedButtonDefaults.colors(
+                activeContainerColor = MaterialTheme.colorScheme.primary,
+                activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                activeBorderColor = Color.Transparent,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                inactiveBorderColor = Color.Transparent,
+            ),
             onClick = {
                 onSelect(DownloadMediaType.AUDIO)
             },
