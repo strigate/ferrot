@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.nio.file.Files
+import java.util.Locale
 
 class HashUtilTest {
     @Test
@@ -21,5 +22,22 @@ class HashUtilTest {
             "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
             result,
         )
+    }
+
+    @Test
+    fun sha256_usesStableAsciiHex_evenWhenDefaultLocaleChanges() {
+        val file = Files.createTempFile("hash-util-locale-test", ".txt")
+        Files.write(file, "hello world".toByteArray())
+        val originalLocale = Locale.getDefault()
+
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+            assertEquals(
+                "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+                sha256(file.toString()),
+            )
+        } finally {
+            Locale.setDefault(originalLocale)
+        }
     }
 }

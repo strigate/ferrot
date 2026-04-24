@@ -3,6 +3,7 @@ package org.strigate.ferrot.util
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
+import java.util.Locale
 
 fun sha256(filePath: String): String? {
     val file = File(filePath)
@@ -20,5 +21,5 @@ fun sha256(filePath: String): String? {
             messageDigest.update(buffer, 0, read)
         }
     }
-    return messageDigest.digest().joinToString("") { "%02x".format(it) }
+    return messageDigest.digest().joinToString("") { "%02x".format(Locale.ROOT, it) }
 }
