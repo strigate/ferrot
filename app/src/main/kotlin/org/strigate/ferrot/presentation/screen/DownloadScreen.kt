@@ -1,7 +1,7 @@
 package org.strigate.ferrot.presentation.screen
 
 import android.view.HapticFeedbackConstants
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -69,6 +71,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -83,6 +86,7 @@ import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.helper.PlayHelper
 import org.strigate.ferrot.helper.SaveHelper
 import org.strigate.ferrot.helper.ShareHelper
+import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.ActionIconButton
 import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
@@ -93,6 +97,7 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
@@ -101,20 +106,31 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadScreen(
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: DownloadViewModel = hiltViewModel(),
 ) {
     val view = LocalView.current
     val context = LocalContext.current
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
     val selectedMedia by viewModel.selectedMedia.collectAsStateWithLifecycle(
         initialValue = DownloadMediaType.VIDEO,
     )
+    val selectedPageData by viewModel.selectedPageData.collectAsStateWithLifecycle()
 
     val showConfirmDeleteDialog = remember { mutableStateOf(false) }
+    val onNavigateBack = {
+        navigateBackToParent(
+            navController = navController,
+            archived = selectedPageData?.archived == true,
+        )
+    }
+
+    BackHandler(enabled = !showConfirmDeleteDialog.value) {
+        onNavigateBack()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -123,7 +139,7 @@ fun DownloadScreen(
         viewModel.events.collect { event ->
             when (event) {
                 DownloadEvent.NavigateBack -> {
-                    backDispatcher?.onBackPressed()
+                    onNavigateBack()
                 }
 
                 is DownloadEvent.Play -> {
@@ -161,12 +177,14 @@ fun DownloadScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = FerrotTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            backDispatcher?.onBackPressed()
+                            onNavigateBack()
                         },
                     ) {
                         Icon(
@@ -177,7 +195,11 @@ fun DownloadScreen(
                 },
                 title = {
                     Text(
-                        text = stringResource(R.string.screen_title_download),
+                        text = if (selectedPageData?.archived == true) {
+                            stringResource(R.string.screen_title_archived_download)
+                        } else {
+                            stringResource(R.string.screen_title_download)
+                        },
                     )
                 },
                 actions = {
@@ -189,6 +211,25 @@ fun DownloadScreen(
                         Icon(
                             imageVector = Icons.Filled.VisibilityOff,
                             contentDescription = stringResource(R.string.content_description_mark_unseen),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            val archived = selectedPageData?.archived ?: false
+                            viewModel.updateArchived(archived = !archived)
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (selectedPageData?.archived == true) {
+                                Icons.Filled.Unarchive
+                            } else {
+                                Icons.Filled.Archive
+                            },
+                            contentDescription = if (selectedPageData?.archived == true) {
+                                stringResource(R.string.content_description_unarchive)
+                            } else {
+                                stringResource(R.string.content_description_archive)
+                            },
                         )
                     }
                     IconButton(
@@ -253,6 +294,33 @@ fun DownloadScreen(
             }
         },
     )
+}
+
+private fun navigateBackToParent(
+    navController: NavController,
+    archived: Boolean,
+) {
+    val parentRoute = if (archived) {
+        Screen.Archived.route
+    } else {
+        Screen.Downloads.route
+    }
+    val previousRoute = navController.previousBackStackEntry?.destination?.route
+    if (previousRoute == parentRoute) {
+        navController.popBackStack()
+        return
+    }
+    if (navController.popBackStack(parentRoute, false)) {
+        return
+    }
+    navController.navigate(parentRoute) {
+        popUpTo(Screen.Downloads.route) {
+            inclusive = false
+            saveState = false
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -322,16 +390,17 @@ private fun DownloadPager(
             key = { page -> downloadIds[page] },
         ) { page ->
             val downloadId = downloadIds[page]
+            val isCurrentPage = pagerState.currentPage == page
             val pageData by remember(downloadId) {
                 pageDataForId(downloadId)
             }.collectAsStateWithLifecycle(initialValue = null)
-            val isCurrentPage = pagerState.currentPage == page
 
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = dimens.spacingSmall),
                 shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = dimens.tonalElevationLow,
                 shadowElevation = dimens.shadowElevationLow,
             ) {
@@ -580,6 +649,14 @@ private fun MediaSwitcherSegmentedButtonRow(
         SegmentedButton(
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             selected = selected == DownloadMediaType.VIDEO,
+            colors = SegmentedButtonDefaults.colors(
+                activeContainerColor = MaterialTheme.colorScheme.primary,
+                activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                activeBorderColor = Color.Transparent,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                inactiveBorderColor = Color.Transparent,
+            ),
             onClick = {
                 onSelect(DownloadMediaType.VIDEO)
             },
@@ -591,6 +668,14 @@ private fun MediaSwitcherSegmentedButtonRow(
         SegmentedButton(
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             selected = selected == DownloadMediaType.AUDIO,
+            colors = SegmentedButtonDefaults.colors(
+                activeContainerColor = MaterialTheme.colorScheme.primary,
+                activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                activeBorderColor = Color.Transparent,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                inactiveBorderColor = Color.Transparent,
+            ),
             onClick = {
                 onSelect(DownloadMediaType.AUDIO)
             },

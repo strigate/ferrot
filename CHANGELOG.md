@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0 - 2026-04-25
+### Added
+- Archived downloads screen with archive and unarchive actions
+- Persisted archived state for downloads
+- Unit tests covering archived downloads, restore scrolling, and hash formatting
+
+### Changed
+- Refined download and archived download navigation behavior
+- Reworked update toast handling for more consistent UI feedback
+- Suppressed completion notifications and toasts for archived downloads
+- Updated theme surfaces and top app bar styling
+- Updated Android Gradle Plugin, Compose BOM, and Navigation Compose
+- Configured the Gradle daemon JVM toolchain
+
+### Fixed
+- Restored items now scroll back into view more reliably
+- SHA-256 hash formatting is now locale-stable
+
 ## 1.6.1 - 2026-04-15
 ### Added
 - Share action in download notifications

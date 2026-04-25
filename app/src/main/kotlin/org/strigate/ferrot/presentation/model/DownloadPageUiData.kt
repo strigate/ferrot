@@ -9,6 +9,7 @@ data class DownloadPageUiData(
     val audio: DownloadAudioUiData?,
     val progress: DownloadProgressUiData?,
     val seen: Boolean,
+    val archived: Boolean,
     val errorMessage: String?,
     val completedAtMillis: Long?,
 )

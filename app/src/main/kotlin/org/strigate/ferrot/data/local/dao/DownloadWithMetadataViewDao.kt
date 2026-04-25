@@ -7,8 +7,11 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 
 @Dao
 interface DownloadWithMetadataViewDao {
-    @Query(SELECT_ALL_QUERY)
-    fun getAllAsFlow(): Flow<List<DownloadWithMetadataView>>
+    @Query(SELECT_DOWNLOADS_QUERY)
+    fun getDownloadsAsFlow(): Flow<List<DownloadWithMetadataView>>
+
+    @Query(SELECT_ARCHIVED_DOWNLOADS_QUERY)
+    fun getArchivedDownloadsAsFlow(): Flow<List<DownloadWithMetadataView>>
 
     companion object {
         private const val ORDER_BY = "ORDER BY\n" +
@@ -32,7 +35,9 @@ interface DownloadWithMetadataViewDao {
                 "  END DESC,\n" +
                 "  id DESC"
 
-        private const val SELECT_ALL_QUERY =
-            "SELECT * FROM downloads_with_metadata_view\n$ORDER_BY"
+        private const val SELECT_DOWNLOADS_QUERY =
+            "SELECT * FROM downloads_with_metadata_view WHERE archived = 0\n$ORDER_BY"
+        private const val SELECT_ARCHIVED_DOWNLOADS_QUERY =
+            "SELECT * FROM downloads_with_metadata_view WHERE archived = 1\n$ORDER_BY"
     }
 }

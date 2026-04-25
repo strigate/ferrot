@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.strigate.ferrot.presentation.screen.AboutScreen
+import org.strigate.ferrot.presentation.screen.ArchivedScreen
 import org.strigate.ferrot.presentation.screen.DownloadScreen
 import org.strigate.ferrot.presentation.screen.DownloadsScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
@@ -33,6 +34,12 @@ fun MainNavHost(
         composable(Screen.Downloads.route) {
             DownloadsScreen(
                 navController = navController,
+                archived = false,
+            )
+        }
+        composable(Screen.Archived.route) {
+            ArchivedScreen(
+                navController = navController,
             )
         }
         composable(
@@ -41,9 +48,15 @@ fun MainNavHost(
                 navArgument(Screen.Download.ARG_DOWNLOAD_ID) {
                     type = NavType.LongType
                 },
+                navArgument(Screen.ARG_ARCHIVED) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
             ),
         ) {
-            DownloadScreen()
+            DownloadScreen(
+                navController = navController,
+            )
         }
         composable(Screen.Settings.route) {
             SettingsScreen(
@@ -60,10 +73,15 @@ fun MainNavHost(
 }
 
 sealed class Screen(val route: String) {
+    companion object {
+        const val ARG_ARCHIVED = "archived"
+    }
+
     data object Downloads : Screen("downloads")
-    data object Download : Screen("download/{downloadId}") {
+    data object Archived : Screen("archived")
+    data object Download : Screen("download/{downloadId}?archived={archived}") {
         const val ARG_DOWNLOAD_ID = "downloadId"
-        fun route(id: Long) = "download/$id"
+        fun route(id: Long, archived: Boolean = false) = "download/$id?archived=$archived"
     }
 
     data object Settings : Screen("settings")

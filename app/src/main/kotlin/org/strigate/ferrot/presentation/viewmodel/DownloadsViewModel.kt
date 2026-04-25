@@ -2,6 +2,7 @@ package org.strigate.ferrot.presentation.viewmodel
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -29,6 +31,7 @@ import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
@@ -41,6 +44,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
     private val stopDownloadsUseCase: StopDownloadUseCase,
@@ -50,15 +54,15 @@ class DownloadsViewModel @Inject constructor(
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
 ) : ViewModel() {
+    private val _archived = MutableStateFlow(savedStateHandle[Screen.ARG_ARCHIVED] ?: false)
+    val isArchived: StateFlow<Boolean> = _archived
+
     private val _searchQuery = MutableStateFlow(
         TextFieldValue(text = "", selection = TextRange(0))
     )
     val searchQuery: StateFlow<TextFieldValue> = _searchQuery
 
-    private val _events = MutableSharedFlow<DownloadsEvent>(
-        replay = 0,
-        extraBufferCapacity = 1,
-    )
+    private val _events = MutableSharedFlow<DownloadsEvent>()
     val events = _events.asSharedFlow()
 
     val uiState: StateFlow<DownloadsUiState> = getUiState().stateIn(
@@ -71,16 +75,19 @@ class DownloadsViewModel @Inject constructor(
         val searchTextFlow = searchQuery
             .map { it.text }
             .distinctUntilChanged()
-        val downloadsWithMetadataFlow = downloadWithMetadataUseCase
-            .getDownloadsWithMetadataAsFlowUseCase()
-        val availableUpdateFlow = availableUpdateUseCase
-            .getAvailableUpdateAsFlowUseCase()
+        val archivedFlow = isArchived
+        val downloadsWithMetadataFlow = archivedFlow
+            .flatMapLatest { archived ->
+                downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase(archived = archived)
+            }
+        val availableUpdateFlow = availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()
 
         return combine(
+            archivedFlow,
             downloadsWithMetadataFlow,
             availableUpdateFlow,
             searchTextFlow,
-        ) { downloadsWithMetadata, availableUpdate, query ->
+        ) { archived, downloadsWithMetadata, availableUpdate, query ->
             val pendingDeleteIds = downloadsWithMetadata
                 .asSequence()
                 .filter { it.pendingDelete }
@@ -95,11 +102,15 @@ class DownloadsViewModel @Inject constructor(
                 .map { it.toUiData() }
                 .toList()
 
-            val availableUpdateUiData = availableUpdate?.let {
-                AvailableUpdateUiData(
-                    localFilePath = it.localFilePath,
-                    tag = it.tag,
-                )
+            val availableUpdateUiData = if (archived) {
+                null
+            } else {
+                availableUpdate?.let {
+                    AvailableUpdateUiData(
+                        localFilePath = it.localFilePath,
+                        tag = it.tag,
+                    )
+                }
             }
             DownloadsUiState.Data(
                 data = DownloadsUiData(
@@ -123,6 +134,13 @@ class DownloadsViewModel @Inject constructor(
             return
         }
         _searchQuery.value = normalizedValue
+    }
+
+    fun setArchived(archived: Boolean) {
+        if (_archived.value == archived) {
+            return
+        }
+        _archived.value = archived
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
@@ -189,6 +207,15 @@ class DownloadsViewModel @Inject constructor(
             downloadUseCase.updateDownloadsPendingDeleteUseCase(downloadIds, pendingDelete)
             if (pendingDelete && downloadIds.isNotEmpty()) {
                 downloadUseCase.requestDeletePendingDownloadsDelayedUseCase()
+            }
+        }
+    }
+
+    fun updateDownloadsArchived(downloadIds: Set<Long>, archived: Boolean = true) {
+        viewModelScope.launch {
+            downloadUseCase.updateDownloadsArchivedUseCase(downloadIds, archived)
+            if (archived) {
+                downloadIds.forEach(clearNotificationsByDownloadIdUseCase::invoke)
             }
         }
     }

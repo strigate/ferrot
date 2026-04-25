@@ -108,4 +108,52 @@ class DownloadsScreenScrollBehaviorTest {
 
         assertEquals(setOf(2L), restoredIds)
     }
+
+    @Test
+    fun shouldScrollToTopOnRestore_returnsTrue_whenTopItemWasRestoredAndListIsAtTop() {
+        val shouldScroll = shouldScrollToTopOnRestore(
+            restoredItemIds = setOf(1L),
+            currentItemIds = listOf(1L, 2L, 3L),
+            firstVisibleItemIndex = 0,
+            firstVisibleItemScrollOffset = 0,
+        )
+
+        assertTrue(shouldScroll)
+    }
+
+    @Test
+    fun shouldScrollToTopOnRestore_returnsTrue_whenTopItemWasRestoredAndAnchorShiftedToIndexOne() {
+        val shouldScroll = shouldScrollToTopOnRestore(
+            restoredItemIds = setOf(1L),
+            currentItemIds = listOf(1L, 2L, 3L),
+            firstVisibleItemIndex = 1,
+            firstVisibleItemScrollOffset = 24,
+        )
+
+        assertTrue(shouldScroll)
+    }
+
+    @Test
+    fun shouldScrollToTopOnRestore_returnsFalse_whenTopItemWasNotRestored() {
+        val shouldScroll = shouldScrollToTopOnRestore(
+            restoredItemIds = setOf(3L),
+            currentItemIds = listOf(1L, 2L, 3L),
+            firstVisibleItemIndex = 0,
+            firstVisibleItemScrollOffset = 0,
+        )
+
+        assertFalse(shouldScroll)
+    }
+
+    @Test
+    fun shouldScrollToTopOnRestore_returnsFalse_whenListIsNotAtTop() {
+        val shouldScroll = shouldScrollToTopOnRestore(
+            restoredItemIds = setOf(1L),
+            currentItemIds = listOf(1L, 2L, 3L),
+            firstVisibleItemIndex = 2,
+            firstVisibleItemScrollOffset = 64,
+        )
+
+        assertFalse(shouldScroll)
+    }
 }

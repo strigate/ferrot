@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
         if (Intent.ACTION_APPLICATION_PREFERENCES == intent.action) {
             viewModel.navigateTo(
                 route = Screen.Settings.route,
-                popUpToDownloads = true,
+                popUpToRoute = Screen.Downloads.route,
             )
             return
         }
@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
                         viewModel.startDownload(sharedUrl)
                         viewModel.navigateTo(
                             route = Screen.Downloads.route,
-                            popUpToDownloads = true,
+                            popUpToRoute = Screen.Downloads.route,
                         )
                     }
                 }
@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
             ACTION_NAVIGATE_DOWNLOADS -> {
                 viewModel.navigateTo(
                     route = Screen.Downloads.route,
-                    popUpToDownloads = true,
+                    popUpToRoute = Screen.Downloads.route,
                 )
                 return
             }
@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                 InstallHelper.requestInstallApkIfExists(this, apkFilePath)
                 viewModel.navigateTo(
                     route = Screen.Downloads.route,
-                    popUpToDownloads = true,
+                    popUpToRoute = Screen.Downloads.route,
                 )
                 return
             }
@@ -122,10 +122,11 @@ class MainActivity : ComponentActivity() {
                     .collectAsStateWithLifecycle(initialValue = null)
 
                 LaunchedEffect(navigateRoute) {
-                    val event = navigateRoute ?: return@LaunchedEffect
-                    val targetRoute = when (event) {
-                        is NavigationEvent.Route -> event.route
-                    }
+                    val routeEvent =
+                        navigateRoute as? NavigationEvent.Route ?: return@LaunchedEffect
+
+                    val targetRoute = routeEvent.route
+                    val popUpToRoute = routeEvent.popUpToRoute
                     val currentRoute = navController.currentDestination?.route
                     if (targetRoute == currentRoute) {
                         viewModel.resetNavigate()
@@ -133,10 +134,20 @@ class MainActivity : ComponentActivity() {
                     }
                     try {
                         navController.currentBackStackEntryFlow.first()
+                        val resolvedPopUpToRoute = when {
+                            popUpToRoute == null -> null
+                            runCatching { navController.getBackStackEntry(popUpToRoute) }
+                                .isSuccess -> popUpToRoute
+
+                            runCatching { navController.getBackStackEntry(Screen.Downloads.route) }
+                                .isSuccess -> Screen.Downloads.route
+
+                            else -> null
+                        }
                         navController.navigate(targetRoute) {
-                            if (event.popUpToDownloads) {
-                                popUpTo(Screen.Downloads.route) {
-                                    inclusive = targetRoute == Screen.Downloads.route
+                            resolvedPopUpToRoute?.let { route ->
+                                popUpTo(route) {
+                                    inclusive = targetRoute == route
                                     saveState = false
                                 }
                             }

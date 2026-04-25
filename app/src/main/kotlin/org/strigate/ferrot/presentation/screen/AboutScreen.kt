@@ -36,6 +36,7 @@ import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
 import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.event.AboutEvent
+import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
 
@@ -77,6 +78,7 @@ fun AboutScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = FerrotTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -101,7 +103,7 @@ fun AboutScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(contentPadding),
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.background,
             ) {
                 Column(
                     modifier = Modifier

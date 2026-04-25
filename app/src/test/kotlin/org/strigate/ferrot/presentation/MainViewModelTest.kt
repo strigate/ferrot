@@ -68,12 +68,12 @@ class MainViewModelTest {
     fun navigateTo_updatesNavigationEvent() {
         val viewModel = createViewModel()
 
-        viewModel.navigateTo(route = Screen.Settings.route, popUpToDownloads = true)
+        viewModel.navigateTo(route = Screen.Settings.route, popUpToRoute = Screen.Downloads.route)
 
         assertEquals(
             NavigationEvent.Route(
                 route = Screen.Settings.route,
-                popUpToDownloads = true,
+                popUpToRoute = Screen.Downloads.route,
             ),
             viewModel.navigateRoute.value,
         )
@@ -110,11 +110,38 @@ class MainViewModelTest {
         assertEquals(
             NavigationEvent.Route(
                 route = Screen.Download.route(42L),
-                popUpToDownloads = true,
+                popUpToRoute = Screen.Downloads.route,
             ),
             viewModel.navigateRoute.value,
         )
     }
+
+    @Test
+    fun navigateToDownload_routesToArchivedDownload_whenDownloadIsArchived() =
+        runTest(testDispatcher) {
+            val download = Download(
+                id = 42L,
+                uid = "uid-42",
+                url = "https://example.com",
+                status = DownloadStatus.COMPLETED,
+                seen = false,
+                archived = true,
+            )
+            val viewModel = createViewModel()
+            `when`(downloadRepository.getById(42L))
+                .thenReturn(download)
+
+            viewModel.navigateToDownload(42L)
+            advanceUntilIdle()
+
+            assertEquals(
+                NavigationEvent.Route(
+                    route = Screen.Download.route(42L, archived = true),
+                    popUpToRoute = Screen.Archived.route,
+                ),
+                viewModel.navigateRoute.value,
+            )
+        }
 
     @Test
     fun navigateToDownload_clearsPendingDeleteBeforeNavigation_whenDownloadIsPendingDelete() =
@@ -138,7 +165,7 @@ class MainViewModelTest {
             assertEquals(
                 NavigationEvent.Route(
                     route = Screen.Download.route(42L),
-                    popUpToDownloads = true,
+                    popUpToRoute = Screen.Downloads.route,
                 ),
                 viewModel.navigateRoute.value,
             )

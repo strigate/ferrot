@@ -43,8 +43,8 @@ class DownloadWithMetadataRepositoryImplTest {
     }
 
     @Test
-    fun getAllDownloadsWithMetadataAsFlow_mapsViewsToDomain() = runTest(testDispatcher) {
-        `when`(downloadWithMetadataViewDao.getAllAsFlow()).thenReturn(
+    fun getDownloadsWithMetadataAsFlow_mapsViewsToDomain() = runTest(testDispatcher) {
+        `when`(downloadWithMetadataViewDao.getDownloadsAsFlow()).thenReturn(
             flowOf(
                 listOf(
                     sampleView(id = 1L, status = EntityStatus.DOWNLOADING),
@@ -59,7 +59,7 @@ class DownloadWithMetadataRepositoryImplTest {
         )
 
         val repository = DownloadWithMetadataRepositoryImpl(downloadWithMetadataViewDao)
-        val result = repository.getAllDownloadsWithMetadataAsFlow().first()
+        val result = repository.getDownloadsWithMetadataAsFlow().first()
         assertEquals(
             listOf(
                 sampleDomain(id = 1L, status = DownloadStatus.DOWNLOADING),
@@ -87,6 +87,7 @@ class DownloadWithMetadataRepositoryImplTest {
         status = status,
         seen = id % 2L == 0L,
         pendingDelete = pendingDelete,
+        archived = false,
         progressPercent = 35F,
         etaSeconds = 12L,
         bytesDownloaded = 1024L,
@@ -109,6 +110,7 @@ class DownloadWithMetadataRepositoryImplTest {
         status = status,
         seen = id % 2L == 0L,
         pendingDelete = pendingDelete,
+        archived = false,
         progressPercent = 35F,
         etaSeconds = 12L,
         bytesDownloaded = 1024L,

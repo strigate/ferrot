@@ -385,20 +385,28 @@ class DownloadWorker(
 
                 val downloadComplete = appContext.getString(R.string.download_complete)
                 Log.d(LOG_TAG, "$tag Complete")
-                appContext.toast("$downloadComplete: $videoTitle", true)
-
-                notificationService.notifyDownloaded(
-                    contentText = videoTitle,
-                    contentTitle = downloadComplete,
-                    extras = notificationExtras,
-                    tag = downloadNotificationTag(downloadId),
-                    actions = buildCompletedNotificationActions(
-                        downloadId = downloadId,
-                        shareFilePath = videoOutputFilePath,
-                    ),
-                    thumbnailFilePath = thumbnailFilePath,
-                    autoCancel = false,
-                )
+                val latestDownload = downloadUseCase.getDownloadByIdUseCase(downloadId)
+                if (latestDownload?.archived == true) {
+                    val message = buildString {
+                        append(tag)
+                        append(" Complete toast and notification skipped for archived download")
+                    }
+                    Log.d(LOG_TAG, message)
+                } else {
+                    appContext.toast("$downloadComplete: $videoTitle", true)
+                    notificationService.notifyDownloaded(
+                        contentText = videoTitle,
+                        contentTitle = downloadComplete,
+                        extras = notificationExtras,
+                        tag = downloadNotificationTag(downloadId),
+                        actions = buildCompletedNotificationActions(
+                            downloadId = downloadId,
+                            shareFilePath = videoOutputFilePath,
+                        ),
+                        thumbnailFilePath = thumbnailFilePath,
+                        autoCancel = false,
+                    )
+                }
                 Result.success()
 
             } catch (throwable: Throwable) {

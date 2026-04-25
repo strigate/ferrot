@@ -11,6 +11,7 @@ internal fun DownloadWithMetadataView.toDomain() = DownloadWithMetadata(
     status = status.toDomain(),
     seen = seen,
     pendingDelete = pendingDelete,
+    archived = archived,
     progressPercent = progressPercent,
     etaSeconds = etaSeconds,
     bytesDownloaded = bytesDownloaded,

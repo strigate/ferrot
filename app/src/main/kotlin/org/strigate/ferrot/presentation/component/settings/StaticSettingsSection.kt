@@ -22,8 +22,8 @@ fun StaticSettingsSection(
 ) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surface,
-        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.large,
         tonalElevation = 4.dp,
         shadowElevation = 1.dp,
     ) {

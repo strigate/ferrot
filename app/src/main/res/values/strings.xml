@@ -31,12 +31,16 @@
     </plurals>
 
     <string name="screen_title_download">Download</string>
+    <string name="screen_title_archived_download">Archived download</string>
+    <string name="screen_title_archived">Archived</string>
     <string name="screen_title_settings">Settings</string>
     <string name="screen_title_updates">Updates</string>
     <string name="screen_title_about">About</string>
 
     <string name="downloads_intro_title">No downloads yet</string>
     <string name="downloads_intro_body">Share a video or post from any app. Tap Share and pick %1$s.</string>
+    <string name="archived_intro_title">No archived downloads</string>
+    <string name="archived_intro_body">Archived downloads will appear here.</string>
 
     <string name="available_update_ready">Update %1$s is ready to install</string>
 
@@ -81,15 +85,15 @@
     <string name="snackbar_delete_undo">Undo</string>
     <string name="bulk_selected">selected</string>
 
-    <string name="toast_checking_for_available_update">Checking for available update</string>
-    <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_already_saved">Already saved in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
-    <string name="toast_dependencies_update_complete">Dependencies update complete</string>
-    <string name="toast_dependencies_already_up_to_date">Dependencies already up to date</string>
-    <string name="toast_downloading_app_update">Downloading app update</string>
-    <string name="toast_already_up_to_date">Already up to date</string>
+    <string name="toast_checking_for_updates">Checking for updates</string>
+    <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
+    <string name="toast_downloading_update">Downloading update</string>
+    <string name="toast_dependencies_updated">Dependencies updated</string>
+    <string name="toast_no_updates_available">No updates available</string>
+    <string name="toast_no_dependency_updates_available">No dependency updates available</string>
 
     <string name="settings_section_general">General</string>
     <string name="settings_section_app_info">App info</string>
@@ -140,6 +144,8 @@
     <string name="content_description_mark_seen">Mark as seen</string>
     <string name="content_description_mark_unseen">Mark as unseen</string>
     <string name="content_description_delete">Delete</string>
+    <string name="content_description_archive">Archive</string>
+    <string name="content_description_unarchive">Unarchive</string>
     <string name="content_description_delete_download">Delete download</string>
     <string name="content_description_share_download">Share download</string>
     <string name="content_description_copy_to_clipboard">Copy to clipboard</string>

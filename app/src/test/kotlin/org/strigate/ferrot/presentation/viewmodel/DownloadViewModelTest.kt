@@ -749,6 +749,7 @@ class DownloadViewModelTest {
                     expectedBytes = 1000L,
                 ),
                 seen = true,
+                archived = false,
                 errorMessage = "download failed",
                 completedAtMillis = 1234L,
             ),
@@ -761,12 +762,14 @@ class DownloadViewModelTest {
         downloadIdsFlow: MutableStateFlow<List<Long>> = MutableStateFlow(listOf(10L, 20L, 30L)),
         downloadsWithMetadataFlow: MutableStateFlow<List<DownloadWithMetadata>>? = null,
     ): DownloadViewModel {
-        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke())
+        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(false))
             .thenReturn(
                 downloadsWithMetadataFlow ?: downloadIdsFlow.map { ids ->
                     ids.map { id -> createDownloadWithMetadata(id) }
                 }
             )
+        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(true))
+            .thenReturn(flowOf(emptyList()))
         `when`(downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase)
             .thenReturn(getDownloadsWithMetadataAsFlowUseCase)
 
@@ -862,6 +865,7 @@ class DownloadViewModelTest {
         url = "https://example.com/$id",
         status = status,
         seen = seen,
+        archived = false,
         errorMessage = errorMessage,
         completedAtMillis = completedAtMillis,
     )
@@ -877,6 +881,7 @@ class DownloadViewModelTest {
         status = DownloadStatus.COMPLETED,
         seen = true,
         pendingDelete = pendingDelete,
+        archived = false,
         progressPercent = 100f,
         etaSeconds = null,
         bytesDownloaded = 1000L,
