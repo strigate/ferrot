@@ -23,7 +23,7 @@ coroutinesTest = "1.10.2"
 mockito = "5.23.0"
 byteBuddy = "1.18.8"
 agp = "9.2.0"
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 ksp = "2.3.4"
 
 [libraries]
