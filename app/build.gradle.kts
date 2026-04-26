@@ -29,6 +29,7 @@ object BuildInfo {
     const val VERSION_CODE = 28
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
+    const val DEBUG_VARIANT_SUFFIX = "debug"
     const val RELEASE_VARIANT_SUFFIX = "release"
 }
 
@@ -119,10 +120,21 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-registerReleaseArtifactRenameTask(
+registerArtifactRenameTask(
+    taskName = "renameDebugApk",
+    outputDirectory = "outputs/apk/debug",
+    sourceFileName = "app-debug.apk",
+    variantSuffix = BuildInfo.DEBUG_VARIANT_SUFFIX,
+    extension = "apk",
+    listingTaskName = "createDebugApkListingFileRedirect",
+    buildTaskName = "assembleDebug",
+)
+
+registerArtifactRenameTask(
     taskName = "renameReleaseApk",
     outputDirectory = "outputs/apk/release",
     sourceFileName = "app-release.apk",
+    variantSuffix = BuildInfo.RELEASE_VARIANT_SUFFIX,
     extension = "apk",
     listingTaskName = "createReleaseApkListingFileRedirect",
     buildTaskName = "assembleRelease",
@@ -163,10 +175,11 @@ private fun String.escapeForBuildConfig(): String {
     return "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
-private fun registerReleaseArtifactRenameTask(
+private fun registerArtifactRenameTask(
     taskName: String,
     outputDirectory: String,
     sourceFileName: String,
+    variantSuffix: String,
     extension: String,
     listingTaskName: String,
     buildTaskName: String,
@@ -176,7 +189,7 @@ private fun registerReleaseArtifactRenameTask(
         from(releaseDir)
         include(sourceFileName)
         into(releaseDir)
-        rename(sourceFileName, releaseArtifactFileName(extension))
+        rename(sourceFileName, artifactFileName(variantSuffix, extension))
     }
     tasks.named(taskName) {
         mustRunAfter(listingTaskName)
@@ -186,8 +199,8 @@ private fun registerReleaseArtifactRenameTask(
     }
 }
 
-private fun releaseArtifactFileName(extension: String): String {
-    return "${BuildInfo.RELEASE_APK_NAME}-${BuildInfo.RELEASE_VARIANT_SUFFIX}.$extension"
+private fun artifactFileName(variantSuffix: String, extension: String): String {
+    return "${BuildInfo.RELEASE_APK_NAME}-$variantSuffix.$extension"
 }
 
 dependencies {
