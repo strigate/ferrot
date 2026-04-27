@@ -88,11 +88,11 @@
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_already_saved">Already saved in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
-    <string name="toast_checking_for_updates">Checking for updates</string>
+    <string name="toast_checking_for_app_updates">Checking for app updates</string>
     <string name="toast_checking_for_dependency_updates">Checking for dependency updates</string>
-    <string name="toast_downloading_update">Downloading update</string>
+    <string name="toast_downloading_app_update">Downloading app update</string>
     <string name="toast_dependencies_updated">Dependencies updated</string>
-    <string name="toast_no_updates_available">No updates available</string>
+    <string name="toast_no_app_updates_available">No app updates available</string>
     <string name="toast_no_dependency_updates_available">No dependency updates available</string>
 
     <string name="settings_section_general">General</string>
@@ -105,9 +105,9 @@
 
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
     <string name="settings_title_automatic_duplicate_deletion">Automatically delete duplicate downloads</string>
-    <string name="settings_title_automatic_updates">Automatic updates</string>
-    <string name="settings_title_check_now">Check now</string>
-    <string name="settings_title_last_checked_for_updates">Last checked for updates</string>
+    <string name="settings_title_automatic_app_updates">Automatic app updates</string>
+    <string name="settings_title_check_for_app_updates">Check for app updates</string>
+    <string name="settings_title_last_checked_for_app_updates">Last checked for app updates</string>
     <string name="settings_title_automatic_dependency_updates">Automatic dependency updates</string>
     <string name="settings_title_check_dependencies_now">Check now</string>
     <string name="settings_title_last_checked_for_dependency_updates">Last checked for dependency updates</string>
@@ -119,7 +119,7 @@
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
     <string name="settings_description_automatic_duplicate_deletion">Automatically delete older downloads when an exact duplicate is found.</string>
     <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
-    <string name="settings_description_check_now">Check for updates now</string>
+    <string name="settings_description_check_for_app_updates">Check for app updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
     <string name="settings_description_privacy">View Privacy Policy</string>

@@ -80,7 +80,7 @@ class UpdatesViewModel @Inject constructor(
 
     fun checkForAvailableUpdate() {
         viewModelScope.launch {
-            _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_updates))
+            _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_app_updates))
             DownloadAvailableUpdateWorker.enqueueOneTimeReplace(appContext)
         }
     }
