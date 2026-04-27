@@ -112,7 +112,7 @@ fun UpdatesScreen(
                                     text = stringResource(R.string.settings_section_app),
                                 ) {
                                     SwitchSetting(
-                                        text = stringResource(R.string.settings_title_automatic_updates),
+                                        text = stringResource(R.string.settings_title_automatic_app_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
                                         checked = settings.automaticUpdates,
                                         onCheckedChange = { checked ->
@@ -120,13 +120,13 @@ fun UpdatesScreen(
                                         },
                                     )
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_check_now),
-                                        description = stringResource(R.string.settings_description_check_now),
+                                        text = stringResource(R.string.settings_title_check_for_app_updates),
+                                        description = stringResource(R.string.settings_description_check_for_app_updates),
                                     ) {
                                         viewModel.checkForAvailableUpdate()
                                     }
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_last_checked_for_updates),
+                                        text = stringResource(R.string.settings_title_last_checked_for_app_updates),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
                                             info.lastAvailableUpdateCheckMillis,
