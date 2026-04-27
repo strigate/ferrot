@@ -29,10 +29,6 @@ class SettingsRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun getters_returnDefaultValues_whenNothingHasBeenSaved() = runTest(testDispatcher) {
@@ -69,6 +65,11 @@ class SettingsRepositoryImplTest {
         assertEquals(false, repository.getAutomaticUpdatesAsFlow().first())
         assertEquals(false, repository.getAutomaticDependencyUpdatesAsFlow().first())
         assertEquals(false, repository.getAutomaticDuplicateDownloadDeletionAsFlow().first())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     private fun createRepository(scope: CoroutineScope): SettingsRepositoryImpl {

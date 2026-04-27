@@ -71,11 +71,6 @@ class SettingsViewModelTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun uiState_exposesMappedSettings() = runTest(testDispatcher) {
@@ -107,7 +102,8 @@ class SettingsViewModelTest {
 
         viewModel.logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.SETTINGS)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.SETTINGS)
     }
 
     @Test
@@ -120,26 +116,35 @@ class SettingsViewModelTest {
         viewModel.setDownloadWifiOnly(true)
         advanceUntilIdle()
 
-        verify(saveDownloadWifiOnlySettingUseCase).invoke(true)
-        verify(applyWifiOnlyPolicyUseCase).invoke(true)
+        verify(saveDownloadWifiOnlySettingUseCase)
+            .invoke(true)
+        verify(applyWifiOnlyPolicyUseCase)
+            .invoke(true)
     }
 
     @Test
-    fun setAutomaticDuplicateDownloadDeletion_savesSetting_andAppliesPolicy() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                downloadWifiOnlyFlow = MutableStateFlow(false),
-                automaticDeletionFlow = MutableStateFlow(false),
-            )
+    fun setAutomaticDuplicateDownloadDeletion_savesAndApplies() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadWifiOnlyFlow = MutableStateFlow(false),
+            automaticDeletionFlow = MutableStateFlow(false),
+        )
 
-            viewModel.setAutomaticDuplicateDownloadDeletion(true)
-            advanceUntilIdle()
+        viewModel.setAutomaticDuplicateDownloadDeletion(true)
+        advanceUntilIdle()
 
-            verify(saveAutomaticDuplicateDownloadDeletionSettingUseCase).invoke(true)
-            verify(applyAutomaticDuplicateDownloadDeletionSettingUseCase).invoke(
+        verify(saveAutomaticDuplicateDownloadDeletionSettingUseCase)
+            .invoke(true)
+        verify(applyAutomaticDuplicateDownloadDeletionSettingUseCase)
+            .invoke(
                 automaticDuplicateDownloadDeletion = true,
             )
-        }
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
+    }
 
     private fun createViewModel(
         downloadWifiOnlyFlow: MutableStateFlow<Boolean>,

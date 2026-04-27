@@ -28,10 +28,6 @@ class StateRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun getters_returnDefaultValues_whenNothingHasBeenSaved() = runTest(testDispatcher) {
@@ -62,6 +58,11 @@ class StateRepositoryImplTest {
         assertEquals(123L, repository.getBootTimeMillisAsFlow().first())
         assertEquals(456L, repository.getLastAvailableUpdateCheckMillisAsFlow().first())
         assertEquals(789L, repository.getLastDependencyUpdateCheckMillisAsFlow().first())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     private fun createRepository(scope: CoroutineScope): StateRepositoryImpl {

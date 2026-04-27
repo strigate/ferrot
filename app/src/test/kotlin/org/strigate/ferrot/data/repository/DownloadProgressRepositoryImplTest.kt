@@ -39,11 +39,6 @@ class DownloadProgressRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -56,7 +51,8 @@ class DownloadProgressRepositoryImplTest {
         val result = repository.save(progress)
 
         assertEquals(5L, result)
-        verify(downloadProgressDao).insertReplace(sampleEntity())
+        verify(downloadProgressDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -101,7 +97,14 @@ class DownloadProgressRepositoryImplTest {
         val result = repository.deleteByDownloadId(7L)
 
         assertEquals(1, result)
-        verify(downloadProgressDao).deleteByDownloadId(7L)
+        verify(downloadProgressDao)
+            .deleteByDownloadId(7L)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleDownloadProgress(downloadId: Long = 4L) = DownloadProgress(

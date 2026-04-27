@@ -31,11 +31,6 @@ class UiFormatterTest {
         Locale.setDefault(Locale.US)
     }
 
-    @After
-    fun tearDown() {
-        Locale.setDefault(originalLocale)
-        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(originalZoneId))
-    }
 
     @Test
     fun formatBytes_handlesZeroAndScaledValues() {
@@ -66,7 +61,8 @@ class UiFormatterTest {
     @Test
     fun formatLastCheckedTime_returnsNever_whenMillisIsNotPositive() {
         val context = mock(Context::class.java)
-        `when`(context.getString(R.string.never)).thenReturn("Never")
+        `when`(context.getString(R.string.never))
+            .thenReturn("Never")
 
         assertEquals("Never", UiFormatter.formatLastCheckedTime(context, 0L))
     }
@@ -82,7 +78,8 @@ class UiFormatterTest {
             mockStatic(DateFormat::class.java).use { dateFormatMock ->
                 dateUtilsMock.`when`<CharSequence> {
                     DateUtils.getRelativeTimeSpanString(anyLong(), anyLong(), anyLong(), anyInt())
-                }.thenReturn("moments ago")
+                }
+                    .thenReturn("moments ago")
                 dateFormatMock.`when`<java.text.DateFormat> { DateFormat.getMediumDateFormat(context) }
                     .thenReturn(dateFormat)
                 dateFormatMock.`when`<java.text.DateFormat> { DateFormat.getTimeFormat(context) }
@@ -111,7 +108,8 @@ class UiFormatterTest {
             .toEpochMilli()
 
         mockStatic(DateFormat::class.java).use { dateFormatMock ->
-            dateFormatMock.`when`<Boolean> { DateFormat.is24HourFormat(context) }.thenReturn(true)
+            dateFormatMock.`when`<Boolean> { DateFormat.is24HourFormat(context) }
+                .thenReturn(true)
             dateFormatMock.`when`<String> {
                 DateFormat.getBestDateTimePattern(
                     Locale.US,
@@ -193,4 +191,11 @@ class UiFormatterTest {
             assertEquals("2024-01-02 09:45 PM", result)
         }
     }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(originalLocale)
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(originalZoneId))
+    }
+
 }

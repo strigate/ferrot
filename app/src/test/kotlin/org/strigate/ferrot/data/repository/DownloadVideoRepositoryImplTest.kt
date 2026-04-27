@@ -36,11 +36,6 @@ class DownloadVideoRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -51,7 +46,8 @@ class DownloadVideoRepositoryImplTest {
         val result = repository.save(sampleVideo())
         assertEquals(5L, result)
 
-        verify(downloadVideoDao).insertReplace(sampleEntity())
+        verify(downloadVideoDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -76,18 +72,30 @@ class DownloadVideoRepositoryImplTest {
 
     @Test
     fun queryMethods_delegateToDao() = runTest(testDispatcher) {
-        `when`(downloadVideoDao.getDownloadIdsBySha256("sha")).thenReturn(listOf(2L, 8L))
-        `when`(downloadVideoDao.getAllFilePaths()).thenReturn(listOf("/tmp/video.mp4"))
-        `when`(downloadVideoDao.deleteByDownloadId(3L)).thenReturn(1)
+        `when`(downloadVideoDao.getDownloadIdsBySha256("sha"))
+            .thenReturn(listOf(2L, 8L))
+        `when`(downloadVideoDao.getAllFilePaths())
+            .thenReturn(listOf("/tmp/video.mp4"))
+        `when`(downloadVideoDao.deleteByDownloadId(3L))
+            .thenReturn(1)
         val repository = DownloadVideoRepositoryImpl(downloadVideoDao)
 
         assertEquals(listOf(2L, 8L), repository.getDownloadIdsBySha256("sha"))
         assertEquals(listOf("/tmp/video.mp4"), repository.getAllFilePaths())
         assertEquals(1, repository.deleteByDownloadId(3L))
 
-        verify(downloadVideoDao).getDownloadIdsBySha256("sha")
-        verify(downloadVideoDao).getAllFilePaths()
-        verify(downloadVideoDao).deleteByDownloadId(3L)
+        verify(downloadVideoDao)
+            .getDownloadIdsBySha256("sha")
+        verify(downloadVideoDao)
+            .getAllFilePaths()
+        verify(downloadVideoDao)
+            .deleteByDownloadId(3L)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleVideo(downloadId: Long = 1L) = DownloadVideo(

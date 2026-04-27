@@ -40,11 +40,6 @@ class DownloadRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -69,17 +64,23 @@ class DownloadRepositoryImplTest {
         assertEquals(download.completedAtMillis, insertedEntity?.completedAtMillis)
         assertNull(insertedEntity?.startedAtMillis)
 
-        verify(downloadDao).insert(insertedEntity ?: error("Entity not captured"))
+        verify(downloadDao)
+            .insert(insertedEntity ?: error("Entity not captured"))
     }
 
     @Test
     fun getAll_mapsEntitiesToDomain() = runTest(testDispatcher) {
-        `when`(downloadDao.getAll()).thenReturn(
-            listOf(
-                sampleEntity(id = 1L, status = EntityStatus.DOWNLOADING),
-                sampleEntity(id = 2L, status = EntityStatus.COMPLETED, completedAtMillis = 300L),
-            ),
-        )
+        `when`(downloadDao.getAll())
+            .thenReturn(
+                listOf(
+                    sampleEntity(id = 1L, status = EntityStatus.DOWNLOADING),
+                    sampleEntity(
+                        id = 2L,
+                        status = EntityStatus.COMPLETED,
+                        completedAtMillis = 300L
+                    ),
+                ),
+            )
 
         val repository = DownloadRepositoryImpl(downloadDao)
         val result = repository.getAll()
@@ -138,14 +139,22 @@ class DownloadRepositoryImplTest {
 
     @Test
     fun updateMethods_delegateToDao() = runTest(testDispatcher) {
-        `when`(downloadDao.updateStatusById(3L, EntityStatus.STOPPED)).thenReturn(1)
-        `when`(downloadDao.updateErrorMessageById(3L, "boom")).thenReturn(1)
-        `when`(downloadDao.updateSeenByIds(setOf(3L, 4L), false)).thenReturn(2)
-        `when`(downloadDao.updatePendingDeleteByIds(setOf(3L, 4L), true)).thenReturn(2)
-        `when`(downloadDao.updateArchivedByIds(setOf(3L, 4L), true)).thenReturn(2)
-        `when`(downloadDao.updateStartedAtById(3L, 100L)).thenReturn(1)
-        `when`(downloadDao.updateCompletedAtById(3L, 200L)).thenReturn(1)
-        `when`(downloadDao.deleteById(3L)).thenReturn(1)
+        `when`(downloadDao.updateStatusById(3L, EntityStatus.STOPPED))
+            .thenReturn(1)
+        `when`(downloadDao.updateErrorMessageById(3L, "boom"))
+            .thenReturn(1)
+        `when`(downloadDao.updateSeenByIds(setOf(3L, 4L), false))
+            .thenReturn(2)
+        `when`(downloadDao.updatePendingDeleteByIds(setOf(3L, 4L), true))
+            .thenReturn(2)
+        `when`(downloadDao.updateArchivedByIds(setOf(3L, 4L), true))
+            .thenReturn(2)
+        `when`(downloadDao.updateStartedAtById(3L, 100L))
+            .thenReturn(1)
+        `when`(downloadDao.updateCompletedAtById(3L, 200L))
+            .thenReturn(1)
+        `when`(downloadDao.deleteById(3L))
+            .thenReturn(1)
 
         val repository = DownloadRepositoryImpl(downloadDao)
 
@@ -158,14 +167,28 @@ class DownloadRepositoryImplTest {
         assertEquals(1, repository.updateCompletedAtById(3L, 200L))
         assertEquals(1, repository.deleteById(3L))
 
-        verify(downloadDao).updateStatusById(3L, EntityStatus.STOPPED)
-        verify(downloadDao).updateErrorMessageById(3L, "boom")
-        verify(downloadDao).updateSeenByIds(setOf(3L, 4L), false)
-        verify(downloadDao).updatePendingDeleteByIds(setOf(3L, 4L), true)
-        verify(downloadDao).updateArchivedByIds(setOf(3L, 4L), true)
-        verify(downloadDao).updateStartedAtById(3L, 100L)
-        verify(downloadDao).updateCompletedAtById(3L, 200L)
-        verify(downloadDao).deleteById(3L)
+        verify(downloadDao)
+            .updateStatusById(3L, EntityStatus.STOPPED)
+        verify(downloadDao)
+            .updateErrorMessageById(3L, "boom")
+        verify(downloadDao)
+            .updateSeenByIds(setOf(3L, 4L), false)
+        verify(downloadDao)
+            .updatePendingDeleteByIds(setOf(3L, 4L), true)
+        verify(downloadDao)
+            .updateArchivedByIds(setOf(3L, 4L), true)
+        verify(downloadDao)
+            .updateStartedAtById(3L, 100L)
+        verify(downloadDao)
+            .updateCompletedAtById(3L, 200L)
+        verify(downloadDao)
+            .deleteById(3L)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleDownload(
