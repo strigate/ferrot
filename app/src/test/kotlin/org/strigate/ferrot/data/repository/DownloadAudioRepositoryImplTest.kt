@@ -36,11 +36,6 @@ class DownloadAudioRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -51,7 +46,8 @@ class DownloadAudioRepositoryImplTest {
 
         val result = repository.save(sampleAudio())
         assertEquals(4L, result)
-        verify(downloadAudioDao).insertReplace(sampleEntity())
+        verify(downloadAudioDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -84,8 +80,16 @@ class DownloadAudioRepositoryImplTest {
         assertEquals(listOf("/tmp/audio.m4a"), repository.getAllFilePaths())
         assertEquals(1, repository.deleteByDownloadId(3L))
 
-        verify(downloadAudioDao).getAllFilePaths()
-        verify(downloadAudioDao).deleteByDownloadId(3L)
+        verify(downloadAudioDao)
+            .getAllFilePaths()
+        verify(downloadAudioDao)
+            .deleteByDownloadId(3L)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleAudio(downloadId: Long = 1L) = DownloadAudio(

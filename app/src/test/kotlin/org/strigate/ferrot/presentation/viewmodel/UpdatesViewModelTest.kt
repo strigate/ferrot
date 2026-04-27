@@ -66,11 +66,6 @@ class UpdatesViewModelTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun uiState_exposesMappedSettingsAndInfo() = runTest(testDispatcher) {
@@ -110,7 +105,14 @@ class UpdatesViewModelTest {
 
         viewModel.logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.UPDATES)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.UPDATES)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun createViewModel(

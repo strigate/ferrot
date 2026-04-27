@@ -36,11 +36,6 @@ class DownloadMetadataRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -51,7 +46,8 @@ class DownloadMetadataRepositoryImplTest {
         val result = repository.save(sampleMetadata())
 
         assertEquals(6L, result)
-        verify(downloadMetadataDao).insertReplace(sampleEntity())
+        verify(downloadMetadataDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -91,9 +87,18 @@ class DownloadMetadataRepositoryImplTest {
         assertEquals(listOf("/tmp/one.jpg", "/tmp/two.jpg"), repository.getAllThumbnailFilePaths())
         assertEquals(1, repository.deleteByDownloadId(2L))
 
-        verify(downloadMetadataDao).getDownloadIdsBySourceAndVideoId("youtube", "abc123")
-        verify(downloadMetadataDao).getAllThumbnailFilePaths()
-        verify(downloadMetadataDao).deleteByDownloadId(2L)
+        verify(downloadMetadataDao)
+            .getDownloadIdsBySourceAndVideoId("youtube", "abc123")
+        verify(downloadMetadataDao)
+            .getAllThumbnailFilePaths()
+        verify(downloadMetadataDao)
+            .deleteByDownloadId(2L)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleMetadata(downloadId: Long = 1L) = DownloadMetadata(

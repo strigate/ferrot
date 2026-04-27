@@ -35,19 +35,14 @@ class AboutViewModelTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
-
     @Test
     fun logShown_logsAboutScreen() {
         val viewModel = AboutViewModel(analyticsLogger)
 
         viewModel.logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.ABOUT)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.ABOUT)
     }
 
     @Test
@@ -70,5 +65,11 @@ class AboutViewModelTest {
         advanceUntilIdle()
 
         assertEquals(AboutEvent.OpenAppInfo, event.await())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 }

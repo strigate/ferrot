@@ -48,8 +48,8 @@ import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
-import org.strigate.ferrot.domain.usecase.download.RequestRefreshDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeleteDownloadsUseCase
+import org.strigate.ferrot.domain.usecase.download.RequestRefreshDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.downloadaudio.GetDownloadAudioByDownloadIdAsFlowUseCase
@@ -132,18 +132,14 @@ class DownloadViewModelTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun init_clearsNotificationsForInitialDownload() = runTest(testDispatcher) {
         createViewModel(initialId = 20L)
         advanceUntilIdle()
 
-        verify(clearNotificationsByDownloadIdUseCase).invoke(20L)
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(20L)
     }
 
     @Test
@@ -152,7 +148,8 @@ class DownloadViewModelTest {
 
         viewModel.logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.DOWNLOAD)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.DOWNLOAD)
     }
 
     @Test
@@ -219,55 +216,53 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun selectedId_movesToNextAdjacentDownload_whenCurrentDownloadIsDeleted() =
-        runTest(testDispatcher) {
-            val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L))
-            val viewModel = createViewModel(
-                initialId = 20L,
-                downloadIdsFlow = downloadIdsFlow,
-            )
-            val collector = collectUiState(backgroundScope, viewModel)
+    fun selectedId_movesToNextDownload_whenCurrentIsDeleted() = runTest(testDispatcher) {
+        val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L))
+        val viewModel = createViewModel(
+            initialId = 20L,
+            downloadIdsFlow = downloadIdsFlow,
+        )
+        val collector = collectUiState(backgroundScope, viewModel)
 
-            advanceUntilIdle()
-            downloadIdsFlow.value = listOf(10L, 30L)
-            advanceUntilIdle()
-            waitForUiState(viewModel) { state ->
-                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
-                data.data.id == 30L
-            }
-
-            assertEquals(30L, viewModel.selectedId.value)
-            assertEquals(30L, (viewModel.uiState.value as DownloadUiState.Data).data.id)
-
-            collector.cancel()
+        advanceUntilIdle()
+        downloadIdsFlow.value = listOf(10L, 30L)
+        advanceUntilIdle()
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.id == 30L
         }
+
+        assertEquals(30L, viewModel.selectedId.value)
+        assertEquals(30L, (viewModel.uiState.value as DownloadUiState.Data).data.id)
+
+        collector.cancel()
+    }
 
     @Test
-    fun selectedId_movesToPreviousAdjacentDownload_whenLastDownloadIsDeleted() =
-        runTest(testDispatcher) {
-            val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L))
-            val viewModel = createViewModel(
-                initialId = 30L,
-                downloadIdsFlow = downloadIdsFlow,
-            )
-            val collector = collectUiState(backgroundScope, viewModel)
+    fun selectedId_movesToPreviousDownload_whenLastIsDeleted() = runTest(testDispatcher) {
+        val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L))
+        val viewModel = createViewModel(
+            initialId = 30L,
+            downloadIdsFlow = downloadIdsFlow,
+        )
+        val collector = collectUiState(backgroundScope, viewModel)
 
-            advanceUntilIdle()
-            downloadIdsFlow.value = listOf(10L, 20L)
-            advanceUntilIdle()
-            waitForUiState(viewModel) { state ->
-                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
-                data.data.id == 20L
-            }
-
-            assertEquals(20L, viewModel.selectedId.value)
-            assertEquals(
-                20L,
-                (viewModel.uiState.value as DownloadUiState.Data).data.id,
-            )
-
-            collector.cancel()
+        advanceUntilIdle()
+        downloadIdsFlow.value = listOf(10L, 20L)
+        advanceUntilIdle()
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.id == 20L
         }
+
+        assertEquals(20L, viewModel.selectedId.value)
+        assertEquals(
+            20L,
+            (viewModel.uiState.value as DownloadUiState.Data).data.id,
+        )
+
+        collector.cancel()
+    }
 
     @Test
     fun uiState_filtersOutPendingDeleteDownloadIds() = runTest(testDispatcher) {
@@ -348,29 +343,28 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun setDefaultsForIds_addsMissingDefaults_withoutOverwritingExistingSelection() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel()
-            val collector = collectSelectedMedia(backgroundScope, viewModel)
+    fun setDefaultsForIds_addsMissingDefaults_withoutOverwriting() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        val collector = collectSelectedMedia(backgroundScope, viewModel)
 
-            viewModel.selectDownload(20L)
-            advanceUntilIdle()
-            viewModel.setSelectedMedia(DownloadMediaType.AUDIO)
-            advanceUntilIdle()
+        viewModel.selectDownload(20L)
+        advanceUntilIdle()
+        viewModel.setSelectedMedia(DownloadMediaType.AUDIO)
+        advanceUntilIdle()
 
-            viewModel.setDefaultsForIds(listOf(20L, 30L))
-            advanceUntilIdle()
-            viewModel.setDefaultsForIds(listOf(20L, 30L))
-            advanceUntilIdle()
+        viewModel.setDefaultsForIds(listOf(20L, 30L))
+        advanceUntilIdle()
+        viewModel.setDefaultsForIds(listOf(20L, 30L))
+        advanceUntilIdle()
 
-            assertEquals(DownloadMediaType.AUDIO, viewModel.selectedMedia.value)
+        assertEquals(DownloadMediaType.AUDIO, viewModel.selectedMedia.value)
 
-            viewModel.selectDownload(30L)
-            advanceUntilIdle()
-            assertEquals(DownloadMediaType.VIDEO, viewModel.selectedMedia.value)
+        viewModel.selectDownload(30L)
+        advanceUntilIdle()
+        assertEquals(DownloadMediaType.VIDEO, viewModel.selectedMedia.value)
 
-            collector.cancel()
-        }
+        collector.cancel()
+    }
 
     @Test
     fun markSeenIfCompleted_updatesSeenForCompletedUnseenDownload() = runTest(testDispatcher) {
@@ -381,52 +375,57 @@ class DownloadViewModelTest {
         viewModel.markSeenIfCompleted(7L)
         advanceUntilIdle()
 
-        verify(updateDownloadsSeenUseCase).invoke(setOf(7L))
-        verify(clearNotificationsByDownloadIdUseCase).invoke(7L)
+        verify(updateDownloadsSeenUseCase)
+            .invoke(setOf(7L))
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(7L)
     }
 
     @Test
-    fun markSeenIfCompleted_doesNothingForMissingSeenOrIncompleteDownload() =
-        runTest(testDispatcher) {
-            `when`(getDownloadByIdUseCase.invoke(7L)).thenReturn(null)
-            `when`(getDownloadByIdUseCase.invoke(8L))
-                .thenReturn(createDownload(id = 8L, status = DownloadStatus.COMPLETED, seen = true))
-            `when`(getDownloadByIdUseCase.invoke(9L))
-                .thenReturn(createDownload(id = 9L, status = DownloadStatus.FAILED, seen = false))
-            val viewModel = createViewModel()
+    fun markSeenIfCompleted_doesNothingForMissingSeenOrIncomplete() = runTest(testDispatcher) {
+        `when`(getDownloadByIdUseCase.invoke(7L))
+            .thenReturn(null)
+        `when`(getDownloadByIdUseCase.invoke(8L))
+            .thenReturn(createDownload(id = 8L, status = DownloadStatus.COMPLETED, seen = true))
+        `when`(getDownloadByIdUseCase.invoke(9L))
+            .thenReturn(createDownload(id = 9L, status = DownloadStatus.FAILED, seen = false))
+        val viewModel = createViewModel()
 
-            viewModel.markSeenIfCompleted(7L)
-            viewModel.markSeenIfCompleted(8L)
-            viewModel.markSeenIfCompleted(9L)
-            advanceUntilIdle()
+        viewModel.markSeenIfCompleted(7L)
+        viewModel.markSeenIfCompleted(8L)
+        viewModel.markSeenIfCompleted(9L)
+        advanceUntilIdle()
 
-            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(7L))
-            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(8L))
-            verify(updateDownloadsSeenUseCase, never()).invoke(setOf(9L))
-        }
+        verify(updateDownloadsSeenUseCase, never())
+            .invoke(setOf(7L))
+        verify(updateDownloadsSeenUseCase, never())
+            .invoke(setOf(8L))
+        verify(updateDownloadsSeenUseCase, never())
+            .invoke(setOf(9L))
+    }
 
     @Test
-    fun deleteDownload_requestsDeletion_withoutNavigation_whenOtherDownloadsRemain() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                initialId = 20L,
-                downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L)),
-            )
-            val eventDeferred = backgroundScope.async {
-                runCatching {
-                    withTimeout(250L) {
-                        viewModel.events.first()
-                    }
+    fun deleteDownload_requestsDeletion_withoutNav_whenOthersRemain() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            initialId = 20L,
+            downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L)),
+        )
+        val eventDeferred = backgroundScope.async {
+            runCatching {
+                withTimeout(250L) {
+                    viewModel.events.first()
                 }
             }
-
-            advanceUntilIdle()
-            viewModel.deleteDownload(20L)
-            advanceUntilIdle()
-
-            verify(requestDeleteDownloadsUseCase).invoke(listOf(20L))
-            assertNull(eventDeferred.await().getOrNull())
         }
+
+        advanceUntilIdle()
+        viewModel.deleteDownload(20L)
+        advanceUntilIdle()
+
+        verify(requestDeleteDownloadsUseCase)
+            .invoke(listOf(20L))
+        assertNull(eventDeferred.await().getOrNull())
+    }
 
     @Test
     fun deleteDownload_emitsNavigateBack_whenDeletingLastDownload() = runTest(testDispatcher) {
@@ -441,7 +440,8 @@ class DownloadViewModelTest {
         viewModel.deleteDownload()
         advanceUntilIdle()
 
-        verify(requestDeleteDownloadsUseCase).invoke(listOf(20L))
+        verify(requestDeleteDownloadsUseCase)
+            .invoke(listOf(20L))
         assertEquals(DownloadEvent.NavigateBack, eventDeferred.await())
     }
 
@@ -453,35 +453,38 @@ class DownloadViewModelTest {
         viewModel.retryDownload()
         advanceUntilIdle()
 
-        verify(startDownloadUseCase).invoke(88L)
-        verify(startDownloadUseCase).invoke(20L)
+        verify(startDownloadUseCase)
+            .invoke(88L)
+        verify(startDownloadUseCase)
+            .invoke(20L)
     }
 
     @Test
-    fun refreshDownloadMetadata_refreshesExplicitOrSelectedDownload() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(initialId = 20L)
+    fun refreshDownloadMetadata_refreshesExplicitOrSelected() = runTest(testDispatcher) {
+        val viewModel = createViewModel(initialId = 20L)
 
-            viewModel.refreshDownloadMetadata(88L)
-            advanceUntilIdle()
+        viewModel.refreshDownloadMetadata(88L)
+        advanceUntilIdle()
 
-            viewModel.refreshDownloadMetadata()
-            advanceUntilIdle()
+        viewModel.refreshDownloadMetadata()
+        advanceUntilIdle()
 
-            verify(requestRefreshDownloadMetadataUseCase).invoke(88L)
-            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
-        }
+        verify(requestRefreshDownloadMetadataUseCase)
+            .invoke(88L)
+        verify(requestRefreshDownloadMetadataUseCase)
+            .invoke(20L)
+    }
 
     @Test
-    fun refreshDownloadMetadata_enqueuesWithoutAdditionalUiTracking() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(initialId = 20L)
+    fun refreshDownloadMetadata_enqueuesWithoutExtraUiTracking() = runTest(testDispatcher) {
+        val viewModel = createViewModel(initialId = 20L)
 
-            viewModel.refreshDownloadMetadata()
-            advanceUntilIdle()
+        viewModel.refreshDownloadMetadata()
+        advanceUntilIdle()
 
-            verify(requestRefreshDownloadMetadataUseCase).invoke(20L)
-        }
+        verify(requestRefreshDownloadMetadataUseCase)
+            .invoke(20L)
+    }
 
     @Test
     fun shareSaveAndPlay_emitEventsUsingSelectedMediaPath() = runTest(testDispatcher) {
@@ -566,54 +569,58 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun shareDownload_usesExplicitStoredVideoSelection_forExplicitDownloadId() =
-        runTest(testDispatcher) {
-            stubPageData(
+    fun shareDownload_usesStoredVideoSelection_forExplicitId() = runTest(testDispatcher) {
+        stubPageData(
+            downloadId = 88L,
+            download = createDownload(id = 88L, status = DownloadStatus.COMPLETED),
+            video = DownloadVideo(
                 downloadId = 88L,
-                download = createDownload(id = 88L, status = DownloadStatus.COMPLETED),
-                video = DownloadVideo(
-                    downloadId = 88L,
-                    filePath = "/tmp/stored-video.mp4",
-                    fileExtension = "mp4",
-                    sha256 = null,
-                ),
-            )
-            val viewModel = createViewModel(initialId = 20L)
+                filePath = "/tmp/stored-video.mp4",
+                fileExtension = "mp4",
+                sha256 = null,
+            ),
+        )
+        val viewModel = createViewModel(initialId = 20L)
 
-            viewModel.setSelectedMedia(DownloadMediaType.VIDEO, forDownloadId = 88L)
-            advanceUntilIdle()
+        viewModel.setSelectedMedia(DownloadMediaType.VIDEO, forDownloadId = 88L)
+        advanceUntilIdle()
 
-            val shareDeferred = backgroundScope.async { viewModel.events.first() }
-            viewModel.shareDownload(88L)
-            advanceUntilIdle()
+        val shareDeferred = backgroundScope.async { viewModel.events.first() }
+        viewModel.shareDownload(88L)
+        advanceUntilIdle()
 
-            assertEquals(DownloadEvent.Share("/tmp/stored-video.mp4"), shareDeferred.await())
-        }
+        assertEquals(DownloadEvent.Share("/tmp/stored-video.mp4"), shareDeferred.await())
+    }
 
     @Test
     fun shareDownload_handlesSuspendingPageDataFlow() = runTest(testDispatcher) {
-        `when`(getDownloadByIdAsFlowUseCase.invoke(66L)).thenReturn(
-            flow {
-                kotlinx.coroutines.yield()
-                emit(createDownload(id = 66L, status = DownloadStatus.COMPLETED))
-            }
-        )
-        `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(66L)).thenReturn(
-            flow {
-                kotlinx.coroutines.yield()
-                emit(
-                    DownloadVideo(
-                        downloadId = 66L,
-                        filePath = "/tmp/suspending-video.mp4",
-                        fileExtension = "mp4",
-                        sha256 = null,
+        `when`(getDownloadByIdAsFlowUseCase.invoke(66L))
+            .thenReturn(
+                flow {
+                    kotlinx.coroutines.yield()
+                    emit(createDownload(id = 66L, status = DownloadStatus.COMPLETED))
+                }
+            )
+        `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(66L))
+            .thenReturn(
+                flow {
+                    kotlinx.coroutines.yield()
+                    emit(
+                        DownloadVideo(
+                            downloadId = 66L,
+                            filePath = "/tmp/suspending-video.mp4",
+                            fileExtension = "mp4",
+                            sha256 = null,
+                        )
                     )
-                )
-            }
-        )
-        `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(66L)).thenReturn(flowOf(null))
-        `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(66L)).thenReturn(flowOf(null))
-        `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(66L)).thenReturn(flowOf(null))
+                }
+            )
+        `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(66L))
+            .thenReturn(flowOf(null))
+        `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(66L))
+            .thenReturn(flowOf(null))
+        `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(66L))
+            .thenReturn(flowOf(null))
 
         val viewModel = createViewModel(initialId = 20L)
         val shareDeferred = backgroundScope.async { viewModel.events.first() }
@@ -755,6 +762,12 @@ class DownloadViewModelTest {
             ),
             pageData,
         )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun createViewModel(

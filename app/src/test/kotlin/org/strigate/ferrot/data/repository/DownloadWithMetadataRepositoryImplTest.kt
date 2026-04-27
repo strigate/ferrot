@@ -36,27 +36,23 @@ class DownloadWithMetadataRepositoryImplTest {
         Dispatchers.setMain(testDispatcher)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
-    }
 
     @Test
     fun getDownloadsWithMetadataAsFlow_mapsViewsToDomain() = runTest(testDispatcher) {
-        `when`(downloadWithMetadataViewDao.getDownloadsAsFlow()).thenReturn(
-            flowOf(
-                listOf(
-                    sampleView(id = 1L, status = EntityStatus.DOWNLOADING),
-                    sampleView(
-                        id = 2L,
-                        status = EntityStatus.COMPLETED,
-                        completedAtMillis = 88L,
-                        pendingDelete = true,
+        `when`(downloadWithMetadataViewDao.getDownloadsAsFlow())
+            .thenReturn(
+                flowOf(
+                    listOf(
+                        sampleView(id = 1L, status = EntityStatus.DOWNLOADING),
+                        sampleView(
+                            id = 2L,
+                            status = EntityStatus.COMPLETED,
+                            completedAtMillis = 88L,
+                            pendingDelete = true,
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
 
         val repository = DownloadWithMetadataRepositoryImpl(downloadWithMetadataViewDao)
         val result = repository.getDownloadsWithMetadataAsFlow().first()
@@ -72,6 +68,12 @@ class DownloadWithMetadataRepositoryImplTest {
             ),
             result,
         )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        autoCloseable.close()
     }
 
     private fun sampleView(

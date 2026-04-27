@@ -3,16 +3,14 @@ package org.strigate.ferrot.domain.usecase.download
 import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.util.NetworkOps
-import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
 
 class StartDownloadUseCase @Inject constructor(
@@ -20,8 +18,9 @@ class StartDownloadUseCase @Inject constructor(
     private val settingsUseCase: SettingsUseCase,
     private val downloadUseCase: DownloadUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
+    private val downloadWorkScheduler: DownloadWorkScheduler,
 ) {
-    suspend operator fun invoke(downloadId: Long) = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(downloadId: Long) {
         val wifiOnly = settingsUseCase
             .getDownloadWifiOnlySettingAsFlowUseCase()
             .first()
@@ -39,10 +38,6 @@ class StartDownloadUseCase @Inject constructor(
             downloadId = downloadId,
         )
         Log.d(LOG_TAG, "Enqueuing download: $downloadId ($downloadStatus)")
-        DownloadWorker.enqueueOneTimeReplace(
-            context = appContext,
-            id = downloadId,
-            wifiOnly = wifiOnly,
-        )
+        downloadWorkScheduler.enqueueOneTimeReplace(downloadId, wifiOnly)
     }
 }
