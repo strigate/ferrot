@@ -13,6 +13,9 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.ApplyUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.presentation.mapper.toDomain
+import org.strigate.ferrot.presentation.mapper.toUiData
+import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.SettingsUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import javax.inject.Inject
@@ -33,11 +36,15 @@ class SettingsViewModel @Inject constructor(
         return combine(
             settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase(),
             settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase(),
-        ) { downloadWifiOnly, automaticDuplicateDownloadDeletion ->
+            settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase(),
+            settingsUseCase.getRightSwipeActionSettingAsFlowUseCase(),
+        ) { downloadWifiOnly, automaticDuplicateDownloadDeletion, leftSwipeAction, rightSwipeAction ->
             SettingsUiState.Data(
                 SettingsUiData(
                     downloadWifiOnly = downloadWifiOnly,
                     automaticDuplicateDownloadDeletion = automaticDuplicateDownloadDeletion,
+                    leftSwipeAction = leftSwipeAction.toUiData(),
+                    rightSwipeAction = rightSwipeAction.toUiData(),
                 )
             )
         }
@@ -58,6 +65,18 @@ class SettingsViewModel @Inject constructor(
             applyUseCase.applyAutomaticDuplicateDownloadDeletionSettingUseCase(
                 automaticDuplicateDownloadDeletion = enabled,
             )
+        }
+    }
+
+    fun setLeftSwipeAction(action: DownloadSwipeActionUiData) {
+        viewModelScope.launch {
+            settingsUseCase.saveLeftSwipeActionSettingUseCase(action.toDomain())
+        }
+    }
+
+    fun setRightSwipeAction(action: DownloadSwipeActionUiData) {
+        viewModelScope.launch {
+            settingsUseCase.saveRightSwipeActionSettingUseCase(action.toDomain())
         }
     }
 

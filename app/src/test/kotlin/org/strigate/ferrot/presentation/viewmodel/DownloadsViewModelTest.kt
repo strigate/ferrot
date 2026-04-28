@@ -31,12 +31,14 @@ import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.AvailableUpdate
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadWithMetadata
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.GetAvailableUpdateAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
@@ -45,10 +47,13 @@ import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.event.DownloadsEvent
+import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import kotlin.time.Duration.Companion.seconds
 
@@ -105,6 +110,15 @@ class DownloadsViewModelTest {
     @Mock
     private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
+    @Mock
+    private lateinit var settingsUseCase: SettingsUseCase
+
+    @Mock
+    private lateinit var getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
@@ -145,6 +159,8 @@ class DownloadsViewModelTest {
         assertEquals("v1.2.3", state.data.availableUpdate?.tag)
         assertEquals("/tmp/update.apk", state.data.availableUpdate?.localFilePath)
         assertTrue(state.data.pendingDeleteIds.isEmpty())
+        assertEquals(DownloadSwipeActionUiData.ARCHIVE, state.data.leftSwipeAction)
+        assertEquals(DownloadSwipeActionUiData.DELETE, state.data.rightSwipeAction)
 
         collector.cancel()
     }
@@ -575,6 +591,14 @@ class DownloadsViewModelTest {
             .thenReturn(updateDownloadsPendingDeleteUseCase)
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
+        `when`(getLeftSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(DownloadSwipeAction.ARCHIVE))
+        `when`(getRightSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(DownloadSwipeAction.DELETE))
+        `when`(settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getLeftSwipeActionSettingAsFlowUseCase)
+        `when`(settingsUseCase.getRightSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getRightSwipeActionSettingAsFlowUseCase)
 
         return DownloadsViewModel(
             savedStateHandle = SavedStateHandle(),
@@ -586,6 +610,7 @@ class DownloadsViewModelTest {
             downloadProgressUseCase = downloadProgressUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
+            settingsUseCase = settingsUseCase,
         )
     }
 

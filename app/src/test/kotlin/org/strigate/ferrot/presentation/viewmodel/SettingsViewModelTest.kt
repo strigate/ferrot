@@ -22,14 +22,20 @@ import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.usecase.ApplyUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.apply.ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveDownloadWifiOnlySettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
+import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import kotlin.time.Duration.Companion.seconds
 
@@ -65,6 +71,18 @@ class SettingsViewModelTest {
     @Mock
     private lateinit var applyAutomaticDuplicateDownloadDeletionSettingUseCase: ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
 
+    @Mock
+    private lateinit var getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var saveLeftSwipeActionSettingUseCase: SaveLeftSwipeActionSettingUseCase
+
+    @Mock
+    private lateinit var saveRightSwipeActionSettingUseCase: SaveRightSwipeActionSettingUseCase
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
@@ -76,9 +94,13 @@ class SettingsViewModelTest {
     fun uiState_exposesMappedSettings() = runTest(testDispatcher) {
         val downloadWifiOnlyFlow = MutableStateFlow(true)
         val automaticDeletionFlow = MutableStateFlow(false)
+        val leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE)
+        val rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE)
         val viewModel = createViewModel(
             downloadWifiOnlyFlow = downloadWifiOnlyFlow,
             automaticDeletionFlow = automaticDeletionFlow,
+            leftSwipeActionFlow = leftSwipeActionFlow,
+            rightSwipeActionFlow = rightSwipeActionFlow,
         )
 
         val collector = backgroundScope.launch {
@@ -89,6 +111,8 @@ class SettingsViewModelTest {
         val state = viewModel.uiState.value as SettingsUiState.Data
         assertEquals(true, state.data.downloadWifiOnly)
         assertEquals(false, state.data.automaticDuplicateDownloadDeletion)
+        assertEquals(DownloadSwipeActionUiData.ARCHIVE, state.data.leftSwipeAction)
+        assertEquals(DownloadSwipeActionUiData.DELETE, state.data.rightSwipeAction)
 
         collector.cancel()
     }
@@ -98,6 +122,8 @@ class SettingsViewModelTest {
         val viewModel = createViewModel(
             downloadWifiOnlyFlow = MutableStateFlow(false),
             automaticDeletionFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE),
         )
 
         viewModel.logShown()
@@ -111,6 +137,8 @@ class SettingsViewModelTest {
         val viewModel = createViewModel(
             downloadWifiOnlyFlow = MutableStateFlow(false),
             automaticDeletionFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE),
         )
 
         viewModel.setDownloadWifiOnly(true)
@@ -127,6 +155,8 @@ class SettingsViewModelTest {
         val viewModel = createViewModel(
             downloadWifiOnlyFlow = MutableStateFlow(false),
             automaticDeletionFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE),
         )
 
         viewModel.setAutomaticDuplicateDownloadDeletion(true)
@@ -140,6 +170,38 @@ class SettingsViewModelTest {
             )
     }
 
+    @Test
+    fun setLeftSwipeAction_savesSetting() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadWifiOnlyFlow = MutableStateFlow(false),
+            automaticDeletionFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE),
+        )
+
+        viewModel.setLeftSwipeAction(DownloadSwipeActionUiData.NONE)
+        advanceUntilIdle()
+
+        verify(saveLeftSwipeActionSettingUseCase)
+            .invoke(DownloadSwipeAction.NONE)
+    }
+
+    @Test
+    fun setRightSwipeAction_savesSetting() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadWifiOnlyFlow = MutableStateFlow(false),
+            automaticDeletionFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.DELETE),
+        )
+
+        viewModel.setRightSwipeAction(DownloadSwipeActionUiData.ARCHIVE)
+        advanceUntilIdle()
+
+        verify(saveRightSwipeActionSettingUseCase)
+            .invoke(DownloadSwipeAction.ARCHIVE)
+    }
+
     @After
     fun tearDown() {
         Dispatchers.resetMain()
@@ -149,19 +211,33 @@ class SettingsViewModelTest {
     private fun createViewModel(
         downloadWifiOnlyFlow: MutableStateFlow<Boolean>,
         automaticDeletionFlow: MutableStateFlow<Boolean>,
+        leftSwipeActionFlow: MutableStateFlow<DownloadSwipeAction>,
+        rightSwipeActionFlow: MutableStateFlow<DownloadSwipeAction>,
     ): SettingsViewModel {
         `when`(getDownloadWifiOnlySettingAsFlowUseCase.invoke())
             .thenReturn(downloadWifiOnlyFlow)
         `when`(getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase.invoke())
             .thenReturn(automaticDeletionFlow)
+        `when`(getLeftSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(leftSwipeActionFlow)
+        `when`(getRightSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(rightSwipeActionFlow)
         `when`(settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase)
             .thenReturn(getDownloadWifiOnlySettingAsFlowUseCase)
         `when`(settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase)
             .thenReturn(getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase)
+        `when`(settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getLeftSwipeActionSettingAsFlowUseCase)
+        `when`(settingsUseCase.getRightSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getRightSwipeActionSettingAsFlowUseCase)
         `when`(settingsUseCase.saveDownloadWifiOnlySettingUseCase)
             .thenReturn(saveDownloadWifiOnlySettingUseCase)
         `when`(settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase)
             .thenReturn(saveAutomaticDuplicateDownloadDeletionSettingUseCase)
+        `when`(settingsUseCase.saveLeftSwipeActionSettingUseCase)
+            .thenReturn(saveLeftSwipeActionSettingUseCase)
+        `when`(settingsUseCase.saveRightSwipeActionSettingUseCase)
+            .thenReturn(saveRightSwipeActionSettingUseCase)
         `when`(applyUseCase.applyWifiOnlyPolicyUseCase)
             .thenReturn(applyWifiOnlyPolicyUseCase)
         `when`(applyUseCase.applyAutomaticDuplicateDownloadDeletionSettingUseCase)

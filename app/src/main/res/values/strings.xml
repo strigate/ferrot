@@ -96,6 +96,7 @@
     <string name="toast_no_dependency_updates_available">No dependency updates available</string>
 
     <string name="settings_section_general">General</string>
+    <string name="settings_section_swipe_actions">Swipe actions</string>
     <string name="settings_section_app_info">App info</string>
     <string name="settings_section_app">App</string>
     <string name="settings_section_dependencies">Dependencies</string>
@@ -105,6 +106,8 @@
 
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
     <string name="settings_title_automatic_duplicate_deletion">Automatically delete duplicate downloads</string>
+    <string name="settings_title_swipe_left">Swipe left</string>
+    <string name="settings_title_swipe_right">Swipe right</string>
     <string name="settings_title_automatic_app_updates">Automatic app updates</string>
     <string name="settings_title_check_for_app_updates">Check for app updates</string>
     <string name="settings_title_last_checked_for_app_updates">Last checked for app updates</string>
@@ -118,12 +121,19 @@
 
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
     <string name="settings_description_automatic_duplicate_deletion">Automatically delete older downloads when an exact duplicate is found.</string>
+    <string name="settings_description_swipe_left">Select the left swipe action</string>
+    <string name="settings_description_swipe_right">Select the right swipe action</string>
     <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
     <string name="settings_description_check_for_app_updates">Check for app updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
     <string name="settings_description_license">GNU General Public License v3.0</string>
+
+    <string name="settings_value_swipe_action_none">None</string>
+    <string name="settings_value_swipe_action_archive">Archive</string>
+    <string name="settings_value_swipe_action_seen">Mark seen</string>
+    <string name="settings_value_swipe_action_delete">Delete</string>
 
     <string name="error_failed_to_load_downloads">Failed to load downloads</string>
     <string name="error_failed_to_load_download">Failed to load download</string>
