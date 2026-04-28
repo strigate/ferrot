@@ -977,18 +977,35 @@ private fun DownloadsListRow(
         mutableFloatStateOf(DISMISS_SWIPE_THRESHOLD_RATIO)
     }
 
-    var hasHandledCurrentSwipe by remember(item.id) { mutableStateOf(false) }
-    var pendingSnapBackSwipeAction by remember(item.id) {
+    var rowWidthPx by remember { mutableFloatStateOf(0f) }
+    var hasHandledCurrentSwipe by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
+        mutableStateOf(false)
+    }
+    var pendingSnapBackSwipeAction by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
         mutableStateOf<DownloadSwipeActionUiData?>(null)
     }
-    val dismissState = key(item.id, leftSwipeAction, rightSwipeAction) {
+    val dismissState = key(item.id, seen, leftSwipeAction, rightSwipeAction) {
         rememberSwipeToDismissBoxState(
+            confirmValueChange = { dismissValue ->
+                val swipeAction = getSwipeActionForDismissValue(
+                    dismissValue = dismissValue,
+                    leftSwipeAction = leftSwipeAction,
+                    rightSwipeAction = rightSwipeAction,
+                )
+                if (!isSnapBackSwipeAction(swipeAction)) {
+                    return@rememberSwipeToDismissBoxState true
+                }
+                if (!hasHandledCurrentSwipe) {
+                    hasHandledCurrentSwipe = true
+                    pendingSnapBackSwipeAction = swipeAction
+                }
+                false
+            },
             positionalThreshold = { totalDistance ->
                 totalDistance * currentSwipeThresholdRatio
             },
         )
     }
-    var rowWidthPx by remember { mutableFloatStateOf(0f) }
     val visibilityState = remember(item.id) {
         MutableTransitionState(!isRestoring)
     }
@@ -1156,7 +1173,6 @@ private fun DownloadsListRow(
                 }
             }
     }
-
 }
 
 private fun isSnapBackSwipeAction(
