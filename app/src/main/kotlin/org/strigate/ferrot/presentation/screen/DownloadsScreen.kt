@@ -986,21 +986,6 @@ private fun DownloadsListRow(
     }
     val dismissState = key(item.id, seen, leftSwipeAction, rightSwipeAction) {
         rememberSwipeToDismissBoxState(
-            confirmValueChange = { dismissValue ->
-                val swipeAction = getSwipeActionForDismissValue(
-                    dismissValue = dismissValue,
-                    leftSwipeAction = leftSwipeAction,
-                    rightSwipeAction = rightSwipeAction,
-                )
-                if (!isSnapBackSwipeAction(swipeAction)) {
-                    return@rememberSwipeToDismissBoxState true
-                }
-                if (!hasHandledCurrentSwipe) {
-                    hasHandledCurrentSwipe = true
-                    pendingSnapBackSwipeAction = swipeAction
-                }
-                false
-            },
             positionalThreshold = { totalDistance ->
                 totalDistance * currentSwipeThresholdRatio
             },
@@ -1076,17 +1061,18 @@ private fun DownloadsListRow(
                     if (swipeAction == DownloadSwipeActionUiData.NONE) {
                         return@SwipeToDismissBox
                     }
-                    hasHandledCurrentSwipe = true
                     if (isSnapBackSwipeAction(swipeAction)) {
+                        hasHandledCurrentSwipe = true
                         pendingSnapBackSwipeAction = swipeAction
                         coroutineScope.launch {
                             runCatching {
                                 dismissState.reset()
                             }
                         }
-                    } else {
-                        onSwipeActionPerformed(item.id, swipeAction)
+                        return@SwipeToDismissBox
                     }
+                    hasHandledCurrentSwipe = true
+                    onSwipeActionPerformed(item.id, swipeAction)
                 },
                 backgroundContent = {
                     SwipeActionBackground(
