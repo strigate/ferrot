@@ -278,6 +278,7 @@ class DownloadViewModel @Inject constructor(
 
     fun retryDownload(id: Long? = null) = viewModelScope.launch {
         val downloadId = id ?: _selectedId.value
+        analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
         startDownloadUseCase(downloadId)
     }
 
