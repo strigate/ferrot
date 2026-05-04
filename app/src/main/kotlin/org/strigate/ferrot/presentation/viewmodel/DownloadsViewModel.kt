@@ -180,6 +180,7 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun retryDownload(downloadId: Long) = viewModelScope.launch {
+        analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
         startDownloadUseCase(downloadId)
     }
 
@@ -195,6 +196,7 @@ class DownloadsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            analyticsLogger.logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
             failedDownloadIds.forEach { downloadId ->
                 startDownloadUseCase(downloadId)
             }

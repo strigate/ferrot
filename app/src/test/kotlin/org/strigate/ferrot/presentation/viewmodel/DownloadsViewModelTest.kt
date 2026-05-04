@@ -25,6 +25,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
@@ -351,6 +352,8 @@ class DownloadsViewModelTest {
         viewModel.retryDownload(11L)
         advanceUntilIdle()
 
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
         verify(startDownloadUseCase)
             .invoke(11L)
     }
@@ -377,6 +380,8 @@ class DownloadsViewModelTest {
         viewModel.retryFailedDownloads()
         advanceUntilIdle()
 
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
         verify(startDownloadUseCase)
             .invoke(1L)
         verify(startDownloadUseCase)
