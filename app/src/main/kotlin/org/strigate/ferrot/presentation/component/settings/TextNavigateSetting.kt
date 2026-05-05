@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -21,12 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun TextNavigateSetting(
     text: String,
     modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
     description: String? = null,
     onClick: () -> Unit,
 ) {
@@ -54,6 +57,16 @@ fun TextNavigateSetting(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
+                if (icon != null) {
+                    Icon(
+                        modifier = Modifier
+                            .size(20.dp),
+                        imageVector = icon,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = null,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
                 Column(
                     modifier = Modifier
                         .weight(1f)
