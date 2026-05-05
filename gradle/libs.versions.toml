@@ -22,7 +22,7 @@ espressoCore = "3.7.0"
 coroutinesTest = "1.10.2"
 mockito = "5.23.0"
 byteBuddy = "1.18.8"
-agp = "9.2.0"
+agp = "9.2.1"
 kotlin = "2.3.21"
 ksp = "2.3.4"
 
