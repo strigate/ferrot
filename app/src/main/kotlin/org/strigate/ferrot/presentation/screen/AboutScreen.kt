@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -112,7 +113,8 @@ fun AboutScreen(
                         .verticalScroll(rememberScrollState()),
                 ) {
                     StaticSettingsSection(
-                        text = stringResource(R.string.settings_section_app_info),
+                        icon = Icons.Outlined.Info,
+                        title = stringResource(R.string.settings_section_app_info),
                     ) {
                         TextSetting(
                             text = stringResource(R.string.settings_title_build),

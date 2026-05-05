@@ -10,6 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -135,7 +139,8 @@ fun SettingsScreen(
                                     .verticalScroll(rememberScrollState()),
                             ) {
                                 ExpandableSettingsSection(
-                                    text = stringResource(id = R.string.settings_section_general),
+                                    icon = Icons.Outlined.Tune,
+                                    title = stringResource(id = R.string.settings_section_general),
                                     initialExpanded = true,
                                 ) {
                                     SwitchSetting(
@@ -158,7 +163,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 ExpandableSettingsSection(
-                                    text = stringResource(id = R.string.settings_section_swipe_actions),
+                                    icon = Icons.Outlined.SwapHoriz,
+                                    title = stringResource(id = R.string.settings_section_swipe_actions),
                                     initialExpanded = true,
                                 ) {
                                     DropdownSetting(
@@ -186,12 +192,14 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
+                                    icon = Icons.Outlined.SystemUpdate,
                                     text = stringResource(R.string.settings_navigate_title_updates),
                                 ) {
                                     navController.navigate(Screen.Updates.route)
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
+                                    icon = Icons.Outlined.Info,
                                     text = stringResource(R.string.settings_navigate_title_about),
                                 ) {
                                     navController.navigate(Screen.About.route)
