@@ -3,7 +3,6 @@ package org.strigate.ferrot.presentation.viewmodel
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,15 +12,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.never
@@ -29,6 +27,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.AvailableUpdate
@@ -60,8 +59,11 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadsViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -123,9 +125,7 @@ class DownloadsViewModelTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
     }
-
 
     @Test
     fun uiState_exposesMappedDownloadsAndAvailableUpdate() = runTest(testDispatcher) {
@@ -568,7 +568,6 @@ class DownloadsViewModelTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

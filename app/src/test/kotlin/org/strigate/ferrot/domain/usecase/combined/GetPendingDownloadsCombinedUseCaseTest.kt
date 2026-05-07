@@ -1,19 +1,18 @@
 package org.strigate.ferrot.domain.usecase.combined
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
@@ -21,8 +20,11 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetPendingDownloadsCombinedUseCaseTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadUseCase: DownloadUseCase
@@ -33,7 +35,6 @@ class GetPendingDownloadsCombinedUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
         `when`(downloadUseCase.getAllDownloadsUseCase)
             .thenReturn(getAllDownloadsUseCase)
     }
@@ -69,7 +70,6 @@ class GetPendingDownloadsCombinedUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

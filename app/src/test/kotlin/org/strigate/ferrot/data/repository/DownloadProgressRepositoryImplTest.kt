@@ -1,18 +1,16 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.eq
@@ -21,14 +19,18 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadProgressDao
 import org.strigate.ferrot.data.local.entity.DownloadProgressEntity
 import org.strigate.ferrot.domain.model.DownloadProgress
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadProgressRepositoryImplTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadProgressDao: DownloadProgressDao
@@ -36,9 +38,7 @@ class DownloadProgressRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
     }
-
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -103,7 +103,6 @@ class DownloadProgressRepositoryImplTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

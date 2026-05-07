@@ -1,20 +1,19 @@
 package org.strigate.ferrot.domain.usecase.availableupdate
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.repository.AvailableUpdateRepository
 import java.io.File
@@ -22,8 +21,11 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClearAvailableUpdateFilesAndDataUseCaseTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var availableUpdateRepository: AvailableUpdateRepository
@@ -34,7 +36,6 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
     }
 
     @Test
@@ -92,7 +93,6 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

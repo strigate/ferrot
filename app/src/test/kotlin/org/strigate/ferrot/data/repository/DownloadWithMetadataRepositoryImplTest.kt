@@ -1,21 +1,20 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadWithMetadataViewDao
 import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 import org.strigate.ferrot.domain.model.DownloadStatus
@@ -24,8 +23,11 @@ import org.strigate.ferrot.data.local.entity.DownloadStatus as EntityStatus
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWithMetadataRepositoryImplTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadWithMetadataViewDao: DownloadWithMetadataViewDao
@@ -33,9 +35,7 @@ class DownloadWithMetadataRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
     }
-
 
     @Test
     fun getDownloadsWithMetadataAsFlow_mapsViewsToDomain() = runTest(testDispatcher) {
@@ -72,7 +72,6 @@ class DownloadWithMetadataRepositoryImplTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

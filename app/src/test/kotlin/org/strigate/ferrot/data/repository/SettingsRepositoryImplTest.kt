@@ -4,18 +4,15 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_UPDATES
@@ -29,13 +26,10 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsRepositoryImplTest {
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
-    }
-
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
 
     @Test
     fun getters_returnDefaultValues_whenNothingHasBeenSaved() = runTest(testDispatcher) {
@@ -106,11 +100,6 @@ class SettingsRepositoryImplTest {
 
         assertEquals(DownloadSwipeAction.ARCHIVE, repository.getLeftSwipeActionAsFlow().first())
         assertEquals(DownloadSwipeAction.DELETE, repository.getRightSwipeActionAsFlow().first())
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     private fun createRepository(scope: CoroutineScope): SettingsRepositoryImpl {
