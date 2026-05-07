@@ -1,23 +1,22 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
 import org.strigate.ferrot.data.local.entity.DownloadMetadataEntity
 import org.strigate.ferrot.domain.model.DownloadMetadata
@@ -27,15 +26,16 @@ class DownloadMetadataRepositoryImplTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
     @Mock
     private lateinit var downloadMetadataDao: DownloadMetadataDao
 
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
     }
-
 
     @Test
     fun save_insertsMappedEntity() = runTest(testDispatcher) {
@@ -97,7 +97,6 @@ class DownloadMetadataRepositoryImplTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

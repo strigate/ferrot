@@ -4,21 +4,20 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
@@ -31,6 +30,9 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 class ApplyWifiOnlyPolicyUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     @Mock
     private lateinit var appContext: Context
@@ -62,7 +64,6 @@ class ApplyWifiOnlyPolicyUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
 
         `when`(appContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .thenReturn(connectivityManager)
@@ -137,7 +138,6 @@ class ApplyWifiOnlyPolicyUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

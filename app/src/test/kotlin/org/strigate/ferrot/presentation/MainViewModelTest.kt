@@ -1,20 +1,18 @@
 package org.strigate.ferrot.presentation
 
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
@@ -25,6 +23,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.repository.DownloadRepository
@@ -38,6 +37,9 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteU
 class MainViewModelTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -53,9 +55,7 @@ class MainViewModelTest {
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
-        Dispatchers.setMain(testDispatcher)
     }
-
 
     @Test
     fun navigateTo_updatesNavigationEvent() {
@@ -226,7 +226,6 @@ class MainViewModelTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         logMock?.close()
         logMock = null
         autoCloseable.close()

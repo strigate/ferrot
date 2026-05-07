@@ -5,20 +5,19 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
 import android.service.notification.StatusBarNotification
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
@@ -28,6 +27,9 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNL
 class ClearNotificationsByDownloadIdUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     @Mock
     private lateinit var appContext: Context
@@ -44,7 +46,6 @@ class ClearNotificationsByDownloadIdUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
 
         `when`(appContext.getSystemService(NotificationManager::class.java))
             .thenReturn(notificationManager)
@@ -79,7 +80,6 @@ class ClearNotificationsByDownloadIdUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 }

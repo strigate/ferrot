@@ -2,23 +2,22 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.YoutubeDLResponse
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
@@ -29,6 +28,9 @@ import java.nio.file.Files
 class DownloadWithProgressUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private lateinit var fakeClient: FakeYoutubeDlClient
 
     @Mock
@@ -37,7 +39,6 @@ class DownloadWithProgressUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
         fakeClient = FakeYoutubeDlClient()
     }
 
@@ -135,7 +136,6 @@ class DownloadWithProgressUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

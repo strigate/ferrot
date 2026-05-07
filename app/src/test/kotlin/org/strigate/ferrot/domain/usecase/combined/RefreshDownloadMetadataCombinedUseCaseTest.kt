@@ -2,19 +2,17 @@ package org.strigate.ferrot.domain.usecase.combined
 
 import android.util.Log
 import com.yausername.youtubedl_android.mapper.VideoInfo
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
@@ -24,6 +22,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
@@ -43,6 +42,9 @@ import java.nio.file.Files
 class RefreshDownloadMetadataCombinedUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -76,7 +78,6 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
-        Dispatchers.setMain(testDispatcher)
 
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
@@ -271,7 +272,6 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         logMock?.close()
         logMock = null
         autoCloseable.close()

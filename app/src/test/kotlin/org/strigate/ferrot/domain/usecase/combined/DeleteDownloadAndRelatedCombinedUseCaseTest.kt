@@ -1,16 +1,14 @@
 package org.strigate.ferrot.domain.usecase.combined
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.InOrder
 import org.mockito.Mock
@@ -18,6 +16,7 @@ import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -35,6 +34,9 @@ import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDown
 class DeleteDownloadAndRelatedCombinedUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     @Mock
     private lateinit var downloadUseCase: DownloadUseCase
@@ -75,7 +77,6 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
 
         `when`(downloadUseCase.deleteDownloadFilesUseCase)
             .thenReturn(deleteDownloadFilesUseCase)
@@ -179,7 +180,6 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         autoCloseable.close()
     }
 

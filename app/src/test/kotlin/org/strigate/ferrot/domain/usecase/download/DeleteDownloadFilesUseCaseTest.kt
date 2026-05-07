@@ -1,23 +1,22 @@
 package org.strigate.ferrot.domain.usecase.download
 
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
@@ -28,6 +27,9 @@ import java.nio.file.Files
 class DeleteDownloadFilesUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -40,7 +42,6 @@ class DeleteDownloadFilesUseCaseTest {
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
-        Dispatchers.setMain(testDispatcher)
     }
 
     @Test
@@ -107,7 +108,6 @@ class DeleteDownloadFilesUseCaseTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         logMock?.close()
         autoCloseable.close()
     }
