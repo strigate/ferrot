@@ -23,11 +23,11 @@ import org.strigate.ferrot.domain.model.AvailableUpdate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AvailableUpdateRepositoryImplTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var availableUpdateDao: AvailableUpdateDao

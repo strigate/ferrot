@@ -35,11 +35,11 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteU
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
     private var logMock: MockedStatic<Log>? = null
 
     @Mock

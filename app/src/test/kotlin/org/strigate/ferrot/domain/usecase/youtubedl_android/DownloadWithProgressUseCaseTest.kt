@@ -26,11 +26,11 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWithProgressUseCaseTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
     private lateinit var fakeClient: FakeYoutubeDlClient
 
     @Mock

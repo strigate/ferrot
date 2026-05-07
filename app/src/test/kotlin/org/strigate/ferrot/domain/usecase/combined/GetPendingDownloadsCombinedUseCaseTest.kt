@@ -20,11 +20,11 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetPendingDownloadsCombinedUseCaseTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadUseCase: DownloadUseCase

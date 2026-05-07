@@ -27,11 +27,11 @@ import org.strigate.ferrot.data.local.entity.DownloadStatus as EntityStatus
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadRepositoryImplTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadDao: DownloadDao

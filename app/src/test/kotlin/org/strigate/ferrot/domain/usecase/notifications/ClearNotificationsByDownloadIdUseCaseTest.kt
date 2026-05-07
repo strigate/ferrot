@@ -25,11 +25,11 @@ import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNL
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClearNotificationsByDownloadIdUseCaseTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var appContext: Context

@@ -32,11 +32,11 @@ import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDown
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteDownloadAndRelatedCombinedUseCaseTest {
-    private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadUseCase: DownloadUseCase
