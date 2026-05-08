@@ -4,6 +4,9 @@
     <string name="file_provider">fileprovider</string>
     <string name="settings_description_website">ferrot.org</string>
     <string name="url_website">https://ferrot.org/</string>
+    <string name="url_github">https://github.com/strigate/ferrot</string>
+    <string name="url_x">https://x.com/ferrotapp</string>
+    <string name="url_strigate">https://x.com/strigate</string>
     <string name="url_privacy">https://github.com/strigate/ferrot/blob/main/PRIVACY.md</string>
     <string name="url_license">https://github.com/strigate/ferrot/blob/main/LICENSE</string>
     <string name="github_latest_release">https://api.github.com/repos/strigate/ferrot/releases/latest</string>

@@ -98,6 +98,7 @@
     <string name="settings_section_general">General</string>
     <string name="settings_section_swipe_actions">Swipe actions</string>
     <string name="settings_section_app_info">App info</string>
+    <string name="settings_section_links">Resources</string>
     <string name="settings_section_app">App</string>
     <string name="settings_section_dependencies">Dependencies</string>
 
@@ -116,6 +117,8 @@
     <string name="settings_title_last_checked_for_dependency_updates">Last checked for dependency updates</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_website">Website</string>
+    <string name="settings_title_github">GitHub</string>
+    <string name="settings_title_x">X</string>
     <string name="settings_title_privacy">Privacy</string>
     <string name="settings_title_license">License</string>
 
@@ -127,6 +130,8 @@
     <string name="settings_description_check_for_app_updates">Check for app updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
+    <string name="settings_description_github">github.com/strigate/ferrot</string>
+    <string name="settings_description_x">x.com/ferrotapp</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
     <string name="settings_description_license">GNU General Public License v3.0</string>
 
