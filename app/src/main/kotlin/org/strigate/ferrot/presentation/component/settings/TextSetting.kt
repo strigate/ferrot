@@ -23,10 +23,11 @@ fun TextSetting(
     text: String,
     modifier: Modifier = Modifier,
     description: String? = null,
+    enabled: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val clickableModifier = if (onClick != null || onLongClick != null) {
+    val clickableModifier = if (enabled && (onClick != null || onLongClick != null)) {
         Modifier
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -39,6 +40,17 @@ fun TextSetting(
                 },
             )
     } else Modifier
+
+    val textColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    val descriptionColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
 
     Column(
         modifier = modifier
@@ -62,14 +74,14 @@ fun TextSetting(
             ) {
                 Text(
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = textColor,
                     text = text,
                 )
                 description?.let {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        color = descriptionColor,
                         text = it,
                     )
                 }
