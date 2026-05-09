@@ -4,19 +4,27 @@ import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdates
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveDownloadWifiOnlySettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
 import javax.inject.Inject
 
 class SettingsUseCase @Inject constructor(
     val saveDownloadWifiOnlySettingUseCase: SaveDownloadWifiOnlySettingUseCase,
     val getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase,
+    val saveAutomaticDuplicateDownloadDeletionSettingUseCase: SaveAutomaticDuplicateDownloadDeletionSettingUseCase,
+    val getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase,
+    val saveLeftSwipeActionSettingUseCase: SaveLeftSwipeActionSettingUseCase,
+    val getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase,
+    val saveRightSwipeActionSettingUseCase: SaveRightSwipeActionSettingUseCase,
+    val getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase,
     val saveAutomaticUpdatesSettingUseCase: SaveAutomaticUpdatesSettingUseCase,
     val getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase,
     val saveAutomaticDependencyUpdatesSettingUseCase: SaveAutomaticDependencyUpdatesSettingUseCase,
     val getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase,
-    val saveAutomaticDuplicateDownloadDeletionSettingUseCase: SaveAutomaticDuplicateDownloadDeletionSettingUseCase,
-    val getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase,
 )

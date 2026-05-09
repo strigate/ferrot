@@ -10,6 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,11 +33,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.Screen
+import org.strigate.ferrot.presentation.component.settings.DropdownSetting
+import org.strigate.ferrot.presentation.component.settings.DropdownSettingOption
 import org.strigate.ferrot.presentation.component.settings.ExpandableSettingsSection
 import org.strigate.ferrot.presentation.component.settings.SwitchSetting
 import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
+import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
@@ -49,6 +56,38 @@ fun SettingsScreen(
     val dimens = LocalDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
+
+    val noneSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_none)
+    val archiveSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_archive)
+    val seenSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_seen)
+    val deleteSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_delete)
+    val swipeActionLabel: (DownloadSwipeActionUiData) -> String = { action ->
+        when (action) {
+            DownloadSwipeActionUiData.NONE -> noneSwipeActionLabel
+            DownloadSwipeActionUiData.ARCHIVE -> archiveSwipeActionLabel
+            DownloadSwipeActionUiData.SEEN -> seenSwipeActionLabel
+            DownloadSwipeActionUiData.DELETE -> deleteSwipeActionLabel
+        }
+    }
+
+    val swipeActionOptions = listOf(
+        DropdownSettingOption(
+            id = DownloadSwipeActionUiData.NONE.name,
+            text = noneSwipeActionLabel,
+        ),
+        DropdownSettingOption(
+            id = DownloadSwipeActionUiData.ARCHIVE.name,
+            text = archiveSwipeActionLabel,
+        ),
+        DropdownSettingOption(
+            id = DownloadSwipeActionUiData.SEEN.name,
+            text = seenSwipeActionLabel,
+        ),
+        DropdownSettingOption(
+            id = DownloadSwipeActionUiData.DELETE.name,
+            text = deleteSwipeActionLabel,
+        ),
+    )
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -100,7 +139,8 @@ fun SettingsScreen(
                                     .verticalScroll(rememberScrollState()),
                             ) {
                                 ExpandableSettingsSection(
-                                    text = stringResource(id = R.string.settings_section_general),
+                                    icon = Icons.Outlined.Tune,
+                                    title = stringResource(id = R.string.settings_section_general),
                                     initialExpanded = true,
                                 ) {
                                     SwitchSetting(
@@ -122,13 +162,44 @@ fun SettingsScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                ExpandableSettingsSection(
+                                    icon = Icons.Outlined.SwapHoriz,
+                                    title = stringResource(id = R.string.settings_section_swipe_actions),
+                                    initialExpanded = true,
+                                ) {
+                                    DropdownSetting(
+                                        text = stringResource(R.string.settings_title_swipe_left),
+                                        description = stringResource(R.string.settings_description_swipe_left),
+                                        selectedText = swipeActionLabel(leftSwipeAction),
+                                        options = swipeActionOptions,
+                                        onOptionSelected = { option ->
+                                            viewModel.setLeftSwipeAction(
+                                                DownloadSwipeActionUiData.valueOf(option.id),
+                                            )
+                                        },
+                                    )
+                                    DropdownSetting(
+                                        text = stringResource(R.string.settings_title_swipe_right),
+                                        description = stringResource(R.string.settings_description_swipe_right),
+                                        selectedText = swipeActionLabel(rightSwipeAction),
+                                        options = swipeActionOptions,
+                                        onOptionSelected = { option ->
+                                            viewModel.setRightSwipeAction(
+                                                DownloadSwipeActionUiData.valueOf(option.id),
+                                            )
+                                        },
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
+                                    icon = Icons.Outlined.SystemUpdate,
                                     text = stringResource(R.string.settings_navigate_title_updates),
                                 ) {
                                     navController.navigate(Screen.Updates.route)
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 TextNavigateSetting(
+                                    icon = Icons.Outlined.Info,
                                     text = stringResource(R.string.settings_navigate_title_about),
                                 ) {
                                     navController.navigate(Screen.About.route)

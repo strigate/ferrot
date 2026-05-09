@@ -2,15 +2,13 @@ package org.strigate.ferrot.domain.usecase.apply
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.util.NetworkOps
-import org.strigate.ferrot.work.DownloadWorker
 import javax.inject.Inject
 
 class ApplyWifiOnlyPolicyUseCase @Inject constructor(
@@ -19,8 +17,9 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
     private val updateDownloadErrorMessageUseCase: UpdateDownloadErrorMessageUseCase,
     private val updateDownloadStatusUseCase: UpdateDownloadStatusUseCase,
     private val deleteDownloadFilesUseCase: DeleteDownloadFilesUseCase,
+    private val downloadWorkScheduler: DownloadWorkScheduler,
 ) {
-    suspend operator fun invoke(isWifiOnly: Boolean) = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(isWifiOnly: Boolean) {
         val (_, isOnWifi) = NetworkOps.quickNetworkProbe(appContext)
         val downloads = getAllDownloadsUseCase()
 
@@ -50,11 +49,7 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                         runCatching {
                             deleteDownloadFilesUseCase(download.id)
                         }
-                        DownloadWorker.enqueueOneTimeReplace(
-                            context = appContext,
-                            id = download.id,
-                            wifiOnly = true,
-                        )
+                        downloadWorkScheduler.enqueueOneTimeReplace(download.id, true)
                     }
             }
         } else {
@@ -72,11 +67,7 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                             downloadId = download.id,
                         )
                     }
-                    DownloadWorker.enqueueOneTimeReplace(
-                        context = appContext,
-                        id = download.id,
-                        wifiOnly = false,
-                    )
+                    downloadWorkScheduler.enqueueOneTimeReplace(download.id, false)
                 }
         }
     }

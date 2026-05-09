@@ -3,7 +3,6 @@ package org.strigate.ferrot.presentation.viewmodel
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,30 +12,33 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.AvailableUpdate
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadWithMetadata
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.GetAvailableUpdateAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
@@ -45,17 +47,23 @@ import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.event.DownloadsEvent
+import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadsViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -105,16 +113,18 @@ class DownloadsViewModelTest {
     @Mock
     private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
+    @Mock
+    private lateinit var settingsUseCase: SettingsUseCase
+
+    @Mock
+    private lateinit var getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
     }
 
     @Test
@@ -150,39 +160,40 @@ class DownloadsViewModelTest {
         assertEquals("v1.2.3", state.data.availableUpdate?.tag)
         assertEquals("/tmp/update.apk", state.data.availableUpdate?.localFilePath)
         assertTrue(state.data.pendingDeleteIds.isEmpty())
+        assertEquals(DownloadSwipeActionUiData.ARCHIVE, state.data.leftSwipeAction)
+        assertEquals(DownloadSwipeActionUiData.DELETE, state.data.rightSwipeAction)
 
         collector.cancel()
     }
 
     @Test
-    fun uiState_hidesPendingDeleteDownloads_andExposesPendingDeleteFlag() =
-        runTest(testDispatcher) {
-            val downloadsFlow = MutableStateFlow(
-                listOf(
-                    createDownload(id = 1L, title = "Visible Download"),
-                    createDownload(id = 2L, title = "Pending Delete", pendingDelete = true),
-                )
+    fun uiState_hidesPendingDelete_andExposesFlag() = runTest(testDispatcher) {
+        val downloadsFlow = MutableStateFlow(
+            listOf(
+                createDownload(id = 1L, title = "Visible Download"),
+                createDownload(id = 2L, title = "Pending Delete", pendingDelete = true),
             )
-            val updateFlow = MutableStateFlow<AvailableUpdate?>(null)
-            val viewModel = createViewModel(
-                downloadsFlow = downloadsFlow,
-                updateFlow = updateFlow,
-            )
+        )
+        val updateFlow = MutableStateFlow<AvailableUpdate?>(null)
+        val viewModel = createViewModel(
+            downloadsFlow = downloadsFlow,
+            updateFlow = updateFlow,
+        )
 
-            val collector = backgroundScope.launch {
-                viewModel.uiState.collect()
-            }
-            waitForUiState(viewModel) { state ->
-                val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
-                data.data.downloads.size == 1 && data.data.pendingDeleteIds.isNotEmpty()
-            }
-
-            val state = viewModel.uiState.value as DownloadsUiState.Data
-            assertEquals(listOf(1L), state.data.downloads.map { it.id })
-            assertEquals(setOf(2L), state.data.pendingDeleteIds)
-
-            collector.cancel()
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
         }
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+            data.data.downloads.size == 1 && data.data.pendingDeleteIds.isNotEmpty()
+        }
+
+        val state = viewModel.uiState.value as DownloadsUiState.Data
+        assertEquals(listOf(1L), state.data.downloads.map { it.id })
+        assertEquals(setOf(2L), state.data.pendingDeleteIds)
+
+        collector.cancel()
+    }
 
     @Test
     fun updateSearchQuery_trimsInputAndFiltersDownloadsByTitle() = runTest(testDispatcher) {
@@ -232,7 +243,8 @@ class DownloadsViewModelTest {
 
         viewModel.logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.DOWNLOADS)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.DOWNLOADS)
     }
 
     @Test
@@ -245,14 +257,17 @@ class DownloadsViewModelTest {
         viewModel.stopDownload(42L)
         advanceUntilIdle()
 
-        verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.STOPPED)
-        verify(updateDownloadProgressUseCase).invoke(
-            id = 42L,
-            progressPercent = 0F,
-            bytesDownloaded = 0L,
-            etaSeconds = null,
-        )
-        verify(stopDownloadUseCase).invoke(42L)
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.STOPPED)
+        verify(updateDownloadProgressUseCase)
+            .invoke(
+                id = 42L,
+                progressPercent = 0F,
+                bytesDownloaded = 0L,
+                etaSeconds = null,
+            )
+        verify(stopDownloadUseCase)
+            .invoke(42L)
     }
 
     @Test
@@ -268,14 +283,17 @@ class DownloadsViewModelTest {
         viewModel.stopDownload(7L)
         advanceUntilIdle()
 
-        verify(updateDownloadStatusUseCase).invoke(7L, DownloadStatus.STOPPED)
-        verify(updateDownloadProgressUseCase, never()).invoke(
-            id = 7L,
-            progressPercent = 0F,
-            bytesDownloaded = 0L,
-            etaSeconds = null,
-        )
-        verify(stopDownloadUseCase).invoke(7L)
+        verify(updateDownloadStatusUseCase)
+            .invoke(7L, DownloadStatus.STOPPED)
+        verify(updateDownloadProgressUseCase, never())
+            .invoke(
+                id = 7L,
+                progressPercent = 0F,
+                bytesDownloaded = 0L,
+                etaSeconds = null,
+            )
+        verify(stopDownloadUseCase)
+            .invoke(7L)
     }
 
     @Test
@@ -304,14 +322,22 @@ class DownloadsViewModelTest {
         viewModel.stopAllDownloads()
         advanceUntilIdle()
 
-        verify(updateDownloadStatusUseCase).invoke(1L, DownloadStatus.STOPPED)
-        verify(updateDownloadStatusUseCase).invoke(2L, DownloadStatus.STOPPED)
-        verify(updateDownloadStatusUseCase, never()).invoke(3L, DownloadStatus.STOPPED)
-        verify(updateDownloadStatusUseCase, never()).invoke(4L, DownloadStatus.STOPPED)
-        verify(stopDownloadUseCase).invoke(1L)
-        verify(stopDownloadUseCase).invoke(2L)
-        verify(stopDownloadUseCase, never()).invoke(3L)
-        verify(stopDownloadUseCase, never()).invoke(4L)
+        verify(updateDownloadStatusUseCase)
+            .invoke(1L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase)
+            .invoke(2L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(3L, DownloadStatus.STOPPED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(4L, DownloadStatus.STOPPED)
+        verify(stopDownloadUseCase)
+            .invoke(1L)
+        verify(stopDownloadUseCase)
+            .invoke(2L)
+        verify(stopDownloadUseCase, never())
+            .invoke(3L)
+        verify(stopDownloadUseCase, never())
+            .invoke(4L)
 
         collector.cancel()
     }
@@ -326,7 +352,10 @@ class DownloadsViewModelTest {
         viewModel.retryDownload(11L)
         advanceUntilIdle()
 
-        verify(startDownloadUseCase).invoke(11L)
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
+        verify(startDownloadUseCase)
+            .invoke(11L)
     }
 
     @Test
@@ -351,100 +380,113 @@ class DownloadsViewModelTest {
         viewModel.retryFailedDownloads()
         advanceUntilIdle()
 
-        verify(startDownloadUseCase).invoke(1L)
-        verify(startDownloadUseCase).invoke(4L)
-        verify(startDownloadUseCase, never()).invoke(2L)
-        verify(startDownloadUseCase, never()).invoke(3L)
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
+        verify(startDownloadUseCase)
+            .invoke(1L)
+        verify(startDownloadUseCase)
+            .invoke(4L)
+        verify(startDownloadUseCase, never())
+            .invoke(2L)
+        verify(startDownloadUseCase, never())
+            .invoke(3L)
         collector.cancel()
     }
 
     @Test
-    fun toggleDownloadsSeen_marksAllSeen_whenAnySelectedDownloadIsUnseen() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                downloadsFlow = MutableStateFlow(
-                    listOf(
-                        createDownload(id = 1L, title = "Seen", seen = true),
-                        createDownload(id = 2L, title = "Unseen", seen = false),
-                        createDownload(id = 3L, title = "Seen 2", seen = true),
-                    )
-                ),
-                updateFlow = MutableStateFlow(null),
-            )
+    fun toggleDownloadsSeen_marksAllSeen_whenAnySelectedIsUnseen() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Seen", seen = true),
+                    createDownload(id = 2L, title = "Unseen", seen = false),
+                    createDownload(id = 3L, title = "Seen 2", seen = true),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
 
-            val collector = backgroundScope.launch {
-                viewModel.uiState.collect()
-            }
-            waitForUiState(viewModel) { it is DownloadsUiState.Data }
-
-            viewModel.toggleDownloadsSeen(setOf(1L, 2L, 3L))
-            advanceUntilIdle()
-
-            verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L, 3L), true)
-            verify(clearNotificationsByDownloadIdUseCase).invoke(1L)
-            verify(clearNotificationsByDownloadIdUseCase).invoke(2L)
-            verify(clearNotificationsByDownloadIdUseCase).invoke(3L)
-            collector.cancel()
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
         }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.toggleDownloadsSeen(setOf(1L, 2L, 3L))
+        advanceUntilIdle()
+
+        verify(updateDownloadsSeenUseCase)
+            .invoke(setOf(1L, 2L, 3L), true)
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(1L)
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(2L)
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(3L)
+        collector.cancel()
+    }
 
     @Test
-    fun toggleDownloadsSeen_marksAllUnseen_whenAllSelectedDownloadsAreSeen() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                downloadsFlow = MutableStateFlow(
-                    listOf(
-                        createDownload(id = 1L, title = "Seen", seen = true),
-                        createDownload(id = 2L, title = "Seen 2", seen = true),
-                    )
-                ),
-                updateFlow = MutableStateFlow(null),
-            )
+    fun toggleDownloadsSeen_marksAllUnseen_whenAllSelectedAreSeen() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Seen", seen = true),
+                    createDownload(id = 2L, title = "Seen 2", seen = true),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
 
-            val collector = backgroundScope.launch {
-                viewModel.uiState.collect()
-            }
-            waitForUiState(viewModel) { it is DownloadsUiState.Data }
-
-            viewModel.toggleDownloadsSeen(setOf(1L, 2L))
-            advanceUntilIdle()
-
-            verify(updateDownloadsSeenUseCase).invoke(setOf(1L, 2L), false)
-            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(1L)
-            verify(clearNotificationsByDownloadIdUseCase, never()).invoke(2L)
-            collector.cancel()
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
         }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.toggleDownloadsSeen(setOf(1L, 2L))
+        advanceUntilIdle()
+
+        verify(updateDownloadsSeenUseCase)
+            .invoke(setOf(1L, 2L), false)
+        verify(clearNotificationsByDownloadIdUseCase, never())
+            .invoke(1L)
+        verify(clearNotificationsByDownloadIdUseCase, never())
+            .invoke(2L)
+        collector.cancel()
+    }
 
     @Test
-    fun markDownloadsPendingDelete_marksIds_andRequestsDelayedDeleteWorker() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                downloadsFlow = MutableStateFlow(emptyList()),
-                updateFlow = MutableStateFlow(null),
-            )
-            val ids = setOf(7L)
+    fun markDownloadsPendingDelete_marksIds_andRequestsDelayedWorker() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+        )
+        val ids = setOf(7L)
 
-            viewModel.markDownloadsPendingDelete(ids)
-            advanceUntilIdle()
+        viewModel.markDownloadsPendingDelete(ids)
+        advanceUntilIdle()
 
-            verify(updateDownloadsPendingDeleteUseCase).invoke(ids, true)
-            verify(requestDeletePendingDownloadsDelayedUseCase).invoke()
-        }
+        verify(updateDownloadsPendingDeleteUseCase)
+            .invoke(ids, true)
+        verify(requestDeletePendingDownloadsDelayedUseCase)
+            .invoke()
+    }
 
     @Test
-    fun markDownloadsPendingDelete_false_doesNotRequestDelayedDeleteWorker() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                downloadsFlow = MutableStateFlow(emptyList()),
-                updateFlow = MutableStateFlow(null),
-            )
-            val ids = setOf(7L)
+    fun markDownloadsPendingDelete_false_skipsDelayedWorker() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+        )
+        val ids = setOf(7L)
 
-            viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
-            advanceUntilIdle()
+        viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
+        advanceUntilIdle()
 
-            verify(updateDownloadsPendingDeleteUseCase).invoke(ids, false)
-            verify(requestDeletePendingDownloadsDelayedUseCase, never()).invoke()
-        }
+        verify(updateDownloadsPendingDeleteUseCase)
+            .invoke(ids, false)
+        verify(requestDeletePendingDownloadsDelayedUseCase, never())
+            .invoke()
+    }
 
     @Test
     fun requestDeletePendingDownloadsImmediate_requestsImmediateWorker() = runTest(testDispatcher) {
@@ -456,7 +498,8 @@ class DownloadsViewModelTest {
         viewModel.requestDeletePendingDownloadsImmediate()
         advanceUntilIdle()
 
-        verify(requestDeletePendingDownloadsImmediateUseCase).invoke()
+        verify(requestDeletePendingDownloadsImmediateUseCase)
+            .invoke()
     }
 
     @Test
@@ -523,6 +566,11 @@ class DownloadsViewModelTest {
         collector.cancel()
     }
 
+    @After
+    fun tearDown() {
+        autoCloseable.close()
+    }
+
     private fun createViewModel(
         downloadsFlow: MutableStateFlow<List<DownloadWithMetadata>>,
         updateFlow: MutableStateFlow<AvailableUpdate?>,
@@ -547,6 +595,14 @@ class DownloadsViewModelTest {
             .thenReturn(updateDownloadsPendingDeleteUseCase)
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
+        `when`(getLeftSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(DownloadSwipeAction.ARCHIVE))
+        `when`(getRightSwipeActionSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(DownloadSwipeAction.DELETE))
+        `when`(settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getLeftSwipeActionSettingAsFlowUseCase)
+        `when`(settingsUseCase.getRightSwipeActionSettingAsFlowUseCase)
+            .thenReturn(getRightSwipeActionSettingAsFlowUseCase)
 
         return DownloadsViewModel(
             savedStateHandle = SavedStateHandle(),
@@ -558,6 +614,7 @@ class DownloadsViewModelTest {
             downloadProgressUseCase = downloadProgressUseCase,
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
+            settingsUseCase = settingsUseCase,
         )
     }
 

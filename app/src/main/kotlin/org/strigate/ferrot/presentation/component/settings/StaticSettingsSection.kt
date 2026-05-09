@@ -8,16 +8,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun StaticSettingsSection(
     modifier: Modifier = Modifier,
-    text: String? = null,
+    icon: ImageVector? = null,
+    title: String? = null,
     content: @Composable () -> Unit,
 ) {
     Surface(
@@ -32,14 +33,13 @@ fun StaticSettingsSection(
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
         ) {
-            text?.let {
-                Text(
+            if (title != null || icon != null) {
+                SettingsSectionHeader(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    text = it,
+                    icon = icon,
+                    title = title,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }

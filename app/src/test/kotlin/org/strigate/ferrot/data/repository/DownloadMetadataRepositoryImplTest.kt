@@ -1,31 +1,33 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
 import org.strigate.ferrot.data.local.entity.DownloadMetadataEntity
 import org.strigate.ferrot.domain.model.DownloadMetadata
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadMetadataRepositoryImplTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadMetadataDao: DownloadMetadataDao
@@ -33,13 +35,6 @@ class DownloadMetadataRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
     }
 
     @Test
@@ -51,7 +46,8 @@ class DownloadMetadataRepositoryImplTest {
         val result = repository.save(sampleMetadata())
 
         assertEquals(6L, result)
-        verify(downloadMetadataDao).insertReplace(sampleEntity())
+        verify(downloadMetadataDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -91,9 +87,17 @@ class DownloadMetadataRepositoryImplTest {
         assertEquals(listOf("/tmp/one.jpg", "/tmp/two.jpg"), repository.getAllThumbnailFilePaths())
         assertEquals(1, repository.deleteByDownloadId(2L))
 
-        verify(downloadMetadataDao).getDownloadIdsBySourceAndVideoId("youtube", "abc123")
-        verify(downloadMetadataDao).getAllThumbnailFilePaths()
-        verify(downloadMetadataDao).deleteByDownloadId(2L)
+        verify(downloadMetadataDao)
+            .getDownloadIdsBySourceAndVideoId("youtube", "abc123")
+        verify(downloadMetadataDao)
+            .getAllThumbnailFilePaths()
+        verify(downloadMetadataDao)
+            .deleteByDownloadId(2L)
+    }
+
+    @After
+    fun tearDown() {
+        autoCloseable.close()
     }
 
     private fun sampleMetadata(downloadId: Long = 1L) = DownloadMetadata(

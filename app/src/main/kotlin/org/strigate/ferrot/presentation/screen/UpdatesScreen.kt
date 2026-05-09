@@ -10,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -109,10 +111,11 @@ fun UpdatesScreen(
                                     .verticalScroll(rememberScrollState()),
                             ) {
                                 StaticSettingsSection(
-                                    text = stringResource(R.string.settings_section_app),
+                                    icon = Icons.Outlined.SystemUpdate,
+                                    title = stringResource(R.string.settings_section_app),
                                 ) {
                                     SwitchSetting(
-                                        text = stringResource(R.string.settings_title_automatic_updates),
+                                        text = stringResource(R.string.settings_title_automatic_app_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
                                         checked = settings.automaticUpdates,
                                         onCheckedChange = { checked ->
@@ -120,13 +123,13 @@ fun UpdatesScreen(
                                         },
                                     )
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_check_now),
-                                        description = stringResource(R.string.settings_description_check_now),
+                                        text = stringResource(R.string.settings_title_check_for_app_updates),
+                                        description = stringResource(R.string.settings_description_check_for_app_updates),
                                     ) {
                                         viewModel.checkForAvailableUpdate()
                                     }
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_last_checked_for_updates),
+                                        text = stringResource(R.string.settings_title_last_checked_for_app_updates),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
                                             info.lastAvailableUpdateCheckMillis,
@@ -135,7 +138,8 @@ fun UpdatesScreen(
                                 }
                                 Spacer(modifier = Modifier.height(dimens.spacingSmall))
                                 StaticSettingsSection(
-                                    text = stringResource(R.string.settings_section_dependencies),
+                                    icon = Icons.Outlined.Extension,
+                                    title = stringResource(R.string.settings_section_dependencies),
                                 ) {
                                     SwitchSetting(
                                         text = stringResource(R.string.settings_title_automatic_dependency_updates),

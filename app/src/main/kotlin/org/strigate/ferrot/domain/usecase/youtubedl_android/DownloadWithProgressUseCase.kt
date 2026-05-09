@@ -1,12 +1,12 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import android.os.SystemClock
-import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
+import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
 import java.io.File
@@ -18,6 +18,7 @@ class DownloadWithProgressUseCase @Inject constructor(
     private val buildVideoDownloadRequestUseCase: BuildVideoDownloadRequestUseCase,
     private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
+    private val youtubeDlClient: YoutubeDlClient,
 ) {
     operator fun invoke(
         url: String,
@@ -54,7 +55,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                 }
             }
 
-            val youtubeDlResponse = YoutubeDL.getInstance().execute(
+            val youtubeDlResponse = youtubeDlClient.execute(
                 request = youtubeDlRequest,
                 processId = processId,
                 redirectErrorStream = false,
@@ -79,7 +80,7 @@ class DownloadWithProgressUseCase @Inject constructor(
         awaitClose {
             outputPathFile?.delete()
             runCatching {
-                YoutubeDL.getInstance().destroyProcessById(processId)
+                youtubeDlClient.destroyProcessById(processId)
             }
             job.cancel()
         }

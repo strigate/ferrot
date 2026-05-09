@@ -4,8 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +23,7 @@ import java.util.Calendar
 @Composable
 fun Copyright(
     modifier: Modifier = Modifier,
+    onLogoClick: (() -> Unit)? = null,
 ) {
     val dimens = LocalDimens.current
     Column(
@@ -28,27 +32,48 @@ fun Copyright(
         verticalArrangement = Arrangement.Center,
     ) {
         Spacer(modifier = Modifier.height(dimens.spacingLarge))
-        Icon(
-            modifier = Modifier
-                .height(dimens.iconLarge),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = 0.8f,
+        Surface(
+            onClick = {
+                onLogoClick?.invoke()
+            },
+            enabled = onLogoClick != null,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceTint.copy(
+                alpha = 0f,
             ),
-            painter = painterResource(R.drawable.strigate_logo),
-            contentDescription = stringResource(R.string.content_description_strigate_logo),
-        )
-        Text(
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                    alpha = 0.75f,
+        ) {
+            Column(
+                modifier = Modifier.padding(
+                    start = dimens.spacingLarge,
+                    top = dimens.spacingMedium,
+                    end = dimens.spacingLarge,
+                    bottom = dimens.spacingLarge,
                 ),
-            ),
-            textAlign = TextAlign.Center,
-            text = stringResource(
-                R.string.copyright,
-                Calendar.getInstance().get(Calendar.YEAR),
-            ),
-        )
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    modifier = Modifier
+                        .height(dimens.iconLarge),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = 0.8f,
+                    ),
+                    painter = painterResource(R.drawable.strigate_logo),
+                    contentDescription = stringResource(R.string.content_description_strigate_logo),
+                )
+                Text(
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = 0.75f,
+                        ),
+                    ),
+                    textAlign = TextAlign.Center,
+                    text = stringResource(
+                        R.string.copyright,
+                        Calendar.getInstance().get(Calendar.YEAR),
+                    ),
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(dimens.spacingLarge))
     }
 }

@@ -4,6 +4,8 @@ object AnalyticsEvents {
     const val DOWNLOAD_STARTED = "download_started"
     const val DOWNLOAD_COMPLETED = "download_completed"
     const val DOWNLOAD_FAILED = "download_failed"
+    const val DOWNLOAD_RETRY = "download_retry"
+    const val DOWNLOADS_RETRY = "downloads_retry"
 
     object Screens {
         const val DOWNLOADS = "downloads_screen"

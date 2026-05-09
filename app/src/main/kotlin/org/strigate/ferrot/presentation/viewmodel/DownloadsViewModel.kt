@@ -28,6 +28,7 @@ import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -53,6 +54,7 @@ class DownloadsViewModel @Inject constructor(
     private val downloadProgressUseCase: DownloadProgressUseCase,
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
+    private val settingsUseCase: SettingsUseCase,
 ) : ViewModel() {
     private val _archived = MutableStateFlow(savedStateHandle[Screen.ARG_ARCHIVED] ?: false)
     val isArchived: StateFlow<Boolean> = _archived
@@ -81,13 +83,23 @@ class DownloadsViewModel @Inject constructor(
                 downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase(archived = archived)
             }
         val availableUpdateFlow = availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()
+        val leftSwipeActionFlow = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase()
+        val rightSwipeActionFlow = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase()
+        val swipeActionsFlow = combine(
+            leftSwipeActionFlow,
+            rightSwipeActionFlow,
+        ) { leftSwipeAction, rightSwipeAction ->
+            leftSwipeAction.toUiData() to rightSwipeAction.toUiData()
+        }
 
         return combine(
             archivedFlow,
             downloadsWithMetadataFlow,
             availableUpdateFlow,
             searchTextFlow,
-        ) { archived, downloadsWithMetadata, availableUpdate, query ->
+            swipeActionsFlow,
+        ) { archived, downloadsWithMetadata, availableUpdate, query, swipeActions ->
+            val (leftSwipeAction, rightSwipeAction) = swipeActions
             val pendingDeleteIds = downloadsWithMetadata
                 .asSequence()
                 .filter { it.pendingDelete }
@@ -117,6 +129,8 @@ class DownloadsViewModel @Inject constructor(
                     downloads = filteredDownloads,
                     availableUpdate = availableUpdateUiData,
                     pendingDeleteIds = pendingDeleteIds,
+                    leftSwipeAction = leftSwipeAction,
+                    rightSwipeAction = rightSwipeAction,
                 ),
             )
         }.flowOn(Dispatchers.Default)
@@ -166,6 +180,7 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun retryDownload(downloadId: Long) = viewModelScope.launch {
+        analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
         startDownloadUseCase(downloadId)
     }
 
@@ -181,6 +196,7 @@ class DownloadsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            analyticsLogger.logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
             failedDownloadIds.forEach { downloadId ->
                 startDownloadUseCase(downloadId)
             }

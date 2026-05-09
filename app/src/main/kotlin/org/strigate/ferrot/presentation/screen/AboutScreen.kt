@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +51,7 @@ fun AboutScreen(
     val dimens = LocalDimens.current
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    val urlStrigate = stringResource(R.string.url_strigate)
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -112,7 +115,8 @@ fun AboutScreen(
                         .verticalScroll(rememberScrollState()),
                 ) {
                     StaticSettingsSection(
-                        text = stringResource(R.string.settings_section_app_info),
+                        icon = Icons.Outlined.Info,
+                        title = stringResource(R.string.settings_section_app_info),
                     ) {
                         TextSetting(
                             text = stringResource(R.string.settings_title_build),
@@ -125,25 +129,57 @@ fun AboutScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(dimens.spacingSmall))
-                    StaticSettingsSection {
+                    StaticSettingsSection(
+                        icon = Icons.Outlined.Link,
+                        title = stringResource(R.string.settings_section_links),
+                    ) {
                         val urlWebsite = stringResource(R.string.url_website)
+                        val urlGitHub = stringResource(R.string.url_github)
+                        val urlX = stringResource(R.string.url_x)
                         val urlPrivacy = stringResource(R.string.url_privacy)
                         val urlLicense = stringResource(R.string.url_license)
                         TextSetting(
                             text = stringResource(R.string.settings_title_website),
                             description = stringResource(R.string.settings_description_website),
+                            onLongClick = {
+                                context.copyToClipboard(urlWebsite)
+                            },
                         ) {
                             viewModel.onUrlClicked(urlWebsite)
                         }
                         TextSetting(
+                            text = stringResource(R.string.settings_title_github),
+                            description = stringResource(R.string.settings_description_github),
+                            onLongClick = {
+                                context.copyToClipboard(urlGitHub)
+                            },
+                        ) {
+                            viewModel.onUrlClicked(urlGitHub)
+                        }
+                        TextSetting(
+                            text = stringResource(R.string.settings_title_x),
+                            description = stringResource(R.string.settings_description_x),
+                            onLongClick = {
+                                context.copyToClipboard(urlX)
+                            },
+                        ) {
+                            viewModel.onUrlClicked(urlX)
+                        }
+                        TextSetting(
                             text = stringResource(R.string.settings_title_privacy),
                             description = stringResource(R.string.settings_description_privacy),
+                            onLongClick = {
+                                context.copyToClipboard(urlPrivacy)
+                            },
                         ) {
                             viewModel.onUrlClicked(urlPrivacy)
                         }
                         TextSetting(
                             text = stringResource(R.string.settings_title_license),
                             description = stringResource(R.string.settings_description_license),
+                            onLongClick = {
+                                context.copyToClipboard(urlLicense)
+                            },
                         ) {
                             viewModel.onUrlClicked(urlLicense)
                         }
@@ -151,6 +187,9 @@ fun AboutScreen(
                     Copyright(
                         modifier = Modifier
                             .fillMaxWidth(),
+                        onLogoClick = {
+                            viewModel.onUrlClicked(urlStrigate)
+                        },
                     )
                 }
             }

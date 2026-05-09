@@ -1,31 +1,33 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.entity.DownloadAudioEntity
 import org.strigate.ferrot.domain.model.DownloadAudio
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadAudioRepositoryImplTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadAudioDao: DownloadAudioDao
@@ -33,13 +35,6 @@ class DownloadAudioRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
     }
 
     @Test
@@ -51,7 +46,8 @@ class DownloadAudioRepositoryImplTest {
 
         val result = repository.save(sampleAudio())
         assertEquals(4L, result)
-        verify(downloadAudioDao).insertReplace(sampleEntity())
+        verify(downloadAudioDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -84,8 +80,15 @@ class DownloadAudioRepositoryImplTest {
         assertEquals(listOf("/tmp/audio.m4a"), repository.getAllFilePaths())
         assertEquals(1, repository.deleteByDownloadId(3L))
 
-        verify(downloadAudioDao).getAllFilePaths()
-        verify(downloadAudioDao).deleteByDownloadId(3L)
+        verify(downloadAudioDao)
+            .getAllFilePaths()
+        verify(downloadAudioDao)
+            .deleteByDownloadId(3L)
+    }
+
+    @After
+    fun tearDown() {
+        autoCloseable.close()
     }
 
     private fun sampleAudio(downloadId: Long = 1L) = DownloadAudio(

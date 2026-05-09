@@ -25,10 +25,12 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.7.0"
-    const val VERSION_CODE = 28
+    const val BASE_VERSION = "1.8.0"
+    const val VERSION_CODE = 29
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val RELEASE_APK_NAME = "ferrot"
+    const val DEBUG_VARIANT_SUFFIX = "debug"
+    const val RELEASE_VARIANT_SUFFIX = "release"
 }
 
 android {
@@ -118,26 +120,25 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-tasks.register<Copy>("renameReleaseApk") {
-    val releaseDir = layout.buildDirectory.dir("outputs/apk/release")
-    from(releaseDir)
-    include("app-release.apk")
-    into(releaseDir)
-    rename {
-        "${BuildInfo.RELEASE_APK_NAME}-release.apk"
-    }
-    doFirst {
-        println("Renaming APK")
-    }
-}
+registerArtifactRenameTask(
+    taskName = "renameDebugApk",
+    outputDirectory = "outputs/apk/debug",
+    sourceFileName = "app-debug.apk",
+    variantSuffix = BuildInfo.DEBUG_VARIANT_SUFFIX,
+    extension = "apk",
+    listingTaskName = "createDebugApkListingFileRedirect",
+    buildTaskName = "assembleDebug",
+)
 
-tasks.named("renameReleaseApk") {
-    mustRunAfter("createReleaseApkListingFileRedirect")
-}
-
-tasks.matching { it.name == "assembleRelease" }.configureEach {
-    finalizedBy("renameReleaseApk")
-}
+registerArtifactRenameTask(
+    taskName = "renameReleaseApk",
+    outputDirectory = "outputs/apk/release",
+    sourceFileName = "app-release.apk",
+    variantSuffix = BuildInfo.RELEASE_VARIANT_SUFFIX,
+    extension = "apk",
+    listingTaskName = "createReleaseApkListingFileRedirect",
+    buildTaskName = "assembleRelease",
+)
 
 private fun ApplicationDefaultConfig.applyFirebaseProperties(
     includeResString: Boolean = true,
@@ -172,6 +173,34 @@ private fun Properties.getString(key: String): String {
 
 private fun String.escapeForBuildConfig(): String {
     return "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+}
+
+private fun registerArtifactRenameTask(
+    taskName: String,
+    outputDirectory: String,
+    sourceFileName: String,
+    variantSuffix: String,
+    extension: String,
+    listingTaskName: String,
+    buildTaskName: String,
+) {
+    tasks.register<Copy>(taskName) {
+        val releaseDir = layout.buildDirectory.dir(outputDirectory)
+        from(releaseDir)
+        include(sourceFileName)
+        into(releaseDir)
+        rename(sourceFileName, artifactFileName(variantSuffix, extension))
+    }
+    tasks.named(taskName) {
+        mustRunAfter(listingTaskName)
+    }
+    tasks.matching { it.name == buildTaskName }.configureEach {
+        finalizedBy(taskName)
+    }
+}
+
+private fun artifactFileName(variantSuffix: String, extension: String): String {
+    return "${BuildInfo.RELEASE_APK_NAME}-$variantSuffix.$extension"
 }
 
 dependencies {

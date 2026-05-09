@@ -1,31 +1,33 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadVideoDao
 import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
 import org.strigate.ferrot.domain.model.DownloadVideo
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadVideoRepositoryImplTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
-    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
 
     @Mock
     private lateinit var downloadVideoDao: DownloadVideoDao
@@ -33,13 +35,6 @@ class DownloadVideoRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
-        Dispatchers.setMain(testDispatcher)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-        autoCloseable.close()
     }
 
     @Test
@@ -51,7 +46,8 @@ class DownloadVideoRepositoryImplTest {
         val result = repository.save(sampleVideo())
         assertEquals(5L, result)
 
-        verify(downloadVideoDao).insertReplace(sampleEntity())
+        verify(downloadVideoDao)
+            .insertReplace(sampleEntity())
     }
 
     @Test
@@ -76,18 +72,29 @@ class DownloadVideoRepositoryImplTest {
 
     @Test
     fun queryMethods_delegateToDao() = runTest(testDispatcher) {
-        `when`(downloadVideoDao.getDownloadIdsBySha256("sha")).thenReturn(listOf(2L, 8L))
-        `when`(downloadVideoDao.getAllFilePaths()).thenReturn(listOf("/tmp/video.mp4"))
-        `when`(downloadVideoDao.deleteByDownloadId(3L)).thenReturn(1)
+        `when`(downloadVideoDao.getDownloadIdsBySha256("sha"))
+            .thenReturn(listOf(2L, 8L))
+        `when`(downloadVideoDao.getAllFilePaths())
+            .thenReturn(listOf("/tmp/video.mp4"))
+        `when`(downloadVideoDao.deleteByDownloadId(3L))
+            .thenReturn(1)
         val repository = DownloadVideoRepositoryImpl(downloadVideoDao)
 
         assertEquals(listOf(2L, 8L), repository.getDownloadIdsBySha256("sha"))
         assertEquals(listOf("/tmp/video.mp4"), repository.getAllFilePaths())
         assertEquals(1, repository.deleteByDownloadId(3L))
 
-        verify(downloadVideoDao).getDownloadIdsBySha256("sha")
-        verify(downloadVideoDao).getAllFilePaths()
-        verify(downloadVideoDao).deleteByDownloadId(3L)
+        verify(downloadVideoDao)
+            .getDownloadIdsBySha256("sha")
+        verify(downloadVideoDao)
+            .getAllFilePaths()
+        verify(downloadVideoDao)
+            .deleteByDownloadId(3L)
+    }
+
+    @After
+    fun tearDown() {
+        autoCloseable.close()
     }
 
     private fun sampleVideo(downloadId: Long = 1L) = DownloadVideo(
