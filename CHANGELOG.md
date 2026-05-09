@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.0 - 2026-05-09
+### Added
+- Configurable left and right swipe actions for downloads
+- Swipe action settings in the Settings screen
+- Resources links on the About screen
+- Section icons and a reusable header component for Settings
+- Download retry analytics events
+- Unit tests covering swipe action mappers, download update use cases, and downloads-with-metadata flow handling
+
+### Changed
+- Refined swipe threshold handling and swipe state behavior in the downloads UI
+- Extracted shared YoutubeDL client and download work scheduler integrations
+- Clarified app update strings and shared artifact rename task setup
+- Updated Kotlin, Android Gradle Plugin, Gradle wrapper, Compose BOM, and Firebase BOM
+- Reused the shared main dispatcher rule consistently across unit tests
+
+### Fixed
+- Swipe actions now trigger more reliably after crossing the threshold
+- Swipe state now resets correctly when a download's seen state changes
+
 ## 1.7.0 - 2026-04-25
 ### Added
 - Archived downloads screen with archive and unarchive actions
