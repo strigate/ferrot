@@ -52,11 +52,11 @@ class SettingsRepositoryImplTest {
             repository.getAutomaticDuplicateDownloadDeletionAsFlow().first(),
         )
         assertEquals(
-            DownloadSwipeAction.fromStorageValue(DEFAULT_VALUE_LEFT_SWIPE_ACTION),
+            DEFAULT_VALUE_LEFT_SWIPE_ACTION,
             repository.getLeftSwipeActionAsFlow().first(),
         )
         assertEquals(
-            DownloadSwipeAction.fromStorageValue(DEFAULT_VALUE_RIGHT_SWIPE_ACTION),
+            DEFAULT_VALUE_RIGHT_SWIPE_ACTION,
             repository.getRightSwipeActionAsFlow().first(),
         )
     }
@@ -98,8 +98,14 @@ class SettingsRepositoryImplTest {
             it[stringPreferencesKey(KEY_RIGHT_SWIPE_ACTION)] = "broken"
         }
 
-        assertEquals(DownloadSwipeAction.ARCHIVE, repository.getLeftSwipeActionAsFlow().first())
-        assertEquals(DownloadSwipeAction.DELETE, repository.getRightSwipeActionAsFlow().first())
+        assertEquals(
+            DEFAULT_VALUE_LEFT_SWIPE_ACTION,
+            repository.getLeftSwipeActionAsFlow().first(),
+        )
+        assertEquals(
+            DEFAULT_VALUE_RIGHT_SWIPE_ACTION,
+            repository.getRightSwipeActionAsFlow().first(),
+        )
     }
 
     private fun createRepository(scope: CoroutineScope): SettingsRepositoryImpl {
