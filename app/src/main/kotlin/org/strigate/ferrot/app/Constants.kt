@@ -1,6 +1,7 @@
 package org.strigate.ferrot.app
 
 import org.strigate.ferrot.BuildConfig
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 
 object Constants {
     const val APP_ID = BuildConfig.APPLICATION_ID
@@ -24,9 +25,9 @@ object Constants {
         const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = "auto_duplicate_download_deletion"
         const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = true
         const val KEY_LEFT_SWIPE_ACTION = "left_swipe_action"
-        const val DEFAULT_VALUE_LEFT_SWIPE_ACTION = "archive"
+        val DEFAULT_VALUE_LEFT_SWIPE_ACTION = DownloadSwipeAction.DELETE
         const val KEY_RIGHT_SWIPE_ACTION = "right_swipe_action"
-        const val DEFAULT_VALUE_RIGHT_SWIPE_ACTION = "delete"
+        val DEFAULT_VALUE_RIGHT_SWIPE_ACTION = DownloadSwipeAction.ARCHIVE
         const val KEY_AUTOMATIC_UPDATES = "auto_updates"
         const val DEFAULT_VALUE_AUTOMATIC_UPDATES = true
         const val KEY_AUTOMATIC_DEPENDENCY_UPDATES = "auto_dependency_updates"
