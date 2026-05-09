@@ -75,8 +75,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun getLeftSwipeActionAsFlow(): Flow<DownloadSwipeAction> {
         return preferencesDataStore.data.map {
             DownloadSwipeAction.fromStorageValue(
-                value = it[leftSwipeActionKey] ?: DEFAULT_VALUE_LEFT_SWIPE_ACTION,
-                defaultAction = DownloadSwipeAction.ARCHIVE,
+                value = it[leftSwipeActionKey],
+                defaultAction = DEFAULT_VALUE_LEFT_SWIPE_ACTION,
             )
         }
     }
@@ -90,8 +90,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun getRightSwipeActionAsFlow(): Flow<DownloadSwipeAction> {
         return preferencesDataStore.data.map {
             DownloadSwipeAction.fromStorageValue(
-                value = it[rightSwipeActionKey] ?: DEFAULT_VALUE_RIGHT_SWIPE_ACTION,
-                defaultAction = DownloadSwipeAction.DELETE,
+                value = it[rightSwipeActionKey],
+                defaultAction = DEFAULT_VALUE_RIGHT_SWIPE_ACTION,
             )
         }
     }
