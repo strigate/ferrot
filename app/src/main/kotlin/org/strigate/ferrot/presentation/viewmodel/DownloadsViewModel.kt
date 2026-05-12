@@ -140,9 +140,10 @@ class DownloadsViewModel @Inject constructor(
 
     fun updateSearchQuery(value: TextFieldValue) {
         val trimmed = value.text.take(MAX_SEARCH_LENGTH)
+        val selectionEnd = value.selection.end.coerceAtMost(trimmed.length)
         val normalizedValue = TextFieldValue(
             text = trimmed,
-            selection = TextRange(trimmed.length),
+            selection = TextRange(selectionEnd),
         )
         if (_searchQuery.value == normalizedValue) {
             return
