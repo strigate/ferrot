@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun TextSetting(
@@ -27,6 +27,7 @@ fun TextSetting(
     onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     val clickableModifier = if (enabled && (onClick != null || onLongClick != null)) {
         Modifier
             .combinedClickable(
@@ -57,8 +58,8 @@ fun TextSetting(
             .fillMaxWidth()
             .then(clickableModifier)
             .padding(
-                horizontal = 16.dp,
-                vertical = 12.dp,
+                horizontal = refineryDimens.spacingMedium,
+                vertical = refineryDimens.spacingMediumAlt,
             ),
     ) {
         Row(
@@ -70,7 +71,7 @@ fun TextSetting(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 24.dp),
+                    .padding(end = refineryDimens.spacingLarge),
             ) {
                 Text(
                     style = MaterialTheme.typography.bodyMedium,
@@ -78,7 +79,7 @@ fun TextSetting(
                     text = text,
                 )
                 description?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
                     Text(
                         style = MaterialTheme.typography.bodySmall,
                         color = descriptionColor,

@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,7 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun ExpandableSettingsSection(
@@ -35,12 +35,14 @@ fun ExpandableSettingsSection(
     content: @Composable () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(initialExpanded) }
+    val refineryDimens = LocalRefineryDimens.current
+
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.large,
-        tonalElevation = 4.dp,
-        shadowElevation = 1.dp,
+        tonalElevation = refineryDimens.tonalElevationHigh,
+        shadowElevation = refineryDimens.shadowElevationLow,
     ) {
         Column(
             modifier = Modifier
@@ -51,18 +53,18 @@ fun ExpandableSettingsSection(
                 ) {
                     expanded = !expanded
                 }
-                .padding(vertical = 16.dp),
+                .padding(vertical = refineryDimens.spacingMedium),
         ) {
             SettingsSectionHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = refineryDimens.spacingMedium),
                 icon = icon,
                 title = title,
             ) {
                 Icon(
                     modifier = Modifier
-                        .size(20.dp),
+                        .size(refineryDimens.iconXSmallAlt),
                     imageVector = if (expanded) {
                         Icons.Filled.KeyboardArrowUp
                     } else {
@@ -73,7 +75,7 @@ fun ExpandableSettingsSection(
                 )
             }
             if (expanded) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                 CompositionLocalProvider(
                     LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
                 ) {

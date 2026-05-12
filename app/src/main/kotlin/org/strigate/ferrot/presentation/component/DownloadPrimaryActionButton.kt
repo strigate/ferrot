@@ -28,6 +28,7 @@ import coil3.request.crossfade
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 import java.io.File
 
 @Composable
@@ -38,8 +39,9 @@ fun DownloadPrimaryActionButton(
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    val dimens = LocalDimens.current
     val context = LocalContext.current
+    val refineryDimens = LocalRefineryDimens.current
+    val dimens = LocalDimens.current
 
     val actionConfig = when (status) {
         DownloadStatusUiData.QUEUED,
@@ -76,7 +78,7 @@ fun DownloadPrimaryActionButton(
         modifier = modifier
             .wrapContentSize(),
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = dimens.tonalElevationHigh,
+        tonalElevation = refineryDimens.tonalElevationHigh,
     ) {
         Box(
             modifier = Modifier

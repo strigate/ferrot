@@ -17,7 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import org.strigate.ferrot.R
-import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 import java.util.Calendar
 
 @Composable
@@ -25,13 +25,13 @@ fun Copyright(
     modifier: Modifier = Modifier,
     onLogoClick: (() -> Unit)? = null,
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Spacer(modifier = Modifier.height(dimens.spacingLarge))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingLarge))
         Surface(
             onClick = {
                 onLogoClick?.invoke()
@@ -44,16 +44,16 @@ fun Copyright(
         ) {
             Column(
                 modifier = Modifier.padding(
-                    start = dimens.spacingLarge,
-                    top = dimens.spacingMedium,
-                    end = dimens.spacingLarge,
-                    bottom = dimens.spacingLarge,
+                    start = refineryDimens.spacingLarge,
+                    top = refineryDimens.spacingMedium,
+                    end = refineryDimens.spacingLarge,
+                    bottom = refineryDimens.spacingLarge,
                 ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     modifier = Modifier
-                        .height(dimens.iconLarge),
+                        .height(refineryDimens.iconLarge),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                         alpha = 0.8f,
                     ),
@@ -74,6 +74,6 @@ fun Copyright(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(dimens.spacingLarge))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingLarge))
     }
 }

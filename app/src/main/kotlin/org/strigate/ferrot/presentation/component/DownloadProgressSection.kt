@@ -18,8 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
-import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun DownloadProgressSection(
@@ -32,7 +32,7 @@ fun DownloadProgressSection(
     forcePrimaryBar: Boolean = false,
     alwaysShowBar: Boolean = true,
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     val running = when (status) {
         DownloadStatusUiData.QUEUED,
         DownloadStatusUiData.METADATA,
@@ -56,11 +56,11 @@ fun DownloadProgressSection(
                 running = running,
                 forcePrimary = forcePrimaryBar,
             )
-            Spacer(modifier = Modifier.height(dimens.spacingXSmall))
+            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
         }
         Box(
             modifier = Modifier
-                .heightIn(min = dimens.spacingLarge),
+                .heightIn(min = refineryDimens.spacingLarge),
         ) {
             StatusSizeEtaRow(
                 status = status,
@@ -129,10 +129,10 @@ private fun InfoLine(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     Row(
         modifier = modifier
-            .padding(top = dimens.spacingSmall)
+            .padding(top = refineryDimens.spacingSmall)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {

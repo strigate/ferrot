@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun EmptyState(
@@ -27,6 +28,7 @@ fun EmptyState(
     icon: ImageVector? = null,
     iconContentDescription: String? = null,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     val dimens = LocalDimens.current
     Column(
         modifier = modifier
@@ -38,13 +40,13 @@ fun EmptyState(
         icon?.let {
             Icon(
                 modifier = Modifier
-                    .size(dimens.iconXLarge),
+                    .size(refineryDimens.iconXLarge),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 imageVector = it,
                 contentDescription = iconContentDescription,
             )
         }
-        Spacer(modifier = Modifier.height(dimens.spacingMedium))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
         Column(
             modifier = Modifier
                 .widthIn(max = dimens.contentMaxWidth),
@@ -56,7 +58,7 @@ fun EmptyState(
                 textAlign = TextAlign.Center,
                 text = title,
             )
-            Spacer(modifier = Modifier.height(dimens.spacingSmall))
+            Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
             Text(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

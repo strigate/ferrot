@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun StaticSettingsSection(
@@ -21,27 +21,28 @@ fun StaticSettingsSection(
     title: String? = null,
     content: @Composable () -> Unit,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.large,
-        tonalElevation = 4.dp,
-        shadowElevation = 1.dp,
+        tonalElevation = refineryDimens.tonalElevationHigh,
+        shadowElevation = refineryDimens.shadowElevationLow,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = refineryDimens.spacingMedium),
         ) {
             if (title != null || icon != null) {
                 SettingsSectionHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = refineryDimens.spacingMedium),
                     icon = icon,
                     title = title,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
             }
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant

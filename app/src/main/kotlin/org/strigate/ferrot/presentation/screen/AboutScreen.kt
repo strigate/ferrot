@@ -35,12 +35,12 @@ import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.Copyright
-import org.strigate.ferrot.presentation.component.settings.StaticSettingsSection
-import org.strigate.ferrot.presentation.component.settings.TextSetting
 import org.strigate.ferrot.presentation.event.AboutEvent
-import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
-import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
+import org.strigate.refinery.component.settings.StaticSettingsSection
+import org.strigate.refinery.component.settings.TextSetting
+import org.strigate.refinery.theme.LocalRefineryDimens
+import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +48,8 @@ fun AboutScreen(
     modifier: Modifier = Modifier,
     viewModel: AboutViewModel = hiltViewModel(),
 ) {
-    val dimens = LocalDimens.current
     val context = LocalContext.current
+    val refineryDimens = LocalRefineryDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val urlStrigate = stringResource(R.string.url_strigate)
 
@@ -81,7 +81,7 @@ fun AboutScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = FerrotTopAppBarDefaults.colors(),
+                colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -111,7 +111,7 @@ fun AboutScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = dimens.spacingMediumAlt)
+                        .padding(horizontal = refineryDimens.spacingMediumAlt)
                         .verticalScroll(rememberScrollState()),
                 ) {
                     StaticSettingsSection(
@@ -128,7 +128,7 @@ fun AboutScreen(
                             viewModel.onBuildClicked()
                         }
                     }
-                    Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                    Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                     StaticSettingsSection(
                         icon = Icons.Outlined.Link,
                         title = stringResource(R.string.settings_section_links),
