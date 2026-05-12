@@ -220,7 +220,9 @@ class DownloadsViewModelTest {
         assertEquals(100, viewModel.searchQuery.value.text.length)
         assertEquals(100, viewModel.searchQuery.value.selection.start)
 
-        viewModel.updateSearchQuery(TextFieldValue("download 2", TextRange(10)))
+        viewModel.updateSearchQuery(TextFieldValue("download 2", TextRange(4)))
+        assertEquals(4, viewModel.searchQuery.value.selection.start)
+
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
             data.data.downloads.size == 1 && data.data.downloads.single().id == 2L
