@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 internal fun SettingsSectionHeader(
@@ -20,6 +20,7 @@ internal fun SettingsSectionHeader(
     modifier: Modifier = Modifier,
     trailingContent: (@Composable () -> Unit)? = null,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -27,14 +28,14 @@ internal fun SettingsSectionHeader(
         if (icon != null) {
             Icon(
                 modifier = Modifier
-                    .size(20.dp),
+                    .size(refineryDimens.iconXSmallAlt),
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (icon != null && title != null) {
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(refineryDimens.spacingMediumAlt))
         }
         if (title != null) {
             Text(

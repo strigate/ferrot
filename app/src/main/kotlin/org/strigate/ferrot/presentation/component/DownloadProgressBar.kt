@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun DownloadProgressBar(
@@ -17,7 +17,7 @@ fun DownloadProgressBar(
     progress: Float?,
     forcePrimary: Boolean = false,
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     val barColor = when {
         forcePrimary -> MaterialTheme.colorScheme.primary
         running -> MaterialTheme.colorScheme.primary
@@ -27,7 +27,7 @@ fun DownloadProgressBar(
         LinearProgressIndicator(
             modifier = modifier
                 .fillMaxWidth()
-                .height(dimens.spacingXSmall),
+                .height(refineryDimens.spacingXSmall),
             color = barColor,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )
@@ -44,7 +44,7 @@ fun DownloadProgressBar(
             },
             modifier = modifier
                 .fillMaxWidth()
-                .height(dimens.spacingXSmall),
+                .height(refineryDimens.spacingXSmall),
             color = barColor,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )

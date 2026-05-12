@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun ErrorState(
@@ -25,6 +26,7 @@ fun ErrorState(
     text: String? = null,
 ) {
     val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     Box(
         modifier = modifier,
         contentAlignment = alignment,
@@ -35,13 +37,13 @@ fun ErrorState(
         ) {
             Icon(
                 modifier = Modifier
-                    .size(dimens.iconXLarge),
+                    .size(refineryDimens.iconXLarge),
                 tint = MaterialTheme.colorScheme.error,
                 imageVector = Icons.Outlined.ErrorOutline,
                 contentDescription = null,
             )
             text?.let {
-                Spacer(modifier = Modifier.height(dimens.spacingMedium))
+                Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
                 Column(
                     modifier = Modifier
                         .widthIn(max = dimens.contentMaxWidth),

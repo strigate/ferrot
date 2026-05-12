@@ -97,10 +97,10 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
-import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
+import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,7 +180,7 @@ fun DownloadScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                colors = FerrotTopAppBarDefaults.colors(),
+                colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {

@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,7 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun SwitchSetting(
@@ -28,6 +28,7 @@ fun SwitchSetting(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -38,8 +39,8 @@ fun SwitchSetting(
                 onCheckedChange(!checked)
             }
             .padding(
-                horizontal = 16.dp,
-                vertical = 12.dp,
+                horizontal = refineryDimens.spacingMedium,
+                vertical = refineryDimens.spacingMediumAlt,
             ),
     ) {
         Row(
@@ -51,25 +52,25 @@ fun SwitchSetting(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 24.dp),
+                    .padding(end = refineryDimens.spacingLarge),
             ) {
                 Text(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     text = text,
                 )
-                description?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
+                description?.let { currentDescription ->
+                    Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
                     Text(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        text = it,
+                        text = currentDescription,
                     )
                 }
             }
             Switch(
                 modifier = Modifier
-                    .height(24.dp),
+                    .height(refineryDimens.iconXSmall),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),

@@ -112,12 +112,12 @@ import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
-import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
 import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
+import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
@@ -240,7 +240,7 @@ fun DownloadsScreen(
         topBar = {
             if (selectionMode) {
                 TopAppBar(
-                    colors = FerrotTopAppBarDefaults.colors(),
+                    colors = RefineryTopAppBarDefaults.colors(),
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -342,7 +342,7 @@ fun DownloadsScreen(
                 )
             } else {
                 TopAppBar(
-                    colors = FerrotTopAppBarDefaults.colors(),
+                    colors = RefineryTopAppBarDefaults.colors(),
                     navigationIcon = {
                         if (isArchived) {
                             IconButton(

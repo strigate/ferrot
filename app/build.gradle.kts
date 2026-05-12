@@ -160,6 +160,8 @@ private fun String.escapeForBuildConfig(): String {
 }
 
 dependencies {
+    // Modules
+    implementation(project(":refinery"))
     // Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
