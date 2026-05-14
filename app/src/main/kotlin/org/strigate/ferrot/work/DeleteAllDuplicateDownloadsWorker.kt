@@ -49,10 +49,15 @@ class DeleteAllDuplicateDownloadsWorker(
             Log.w(LOG_TAG, "$tag Failed to load downloads", it)
             return@withContext Result.failure()
         }
+        val completedDownloadIds = downloads.map { it.id }.toSet()
 
         var deletedCount = 0
         var failedDeleteCount = 0
+        val deletedDownloadIds = mutableSetOf<Long>()
         downloads.forEach { download ->
+            if (download.id in deletedDownloadIds) {
+                return@forEach
+            }
             val downloadMetadata = downloadMetadataUseCase
                 .getDownloadMetadataByIdAsFlowUseCase(download.id)
                 .first() ?: return@forEach
@@ -64,53 +69,37 @@ class DeleteAllDuplicateDownloadsWorker(
                     source = source,
                     videoId = videoId,
                 )
-            if (duplicateDownloadIds.size <= 1) {
-                return@forEach
-            }
-            val keepDownloadId = duplicateDownloadIds.maxOrNull() ?: return@forEach
-            duplicateDownloadIds
-                .filter { it != keepDownloadId }
-                .forEach { deleteId ->
-                    runCatching {
-                        deleteDownloadAndRelatedCombinedUseCase(deleteId)
-                        deletedCount++
-                    }.onFailure {
-                        failedDeleteCount++
-                        val message = buildString {
-                            append("$tag Failed to delete duplicate by source/videoId ")
-                            append("downloadId=$deleteId")
-                        }
-                        Log.w(LOG_TAG, message, it)
-                    }
-                }
+
+            val result = deleteDuplicateCandidates(
+                duplicateDownloadIds = duplicateDownloadIds,
+                completedDownloadIds = completedDownloadIds,
+                deletedDownloadIds = deletedDownloadIds,
+                matchType = "source/videoId",
+            )
+            deletedCount += result.deletedCount
+            failedDeleteCount += result.failedDeleteCount
         }
 
         downloads.forEach { download ->
+            if (download.id in deletedDownloadIds) {
+                return@forEach
+            }
             val downloadVideo = downloadVideoUseCase
                 .getDownloadVideoByDownloadIdAsFlowUseCase(download.id)
                 .first() ?: return@forEach
 
             val sha256 = downloadVideo.sha256 ?: return@forEach
-            val duplicateDownloadIds = downloadVideoUseCase.getDownloadIdsBySha256UseCase(sha256)
-            if (duplicateDownloadIds.size <= 1) {
-                return@forEach
-            }
-            val keepDownloadId = duplicateDownloadIds.maxOrNull() ?: return@forEach
-            duplicateDownloadIds
-                .filter { it != keepDownloadId }
-                .forEach { deleteId ->
-                    runCatching {
-                        deleteDownloadAndRelatedCombinedUseCase(deleteId)
-                        deletedCount++
-                    }.onFailure {
-                        failedDeleteCount++
-                        val message = buildString {
-                            append("$tag Failed to delete duplicate by sha256 ")
-                            append("downloadId=$deleteId")
-                        }
-                        Log.w(LOG_TAG, message, it)
-                    }
-                }
+            val duplicateDownloadIds = downloadVideoUseCase
+                .getDownloadIdsBySha256UseCase(sha256)
+
+            val result = deleteDuplicateCandidates(
+                duplicateDownloadIds = duplicateDownloadIds,
+                completedDownloadIds = completedDownloadIds,
+                deletedDownloadIds = deletedDownloadIds,
+                matchType = "sha256",
+            )
+            deletedCount += result.deletedCount
+            failedDeleteCount += result.failedDeleteCount
         }
 
         val message = buildString {
@@ -120,6 +109,72 @@ class DeleteAllDuplicateDownloadsWorker(
         Log.d(LOG_TAG, message)
         Result.success()
     }
+
+    private fun filterDeletionCandidateIds(
+        duplicateDownloadIds: List<Long>,
+        completedDownloadIds: Set<Long>,
+        deletedDownloadIds: Set<Long>,
+    ): List<Long> {
+        return duplicateDownloadIds.filter { it in completedDownloadIds && it !in deletedDownloadIds }
+    }
+
+    private suspend fun deleteDuplicateCandidates(
+        duplicateDownloadIds: List<Long>,
+        completedDownloadIds: Set<Long>,
+        deletedDownloadIds: MutableSet<Long>,
+        matchType: String,
+    ): DeleteResult {
+        val deletionCandidateIds = filterDeletionCandidateIds(
+            duplicateDownloadIds = duplicateDownloadIds,
+            completedDownloadIds = completedDownloadIds,
+            deletedDownloadIds = deletedDownloadIds,
+        )
+        if (deletionCandidateIds.size <= 1) {
+            return DeleteResult()
+        }
+
+        val keepDownloadId = deletionCandidateIds.maxOrNull() ?: return DeleteResult()
+        var deletedCount = 0
+        var failedDeleteCount = 0
+
+        deletionCandidateIds
+            .filter { it != keepDownloadId }
+            .forEach { deleteId ->
+                runCatching {
+                    val deleted = deleteDownloadAndRelatedCombinedUseCase(deleteId)
+                    if (deleted) {
+                        deletedDownloadIds += deleteId
+                        deletedCount++
+                    } else {
+                        failedDeleteCount++
+                        val message = buildString {
+                            append("DeleteAllDuplicateDownloads: Failed to fully delete duplicate by ")
+                            append("$matchType ")
+                            append("downloadId=$deleteId")
+                        }
+                        Log.w(LOG_TAG, message)
+                    }
+                }.onFailure {
+                    failedDeleteCount++
+                    val message = buildString {
+                        append("DeleteAllDuplicateDownloads: Failed to delete duplicate by ")
+                        append("$matchType ")
+                        append("downloadId=$deleteId")
+                    }
+                    Log.w(LOG_TAG, message, it)
+                }
+            }
+
+        return DeleteResult(
+            deletedCount = deletedCount,
+            failedDeleteCount = failedDeleteCount,
+        )
+    }
+
+    private data class DeleteResult(
+        val deletedCount: Int = 0,
+        val failedDeleteCount: Int = 0,
+    )
 
     companion object {
         fun enqueueDebouncedReplace(context: Context) {
