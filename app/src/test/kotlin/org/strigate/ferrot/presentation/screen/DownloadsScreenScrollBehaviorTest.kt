@@ -27,8 +27,8 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsTrue_whenNewItemIsInsertedAtTop() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsTrue_whenNewItemIsInsertedAtTop() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = listOf(3L, 2L, 1L),
             currentItemIds = listOf(4L, 3L, 2L, 1L),
             previousPendingDeleteIds = emptySet(),
@@ -39,8 +39,8 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsFalse_onInitialLoad() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsFalse_onInitialLoad() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = emptyList(),
             currentItemIds = listOf(3L, 2L, 1L),
             previousPendingDeleteIds = emptySet(),
@@ -51,8 +51,8 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsFalse_whenExistingItemMovesToTop() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsFalse_whenExistingItemMovesToTop() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = listOf(3L, 2L, 1L),
             currentItemIds = listOf(2L, 3L, 1L),
             previousPendingDeleteIds = emptySet(),
@@ -63,8 +63,20 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsFalse_whileSearching() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsFalse_whenExistingItemReordersAfterCompletion() {
+        val shouldScroll = hasNewVisibleItem(
+            previousItemIds = listOf(10L, 9L, 8L, 7L),
+            currentItemIds = listOf(9L, 8L, 7L, 10L),
+            previousPendingDeleteIds = emptySet(),
+            searchQuery = "",
+        )
+
+        assertFalse(shouldScroll)
+    }
+
+    @Test
+    fun hasNewVisibleItem_returnsFalse_whileSearching() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = listOf(3L, 2L, 1L),
             currentItemIds = listOf(4L, 3L, 2L, 1L),
             previousPendingDeleteIds = emptySet(),
@@ -75,8 +87,8 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsTrue_whenNewItemIsAddedNotAtTop() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsTrue_whenNewItemIsAddedNotAtTop() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = listOf(3L, 2L, 1L),
             currentItemIds = listOf(3L, 2L, 1L, 4L),
             previousPendingDeleteIds = emptySet(),
@@ -87,8 +99,8 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun hasNewItemAtTop_returnsFalse_whenUndoReAddsPendingDeleteItem() {
-        val shouldScroll = hasNewItemAtTop(
+    fun hasNewVisibleItem_returnsFalse_whenUndoReAddsPendingDeleteItem() {
+        val shouldScroll = hasNewVisibleItem(
             previousItemIds = listOf(3L, 2L),
             currentItemIds = listOf(3L, 2L, 1L),
             previousPendingDeleteIds = setOf(1L),
