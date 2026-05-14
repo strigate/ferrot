@@ -766,9 +766,6 @@ private fun DownloadsList(
     }
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
     val swipeActionIds = remember { mutableStateMapOf<Long, DownloadSwipeActionUiData>() }
-    var trackedAutoScrollDownloadId by remember { mutableStateOf<Long?>(null) }
-    var trackedAutoScrollWasActive by remember { mutableStateOf(false) }
-
     val showScrollToBottom by remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
@@ -784,19 +781,9 @@ private fun DownloadsList(
         currentItemIds = itemIds,
         currentPendingDeleteIds = pendingDeleteIds,
     )
-    val visibleCount by remember(items) {
-        derivedStateOf {
-            items.size
-        }
-    }
+    val visibleCount = items.size
     LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
-        if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
-            trackedAutoScrollDownloadId =
-                itemIds.firstOrNull { it !in previousItemIds && it !in previousPendingDeleteIds }
-            trackedAutoScrollWasActive = items
-                .firstOrNull { it.id == trackedAutoScrollDownloadId }
-                ?.status
-                ?.isActive == true
+        if (hasNewVisibleItem(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
@@ -812,24 +799,6 @@ private fun DownloadsList(
         ) {
             lazyListState.scrollToItem(0)
         }
-    }
-    LaunchedEffect(items.map { it.id to it.status }, trackedAutoScrollDownloadId) {
-        val trackedId = trackedAutoScrollDownloadId ?: return@LaunchedEffect
-        val trackedIndex = items.indexOfFirst { it.id == trackedId }
-        if (trackedIndex < 0) {
-            trackedAutoScrollDownloadId = null
-            trackedAutoScrollWasActive = false
-            return@LaunchedEffect
-        }
-        val currentStatus = items[trackedIndex].status
-        val isActive = currentStatus.isActive
-        if (trackedAutoScrollWasActive && !isActive) {
-            lazyListState.animateScrollToItem(trackedIndex)
-            trackedAutoScrollDownloadId = null
-            trackedAutoScrollWasActive = false
-            return@LaunchedEffect
-        }
-        trackedAutoScrollWasActive = isActive
     }
     Box(
         modifier = Modifier
@@ -1490,7 +1459,7 @@ internal fun getBulkDeleteVisibleIds(
     return selectedIds.intersect(visibleIds)
 }
 
-internal fun hasNewItemAtTop(
+internal fun hasNewVisibleItem(
     previousItemIds: List<Long>,
     currentItemIds: List<Long>,
     previousPendingDeleteIds: Set<Long>,
