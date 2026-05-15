@@ -30,6 +30,8 @@
         <item quantity="other">Deleting downloads</item>
     </plurals>
 
+    <string name="activity_label_download">Download</string>
+
     <string name="screen_title_download">Download</string>
     <string name="screen_title_archived_download">Archived download</string>
     <string name="screen_title_archived">Archived</string>

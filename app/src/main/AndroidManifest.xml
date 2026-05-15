@@ -114,6 +114,7 @@
         <activity
             android:name=".app.ShareReceiveActivity"
             android:exported="true"
+            android:label="@string/activity_label_download"
             android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
