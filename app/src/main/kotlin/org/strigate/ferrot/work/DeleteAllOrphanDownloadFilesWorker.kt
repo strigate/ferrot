@@ -18,17 +18,21 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_ORPHAN_DOWNLOAD_FILES
 import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DELETE_ORPHAN_DOWNLOADS
 import org.strigate.ferrot.app.provider.DownloadPathProvider
+import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
+import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 class DeleteAllOrphanDownloadFilesWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
     private val downloadPathProvider: DownloadPathProvider,
+    private val downloadUseCase: DownloadUseCase,
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
@@ -38,19 +42,31 @@ class DeleteAllOrphanDownloadFilesWorker(
         Log.d(LOG_TAG, "$tag Starting orphan file cleanup")
 
         val referencedPaths = runCatching {
-            val audioPaths = downloadAudioUseCase
-                .getAllDownloadAudioFilePathsUseCase()
-                .mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }
-            val videoPaths = downloadVideoUseCase
-                .getAllDownloadVideoFilePathsUseCase()
-                .mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }
-            val thumbnailPaths = downloadMetadataUseCase
-                .getAllDownloadThumbnailFilePathsUseCase()
-                .mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }
+            val audioPaths = toCanonicalPathSet(
+                paths = downloadAudioUseCase.getAllDownloadAudioFilePathsUseCase(),
+            )
+            val videoPaths = toCanonicalPathSet(
+                paths = downloadVideoUseCase.getAllDownloadVideoFilePathsUseCase(),
+            )
+            val thumbnailPaths = toCanonicalPathSet(
+                paths = downloadMetadataUseCase.getAllDownloadThumbnailFilePathsUseCase(),
+            )
 
             (audioPaths + videoPaths + thumbnailPaths).toSet()
         }.getOrElse {
             Log.w(LOG_TAG, "$tag Failed to load referenced file paths", it)
+            return@withContext Result.failure()
+        }
+
+        val protectedDownloadUids = runCatching {
+            downloadUseCase
+                .getAllDownloadsUseCase()
+                .filter { shouldProtectDownloadFromOrphanCleanup(it.status) }
+                .map { it.uid }
+                .toSet()
+
+        }.getOrElse {
+            Log.w(LOG_TAG, "$tag Failed to load downloads", it)
             return@withContext Result.failure()
         }
 
@@ -59,8 +75,12 @@ class DeleteAllOrphanDownloadFilesWorker(
             return@withContext Result.success()
         }
         val rootCanonicalPath = runCatching {
-            downloadRoot.canonicalPath
+            downloadRoot.canonicalFile.toPath()
         }.getOrNull() ?: return@withContext Result.success()
+
+        val protectedDownloadRootPaths = protectedDownloadUids.mapTo(mutableSetOf()) { uid ->
+            downloadPathProvider.uidDir(uid).canonicalFile.toPath()
+        }
 
         var deletedCount = 0
         var failedDeleteCount = 0
@@ -69,23 +89,35 @@ class DeleteAllOrphanDownloadFilesWorker(
             .filter { it.isFile }
             .forEach { file ->
                 val canonicalPath = runCatching {
-                    file.canonicalPath
+                    file.canonicalFile.toPath()
                 }.getOrNull() ?: return@forEach
 
-                if (!canonicalPath.startsWith(rootCanonicalPath)) {
+                if (!isPathWithinRoot(rootCanonicalPath, canonicalPath)) {
                     return@forEach
                 }
-                if (canonicalPath !in referencedPaths) {
+                if (isInProtectedDownloadTree(canonicalPath, protectedDownloadRootPaths)) {
+                    return@forEach
+                }
+                val canonicalPathString = canonicalPath.toString()
+                if (canonicalPathString !in referencedPaths) {
                     runCatching {
                         if (file.delete()) {
                             deletedCount++
                         } else {
                             failedDeleteCount++
-                            Log.w(LOG_TAG, "$tag Failed to delete orphan file path=$canonicalPath")
+                            val message = buildString {
+                                append("$tag Failed to delete orphan file ")
+                                append("path=$canonicalPathString")
+                            }
+                            Log.w(LOG_TAG, message)
                         }
                     }.onFailure {
                         failedDeleteCount++
-                        Log.w(LOG_TAG, "$tag Error deleting orphan file path=$canonicalPath", it)
+                        val message = buildString {
+                            append("$tag Error deleting orphan file ")
+                            append("path=$canonicalPathString")
+                        }
+                        Log.w(LOG_TAG, message, it)
                     }
                 }
             }
@@ -94,6 +126,13 @@ class DeleteAllOrphanDownloadFilesWorker(
             .walkBottomUp()
             .filter { it.isDirectory }
             .forEach { dir ->
+                val canonicalPath = runCatching {
+                    dir.canonicalFile.toPath()
+                }.getOrNull() ?: return@forEach
+
+                if (isInProtectedDownloadTree(canonicalPath, protectedDownloadRootPaths)) {
+                    return@forEach
+                }
                 if (dir.listFiles().isNullOrEmpty()) {
                     dir.delete()
                 }
@@ -105,6 +144,36 @@ class DeleteAllOrphanDownloadFilesWorker(
         }
         Log.d(LOG_TAG, message)
         Result.success()
+    }
+
+    private fun shouldProtectDownloadFromOrphanCleanup(status: DownloadStatus): Boolean {
+        return when (status) {
+            DownloadStatus.QUEUED,
+            DownloadStatus.WAITING_FOR_NETWORK,
+            DownloadStatus.WAITING_FOR_WIFI,
+            DownloadStatus.METADATA,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.PAUSED -> true
+
+            DownloadStatus.COMPLETED,
+            DownloadStatus.FAILED,
+            DownloadStatus.STOPPED -> false
+        }
+    }
+
+    private fun isPathWithinRoot(rootPath: Path, candidatePath: Path): Boolean {
+        return candidatePath.startsWith(rootPath)
+    }
+
+    private fun isInProtectedDownloadTree(
+        candidatePath: Path,
+        protectedDownloadRootPaths: Set<Path>,
+    ): Boolean {
+        return protectedDownloadRootPaths.any { candidatePath.startsWith(it) }
+    }
+
+    private fun toCanonicalPathSet(paths: List<String>): Set<String> {
+        return paths.mapNotNull { runCatching { File(it).canonicalPath }.getOrNull() }.toSet()
     }
 
     companion object {
