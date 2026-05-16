@@ -24,7 +24,7 @@ mockito = "5.23.0"
 byteBuddy = "1.18.8"
 agp = "9.2.1"
 kotlin = "2.3.21"
-ksp = "2.3.4"
+ksp = "2.3.7"
 
 [libraries]
 # Android
