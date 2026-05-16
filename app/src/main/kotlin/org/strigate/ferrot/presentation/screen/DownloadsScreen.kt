@@ -116,6 +116,7 @@ import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
 import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
+import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
@@ -154,6 +155,7 @@ fun DownloadsScreen(
     var archivingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
 
+    val bulkSelectedLabel = stringResource(R.string.bulk_selected)
     val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
     val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
 
@@ -187,6 +189,23 @@ fun DownloadsScreen(
     val hasActiveDownloads = remember(uiState) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.status.isActive }
+    }
+    val selectedBytes = remember(uiState, selectedIds) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads
+            .asSequence()
+            .filter { it.id in selectedIds }
+            .sumOf { it.bytesDownloaded }
+    }
+    val selectionCountTitle = remember(selectedIds, bulkSelectedLabel) {
+        buildString {
+            append(selectedIds.size)
+            append(' ')
+            append(bulkSelectedLabel)
+        }
+    }
+    val selectionSizeTitle = remember(selectedBytes) {
+        UiFormatter.formatBytes(selectedBytes)
     }
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
@@ -254,7 +273,20 @@ fun DownloadsScreen(
                         }
                     },
                     title = {
-                        Text("${selectedIds.size} ${stringResource(R.string.bulk_selected)}")
+                        Column {
+                            Text(
+                                text = selectionCountTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = selectionSizeTitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     },
                     actions = {
                         IconButton(
