@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0 - 2026-05-17
+### Added
+- Selected download size in the downloads selection app bar
+
+### Changed
+- Improved internal UI component and theme organization
+- Updated build and test dependencies
+
+### Fixed
+- Improved the share target label shown by the system
+- Hardened duplicate and orphan download cleanup to better protect active downloads
+- Simplified downloads list auto-scroll behavior around newly visible and restored items
+- Preserved the search cursor position when the downloads query is trimmed
+- Simplified automatic app update scheduling and legacy periodic work cleanup
+
 ## 1.8.1 - 2026-05-09
 ### Fixed
 - Preserved the legacy default swipe directions when swipe action preferences are missing or invalid
