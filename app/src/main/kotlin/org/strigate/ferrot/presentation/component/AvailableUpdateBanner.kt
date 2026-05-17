@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import org.strigate.ferrot.R
-import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun AvailableUpdateBanner(
@@ -28,7 +28,7 @@ fun AvailableUpdateBanner(
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     if (!localFilePath.isNullOrBlank()) {
         Surface(
             modifier = modifier
@@ -37,15 +37,15 @@ fun AvailableUpdateBanner(
                 },
             shape = RectangleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
-            tonalElevation = dimens.zero,
-            shadowElevation = dimens.zero,
+            tonalElevation = refineryDimens.zero,
+            shadowElevation = refineryDimens.zero,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = dimens.spacingMedium,
-                        vertical = dimens.spacingMediumAlt,
+                        horizontal = refineryDimens.spacingMedium,
+                        vertical = refineryDimens.spacingMediumAlt,
                     ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -54,7 +54,7 @@ fun AvailableUpdateBanner(
                     imageVector = Icons.Filled.SystemUpdate,
                     contentDescription = null,
                 )
-                Spacer(Modifier.width(dimens.spacingMediumAlt))
+                Spacer(Modifier.width(refineryDimens.spacingMediumAlt))
                 Text(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,

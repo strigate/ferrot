@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,8 +32,10 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL_UID
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.helper.InstallHelper
-import org.strigate.ferrot.presentation.theme.FerrotTheme
+import org.strigate.ferrot.presentation.theme.Dimens
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.util.isAtLeastTiramisu
+import org.strigate.refinery.theme.RefineryTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -114,61 +117,65 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         setContent {
-            FerrotTheme {
-                val navController = rememberNavController()
-                var permissionsRequested by rememberSaveable { mutableStateOf(false) }
-                val navigateRoute by viewModel
-                    .navigateRoute
-                    .collectAsStateWithLifecycle(initialValue = null)
+            RefineryTheme {
+                CompositionLocalProvider(
+                    LocalDimens provides Dimens(),
+                ) {
+                    val navController = rememberNavController()
+                    var permissionsRequested by rememberSaveable { mutableStateOf(false) }
+                    val navigateRoute by viewModel
+                        .navigateRoute
+                        .collectAsStateWithLifecycle(initialValue = null)
 
-                LaunchedEffect(navigateRoute) {
-                    val routeEvent =
-                        navigateRoute as? NavigationEvent.Route ?: return@LaunchedEffect
+                    LaunchedEffect(navigateRoute) {
+                        val routeEvent =
+                            navigateRoute as? NavigationEvent.Route ?: return@LaunchedEffect
 
-                    val targetRoute = routeEvent.route
-                    val popUpToRoute = routeEvent.popUpToRoute
-                    val currentRoute = navController.currentDestination?.route
-                    if (targetRoute == currentRoute) {
-                        viewModel.resetNavigate()
-                        return@LaunchedEffect
-                    }
-                    try {
-                        navController.currentBackStackEntryFlow.first()
-                        val resolvedPopUpToRoute = when {
-                            popUpToRoute == null -> null
-                            runCatching { navController.getBackStackEntry(popUpToRoute) }
-                                .isSuccess -> popUpToRoute
-
-                            runCatching { navController.getBackStackEntry(Screen.Downloads.route) }
-                                .isSuccess -> Screen.Downloads.route
-
-                            else -> null
+                        val targetRoute = routeEvent.route
+                        val popUpToRoute = routeEvent.popUpToRoute
+                        val currentRoute = navController.currentDestination?.route
+                        if (targetRoute == currentRoute) {
+                            viewModel.resetNavigate()
+                            return@LaunchedEffect
                         }
-                        navController.navigate(targetRoute) {
-                            resolvedPopUpToRoute?.let { route ->
-                                popUpTo(route) {
-                                    inclusive = targetRoute == route
-                                    saveState = false
-                                }
+                        try {
+                            navController.currentBackStackEntryFlow.first()
+                            val resolvedPopUpToRoute = when {
+                                popUpToRoute == null -> null
+                                runCatching { navController.getBackStackEntry(popUpToRoute) }
+                                    .isSuccess -> popUpToRoute
+
+                                runCatching { navController.getBackStackEntry(Screen.Downloads.route) }
+                                    .isSuccess -> Screen.Downloads.route
+
+                                else -> null
                             }
-                            launchSingleTop = true
-                            restoreState = false
+                            navController.navigate(targetRoute) {
+                                resolvedPopUpToRoute?.let { route ->
+                                    popUpTo(route) {
+                                        inclusive = targetRoute == route
+                                        saveState = false
+                                    }
+                                }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                        } catch (throwable: Throwable) {
+                            Log.w(LOG_TAG, "Navigation failed: ${throwable.message}", throwable)
+                        } finally {
+                            viewModel.resetNavigate()
                         }
-                    } catch (throwable: Throwable) {
-                        Log.w(LOG_TAG, "Navigation failed: ${throwable.message}", throwable)
-                    } finally {
-                        viewModel.resetNavigate()
                     }
-                }
-                LaunchedEffect(Unit) {
-                    if (!permissionsRequested) {
-                        requestNotificationsPermissionsIfNeeded()
-                        permissionsRequested = true
+                    LaunchedEffect(Unit) {
+                        if (!permissionsRequested) {
+                            requestNotificationsPermissionsIfNeeded()
+                            permissionsRequested = true
+                        }
                     }
+                    MainNavHost(
+                        navController = navController,
+                    )
                 }
-                MainNavHost(
-                    navController = navController,
-                )
             }
         }
     }

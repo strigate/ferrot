@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -28,9 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
-import org.strigate.ferrot.presentation.component.DropdownMenu
-import org.strigate.ferrot.presentation.component.DropdownMenuItem
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 data class DropdownSettingOption(
     val id: String,
@@ -46,6 +44,8 @@ fun DropdownSetting(
     description: String? = null,
     onOptionSelected: (DropdownSettingOption) -> Unit,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
+
     var expanded by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val chipColor = MaterialTheme.colorScheme.surface
@@ -66,8 +66,8 @@ fun DropdownSetting(
                     },
                 )
                 .padding(
-                    horizontal = 16.dp,
-                    vertical = 12.dp,
+                    horizontal = refineryDimens.spacingMedium,
+                    vertical = refineryDimens.spacingMediumAlt,
                 ),
         ) {
             Row(
@@ -79,19 +79,19 @@ fun DropdownSetting(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 24.dp),
+                        .padding(end = refineryDimens.spacingLarge),
                 ) {
                     Text(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         text = text,
                     )
-                    description?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    description?.let { currentDescription ->
+                        Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
                         Text(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            text = it,
+                            text = currentDescription,
                         )
                     }
                 }
@@ -104,13 +104,13 @@ fun DropdownSetting(
                     ) {
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
+                                .clip(RoundedCornerShape(refineryDimens.radiusPill))
                                 .background(chipColor)
                                 .padding(
-                                    start = 12.dp,
-                                    end = 8.dp,
-                                    top = 6.dp,
-                                    bottom = 6.dp,
+                                    start = refineryDimens.spacingMediumAlt,
+                                    end = refineryDimens.spacingSmall,
+                                    top = refineryDimens.spacingXSmallAlt,
+                                    bottom = refineryDimens.spacingXSmallAlt,
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -121,21 +121,21 @@ fun DropdownSetting(
                             )
                             Icon(
                                 modifier = Modifier
-                                    .padding(start = 4.dp)
-                                    .size(20.dp),
+                                    .padding(start = refineryDimens.spacingXSmall)
+                                    .size(refineryDimens.iconXSmallAlt),
                                 imageVector = Icons.Filled.ArrowDropDown,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 contentDescription = null,
                             )
                         }
 
-                        DropdownMenu(
+                        SettingsDropdownMenu(
                             expanded = expanded,
                             onDismissRequest = {
                                 expanded = false
                             },
                             items = options.map { option ->
-                                DropdownMenuItem(
+                                SettingsDropdownMenuItem(
                                     id = option.id,
                                     text = option.text,
                                     onClick = {
@@ -143,7 +143,10 @@ fun DropdownSetting(
                                     },
                                 )
                             },
-                            offset = DpOffset(x = 0.dp, y = 4.dp),
+                            offset = DpOffset(
+                                x = refineryDimens.zero,
+                                y = refineryDimens.spacingXSmall
+                            ),
                         )
                     }
                 }

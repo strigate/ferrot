@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.strigate.ferrot.presentation.theme.LocalDimens
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun ActionIconButton(
@@ -25,6 +26,7 @@ fun ActionIconButton(
     imageVector: ImageVector,
     contentDescription: String,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     val dimens = LocalDimens.current
     Box(
         modifier = modifier
@@ -36,7 +38,7 @@ fun ActionIconButton(
                 indication = LocalIndication.current,
                 onClick = onClick,
             )
-            .padding(dimens.spacingSmall),
+            .padding(refineryDimens.spacingSmall),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

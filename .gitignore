@@ -1,12 +1,12 @@
 *.iml
-.externalNativeBuild
+.externalNativeBuild/
 .DS_Store
-.cxx
+.cxx/
 .gradle/
 .kotlin/
 .idea/
-/build
-/captures
+build/
+captures/
 local.properties
 keystore.properties
 google-services.properties

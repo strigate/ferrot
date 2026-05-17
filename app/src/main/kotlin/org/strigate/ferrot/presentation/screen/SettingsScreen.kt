@@ -33,18 +33,18 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.Screen
-import org.strigate.ferrot.presentation.component.settings.DropdownSetting
-import org.strigate.ferrot.presentation.component.settings.DropdownSettingOption
-import org.strigate.ferrot.presentation.component.settings.ExpandableSettingsSection
-import org.strigate.ferrot.presentation.component.settings.SwitchSetting
-import org.strigate.ferrot.presentation.component.settings.TextNavigateSetting
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
-import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
-import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
+import org.strigate.refinery.component.settings.DropdownSetting
+import org.strigate.refinery.component.settings.DropdownSettingOption
+import org.strigate.refinery.component.settings.ExpandableSettingsSection
+import org.strigate.refinery.component.settings.SwitchSetting
+import org.strigate.refinery.component.settings.TextNavigateSetting
+import org.strigate.refinery.theme.LocalRefineryDimens
+import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +53,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val dimens = LocalDimens.current
+    val refineryDimens = LocalRefineryDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
 
@@ -96,7 +96,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = FerrotTopAppBarDefaults.colors(),
+                colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -135,7 +135,7 @@ fun SettingsScreen(
                         with(state.data) {
                             Column(
                                 modifier = Modifier
-                                    .padding(horizontal = dimens.spacingMediumAlt)
+                                    .padding(horizontal = refineryDimens.spacingMediumAlt)
                                     .verticalScroll(rememberScrollState()),
                             ) {
                                 ExpandableSettingsSection(
@@ -151,7 +151,7 @@ fun SettingsScreen(
                                             viewModel.setDownloadWifiOnly(checked)
                                         },
                                     )
-                                    Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                    Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                     SwitchSetting(
                                         text = stringResource(id = R.string.settings_title_automatic_duplicate_deletion),
                                         description = stringResource(id = R.string.settings_description_automatic_duplicate_deletion),
@@ -161,7 +161,7 @@ fun SettingsScreen(
                                         },
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                 ExpandableSettingsSection(
                                     icon = Icons.Outlined.SwapHoriz,
                                     title = stringResource(id = R.string.settings_section_swipe_actions),
@@ -190,21 +190,21 @@ fun SettingsScreen(
                                         },
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                 TextNavigateSetting(
                                     icon = Icons.Outlined.SystemUpdate,
                                     text = stringResource(R.string.settings_navigate_title_updates),
                                 ) {
                                     navController.navigate(Screen.Updates.route)
                                 }
-                                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                 TextNavigateSetting(
                                     icon = Icons.Outlined.Info,
                                     text = stringResource(R.string.settings_navigate_title_about),
                                 ) {
                                     navController.navigate(Screen.About.route)
                                 }
-                                Spacer(modifier = Modifier.height(dimens.spacingMedium))
+                                Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
                             }
                         }
                     }

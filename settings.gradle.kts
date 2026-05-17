@@ -26,3 +26,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ferrot"
 include(":app")
+include(":refinery")

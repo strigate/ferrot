@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.component.settings
+package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,7 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
 fun TextNavigateSetting(
@@ -33,12 +33,13 @@ fun TextNavigateSetting(
     description: String? = null,
     onClick: () -> Unit,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.large,
-        tonalElevation = 4.dp,
-        shadowElevation = 1.dp,
+        tonalElevation = refineryDimens.tonalElevationHigh,
+        shadowElevation = refineryDimens.shadowElevationLow,
     ) {
         Column(
             modifier = Modifier
@@ -49,7 +50,7 @@ fun TextNavigateSetting(
                 ) {
                     onClick()
                 }
-                .padding(16.dp),
+                .padding(refineryDimens.spacingMedium),
         ) {
             Row(
                 modifier = Modifier
@@ -60,35 +61,35 @@ fun TextNavigateSetting(
                 if (icon != null) {
                     Icon(
                         modifier = Modifier
-                            .size(20.dp),
+                            .size(refineryDimens.iconXSmallAlt),
                         imageVector = icon,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         contentDescription = null,
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(refineryDimens.spacingMediumAlt))
                 }
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 24.dp),
+                        .padding(end = refineryDimens.spacingLarge),
                 ) {
                     Text(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         text = text,
                     )
-                    description?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    description?.let { currentDescription ->
+                        Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
                         Text(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            text = it,
+                            text = currentDescription,
                         )
                     }
                 }
                 Icon(
                     modifier = Modifier
-                        .size(20.dp),
+                        .size(refineryDimens.iconXSmallAlt),
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     contentDescription = null,

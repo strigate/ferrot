@@ -21,8 +21,7 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD_AVAILABLE_UPDATE
-import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST
-import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND
+import org.strigate.ferrot.app.Constants.Work.Name.PERIODIC_DOWNLOAD_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.actions.availableUpdateNotificationExtras
@@ -53,8 +52,8 @@ class DownloadAvailableUpdateWorker(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        val tag = "DownloadAvailableUpdate:"
         try {
+            val tag = "DownloadAvailableUpdate:"
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
             }.getOrNull()
@@ -468,27 +467,9 @@ class DownloadAvailableUpdateWorker(
         fun enqueuePeriodicKeep(
             context: Context,
             flexHours: Long = 1,
+            targetHour: Int = 3,
         ) {
-            enqueuePeriodicDailyUpdate(
-                context = context,
-                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST,
-                targetHour = 3,
-                flexHours = flexHours,
-            )
-            enqueuePeriodicDailyUpdate(
-                context = context,
-                uniqueWorkName = PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND,
-                targetHour = 12,
-                flexHours = flexHours,
-            )
-        }
-
-        private fun enqueuePeriodicDailyUpdate(
-            context: Context,
-            uniqueWorkName: String,
-            targetHour: Int,
-            flexHours: Long,
-        ) {
+            cancelLegacyPeriodic(context)
             val initialDelayMillis = calculateDailyInitialDelayMillis(targetHour)
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -507,7 +488,7 @@ class DownloadAvailableUpdateWorker(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                uniqueWorkName,
+                PERIODIC_DOWNLOAD_AVAILABLE_UPDATE,
                 ExistingPeriodicWorkPolicy.UPDATE,
                 periodicWorkRequest,
             )
@@ -535,10 +516,21 @@ class DownloadAvailableUpdateWorker(
         }
 
         fun cancelPeriodic(context: Context) {
+            cancelLegacyPeriodic(context)
             WorkManager.getInstance(context)
-                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST)
-            WorkManager.getInstance(context)
-                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND)
+                .cancelUniqueWork(PERIODIC_DOWNLOAD_AVAILABLE_UPDATE)
         }
+
+        private fun cancelLegacyPeriodic(context: Context) {
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(LEGACY_PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST)
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(LEGACY_PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND)
+        }
+
+        private const val LEGACY_PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_FIRST =
+            "${Constants.APP_ID}.work.periodic.DOWNLOAD_AVAILABLE_UPDATE_FIRST"
+        private const val LEGACY_PERIODIC_DOWNLOAD_AVAILABLE_UPDATE_SECOND =
+            "${Constants.APP_ID}.work.periodic.DOWNLOAD_AVAILABLE_UPDATE_SECOND"
     }
 }

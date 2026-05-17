@@ -112,12 +112,13 @@ import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
-import org.strigate.ferrot.presentation.theme.FerrotTopAppBarDefaults
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
 import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
+import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
+import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
@@ -154,6 +155,7 @@ fun DownloadsScreen(
     var archivingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
 
+    val bulkSelectedLabel = stringResource(R.string.bulk_selected)
     val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
     val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
 
@@ -187,6 +189,23 @@ fun DownloadsScreen(
     val hasActiveDownloads = remember(uiState) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.status.isActive }
+    }
+    val selectedBytes = remember(uiState, selectedIds) {
+        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+        downloads
+            .asSequence()
+            .filter { it.id in selectedIds }
+            .sumOf { it.bytesDownloaded }
+    }
+    val selectionCountTitle = remember(selectedIds, bulkSelectedLabel) {
+        buildString {
+            append(selectedIds.size)
+            append(' ')
+            append(bulkSelectedLabel)
+        }
+    }
+    val selectionSizeTitle = remember(selectedBytes) {
+        UiFormatter.formatBytes(selectedBytes)
     }
     val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
@@ -240,7 +259,7 @@ fun DownloadsScreen(
         topBar = {
             if (selectionMode) {
                 TopAppBar(
-                    colors = FerrotTopAppBarDefaults.colors(),
+                    colors = RefineryTopAppBarDefaults.colors(),
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -254,7 +273,20 @@ fun DownloadsScreen(
                         }
                     },
                     title = {
-                        Text("${selectedIds.size} ${stringResource(R.string.bulk_selected)}")
+                        Column {
+                            Text(
+                                text = selectionCountTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = selectionSizeTitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     },
                     actions = {
                         IconButton(
@@ -342,7 +374,7 @@ fun DownloadsScreen(
                 )
             } else {
                 TopAppBar(
-                    colors = FerrotTopAppBarDefaults.colors(),
+                    colors = RefineryTopAppBarDefaults.colors(),
                     navigationIcon = {
                         if (isArchived) {
                             IconButton(
@@ -766,9 +798,6 @@ private fun DownloadsList(
     }
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
     val swipeActionIds = remember { mutableStateMapOf<Long, DownloadSwipeActionUiData>() }
-    var trackedAutoScrollDownloadId by remember { mutableStateOf<Long?>(null) }
-    var trackedAutoScrollWasActive by remember { mutableStateOf(false) }
-
     val showScrollToBottom by remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
@@ -784,19 +813,9 @@ private fun DownloadsList(
         currentItemIds = itemIds,
         currentPendingDeleteIds = pendingDeleteIds,
     )
-    val visibleCount by remember(items) {
-        derivedStateOf {
-            items.size
-        }
-    }
+    val visibleCount = items.size
     LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
-        if (hasNewItemAtTop(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
-            trackedAutoScrollDownloadId =
-                itemIds.firstOrNull { it !in previousItemIds && it !in previousPendingDeleteIds }
-            trackedAutoScrollWasActive = items
-                .firstOrNull { it.id == trackedAutoScrollDownloadId }
-                ?.status
-                ?.isActive == true
+        if (hasNewVisibleItem(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
             lazyListState.scrollToItem(0)
         }
         previousItemIds = itemIds
@@ -812,24 +831,6 @@ private fun DownloadsList(
         ) {
             lazyListState.scrollToItem(0)
         }
-    }
-    LaunchedEffect(items.map { it.id to it.status }, trackedAutoScrollDownloadId) {
-        val trackedId = trackedAutoScrollDownloadId ?: return@LaunchedEffect
-        val trackedIndex = items.indexOfFirst { it.id == trackedId }
-        if (trackedIndex < 0) {
-            trackedAutoScrollDownloadId = null
-            trackedAutoScrollWasActive = false
-            return@LaunchedEffect
-        }
-        val currentStatus = items[trackedIndex].status
-        val isActive = currentStatus.isActive
-        if (trackedAutoScrollWasActive && !isActive) {
-            lazyListState.animateScrollToItem(trackedIndex)
-            trackedAutoScrollDownloadId = null
-            trackedAutoScrollWasActive = false
-            return@LaunchedEffect
-        }
-        trackedAutoScrollWasActive = isActive
     }
     Box(
         modifier = Modifier
@@ -1490,7 +1491,7 @@ internal fun getBulkDeleteVisibleIds(
     return selectedIds.intersect(visibleIds)
 }
 
-internal fun hasNewItemAtTop(
+internal fun hasNewVisibleItem(
     previousItemIds: List<Long>,
     currentItemIds: List<Long>,
     previousPendingDeleteIds: Set<Long>,

@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.theme
+package org.strigate.refinery.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,10 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
-val FerrotCoral = Color(0xFFFF8557)
+val RefineryPrimary = Color(0xFFFF8557)
 
 private val LightColorScheme = lightColorScheme(
-    primary = FerrotCoral,
+    primary = RefineryPrimary,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFFE7DF),
     onPrimaryContainer = Color(0xFF2B140D),
@@ -37,7 +37,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceTint = Color.Transparent,
     inverseSurface = Color(0xFF2F2B2A),
     inverseOnSurface = Color(0xFFF8EEEA),
-    inversePrimary = FerrotCoral,
+    inversePrimary = RefineryPrimary,
 
     error = Color(0xFFB3261E),
     onError = Color.White,
@@ -46,7 +46,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = FerrotCoral,
+    primary = RefineryPrimary,
     onPrimary = Color.White,
     primaryContainer = Color(0xFF5C3125),
     onPrimaryContainer = Color(0xFFFFE7DF),
@@ -81,20 +81,21 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun FerrotTheme(
-    dimens: Dimens = Dimens(),
+fun RefineryTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dimens: RefineryDimens = RefineryDimens(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-        LocalDimens provides dimens,
+        LocalRefineryDimens provides dimens,
     ) {
         MaterialTheme(
-            colorScheme = if (isSystemInDarkTheme()) {
+            colorScheme = if (darkTheme) {
                 DarkColorScheme
             } else {
                 LightColorScheme
             },
-            typography = Typography,
+            typography = RefineryTypography,
             content = content,
         )
     }

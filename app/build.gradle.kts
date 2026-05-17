@@ -25,13 +25,17 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "1.8.1"
-    const val VERSION_CODE = 30
+    const val BASE_VERSION = "1.9.0"
+    const val VERSION_CODE = 31
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
-    const val RELEASE_APK_NAME = "ferrot"
-    const val DEBUG_VARIANT_SUFFIX = "debug"
-    const val RELEASE_VARIANT_SUFFIX = "release"
+    const val ARTIFACT_BASE_NAME = "ferrot"
 }
+
+val releaseArtifactName = "${BuildInfo.ARTIFACT_BASE_NAME}-release"
+extra["prepareReleaseAabFileName"] = "$releaseArtifactName.aab"
+extra["prepareReleaseApkFileName"] = "$releaseArtifactName.apk"
+
+apply(from = "$rootDir/app/prepare-release.gradle.kts")
 
 android {
     namespace = BuildInfo.PACKAGE_NAME
@@ -120,26 +124,6 @@ tasks.withType<KotlinJvmCompile>().configureEach {
     }
 }
 
-registerArtifactRenameTask(
-    taskName = "renameDebugApk",
-    outputDirectory = "outputs/apk/debug",
-    sourceFileName = "app-debug.apk",
-    variantSuffix = BuildInfo.DEBUG_VARIANT_SUFFIX,
-    extension = "apk",
-    listingTaskName = "createDebugApkListingFileRedirect",
-    buildTaskName = "assembleDebug",
-)
-
-registerArtifactRenameTask(
-    taskName = "renameReleaseApk",
-    outputDirectory = "outputs/apk/release",
-    sourceFileName = "app-release.apk",
-    variantSuffix = BuildInfo.RELEASE_VARIANT_SUFFIX,
-    extension = "apk",
-    listingTaskName = "createReleaseApkListingFileRedirect",
-    buildTaskName = "assembleRelease",
-)
-
 private fun ApplicationDefaultConfig.applyFirebaseProperties(
     includeResString: Boolean = true,
 ) {
@@ -175,35 +159,9 @@ private fun String.escapeForBuildConfig(): String {
     return "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
-private fun registerArtifactRenameTask(
-    taskName: String,
-    outputDirectory: String,
-    sourceFileName: String,
-    variantSuffix: String,
-    extension: String,
-    listingTaskName: String,
-    buildTaskName: String,
-) {
-    tasks.register<Copy>(taskName) {
-        val releaseDir = layout.buildDirectory.dir(outputDirectory)
-        from(releaseDir)
-        include(sourceFileName)
-        into(releaseDir)
-        rename(sourceFileName, artifactFileName(variantSuffix, extension))
-    }
-    tasks.named(taskName) {
-        mustRunAfter(listingTaskName)
-    }
-    tasks.matching { it.name == buildTaskName }.configureEach {
-        finalizedBy(taskName)
-    }
-}
-
-private fun artifactFileName(variantSuffix: String, extension: String): String {
-    return "${BuildInfo.RELEASE_APK_NAME}-$variantSuffix.$extension"
-}
-
 dependencies {
+    // Modules
+    implementation(project(":refinery"))
     // Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
