@@ -19,7 +19,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetPendingDownloadsCombinedUseCaseTest {
+class GetResumableDownloadsCombinedUseCaseTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
@@ -63,6 +63,8 @@ class GetPendingDownloadsCombinedUseCaseTest {
                 sampleDownload(2L, DownloadStatus.WAITING_FOR_NETWORK),
                 sampleDownload(3L, DownloadStatus.WAITING_FOR_WIFI),
                 sampleDownload(4L, DownloadStatus.PAUSED),
+                sampleDownload(5L, DownloadStatus.METADATA),
+                sampleDownload(6L, DownloadStatus.DOWNLOADING),
             ),
             result,
         )
@@ -73,7 +75,7 @@ class GetPendingDownloadsCombinedUseCaseTest {
         autoCloseable.close()
     }
 
-    private fun createUseCase() = GetPendingDownloadsCombinedUseCase(
+    private fun createUseCase() = GetResumableDownloadsCombinedUseCase(
         downloadUseCase = downloadUseCase,
     )
 
