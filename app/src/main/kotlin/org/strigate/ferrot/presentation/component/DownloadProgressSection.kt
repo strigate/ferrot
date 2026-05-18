@@ -92,7 +92,6 @@ private fun StatusSizeEtaRow(
         DownloadStatusUiData.WAITING_FOR_WIFI -> stringResource(R.string.status_waiting_for_wifi)
         DownloadStatusUiData.METADATA -> stringResource(R.string.status_metadata)
         DownloadStatusUiData.DOWNLOADING -> stringResource(R.string.status_downloading)
-        DownloadStatusUiData.PAUSED -> stringResource(R.string.status_paused)
         DownloadStatusUiData.COMPLETED -> stringResource(R.string.status_completed)
         DownloadStatusUiData.FAILED -> stringResource(R.string.status_failed)
         DownloadStatusUiData.STOPPED -> stringResource(R.string.status_stopped)

@@ -12,7 +12,6 @@ class GetResumableDownloadsCombinedUseCase @Inject constructor(
         DownloadStatus.QUEUED,
         DownloadStatus.WAITING_FOR_NETWORK,
         DownloadStatus.WAITING_FOR_WIFI,
-        DownloadStatus.PAUSED,
         DownloadStatus.METADATA,
         DownloadStatus.DOWNLOADING,
     )

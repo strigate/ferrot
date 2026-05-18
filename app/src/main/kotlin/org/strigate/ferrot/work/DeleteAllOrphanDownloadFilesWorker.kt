@@ -152,8 +152,7 @@ class DeleteAllOrphanDownloadFilesWorker(
             DownloadStatus.WAITING_FOR_NETWORK,
             DownloadStatus.WAITING_FOR_WIFI,
             DownloadStatus.METADATA,
-            DownloadStatus.DOWNLOADING,
-            DownloadStatus.PAUSED -> true
+            DownloadStatus.DOWNLOADING -> true
 
             DownloadStatus.COMPLETED,
             DownloadStatus.FAILED,

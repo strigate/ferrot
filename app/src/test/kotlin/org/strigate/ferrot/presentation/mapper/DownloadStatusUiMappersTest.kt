@@ -18,7 +18,6 @@ class DownloadStatusUiMappersTest {
         assertEquals(DownloadStatusUiData.WAITING_FOR_WIFI, mapped[DownloadStatus.WAITING_FOR_WIFI])
         assertEquals(DownloadStatusUiData.METADATA, mapped[DownloadStatus.METADATA])
         assertEquals(DownloadStatusUiData.DOWNLOADING, mapped[DownloadStatus.DOWNLOADING])
-        assertEquals(DownloadStatusUiData.PAUSED, mapped[DownloadStatus.PAUSED])
         assertEquals(DownloadStatusUiData.COMPLETED, mapped[DownloadStatus.COMPLETED])
         assertEquals(DownloadStatusUiData.FAILED, mapped[DownloadStatus.FAILED])
         assertEquals(DownloadStatusUiData.STOPPED, mapped[DownloadStatus.STOPPED])
