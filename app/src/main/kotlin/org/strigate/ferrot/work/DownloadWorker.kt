@@ -866,6 +866,6 @@ class DownloadWorker(
             WorkManager.getInstance(context).cancelUniqueWork(uniqueWorkName(id))
         }
 
-        private fun uniqueWorkName(downloadId: Long): String = "$ONETIME_DOWNLOAD-$downloadId"
+        fun uniqueWorkName(downloadId: Long): String = "$ONETIME_DOWNLOAD-$downloadId"
     }
 }
