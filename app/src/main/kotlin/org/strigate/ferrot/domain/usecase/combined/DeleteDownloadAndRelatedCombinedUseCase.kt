@@ -22,25 +22,12 @@ class DeleteDownloadAndRelatedCombinedUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(downloadId: Long): Boolean = withContext(Dispatchers.IO) {
         clearNotificationsByDownloadIdUseCase(downloadId)
-
-        val downloadFilesDeleted = downloadUseCase
-            .deleteDownloadFilesUseCase(downloadId)
-        val downloadMetadataDeleted = downloadMetadataUseCase
-            .deleteDownloadMetadataByDownloadIdUseCase(downloadId)
-        val downloadProgressDeleted = downloadProgressUseCase
-            .deleteDownloadProgressByDownloadIdUseCase(downloadId)
-        val downloadAudioDeleted = downloadAudioUseCase
-            .deleteDownloadAudioUseCase(downloadId)
-        val downloadVideoDeleted = downloadVideoUseCase
-            .deleteDownloadVideoUseCase(downloadId)
-        val downloadDeleted = downloadUseCase
-            .deleteDownloadByIdUseCase(downloadId)
-
-        downloadFilesDeleted
-                && downloadAudioDeleted
-                && downloadVideoDeleted
-                && downloadMetadataDeleted
-                && downloadProgressDeleted
-                && downloadDeleted
+        val downloadFilesDeleted = downloadUseCase.deleteDownloadFilesUseCase(downloadId)
+        downloadMetadataUseCase.deleteDownloadMetadataByDownloadIdUseCase(downloadId)
+        downloadProgressUseCase.deleteDownloadProgressByDownloadIdUseCase(downloadId)
+        downloadAudioUseCase.deleteDownloadAudioUseCase(downloadId)
+        downloadVideoUseCase.deleteDownloadVideoUseCase(downloadId)
+        val downloadDeleted = downloadUseCase.deleteDownloadByIdUseCase(downloadId)
+        downloadFilesDeleted && downloadDeleted
     }
 }
