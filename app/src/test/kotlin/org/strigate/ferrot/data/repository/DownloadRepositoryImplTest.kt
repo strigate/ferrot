@@ -120,12 +120,12 @@ class DownloadRepositoryImplTest {
     @Test
     fun getByIdAsFlow_mapsEntityToDomain() = runTest(testDispatcher) {
         `when`(downloadDao.getByIdAsFlow(8L))
-            .thenReturn(flowOf(sampleEntity(id = 8L, status = EntityStatus.PAUSED)))
+            .thenReturn(flowOf(sampleEntity(id = 8L, status = EntityStatus.STOPPED)))
 
         val repository = DownloadRepositoryImpl(downloadDao)
         val result = repository.getByIdAsFlow(8L).first()
 
-        assertEquals(sampleDownload(id = 8L, status = DownloadStatus.PAUSED), result)
+        assertEquals(sampleDownload(id = 8L, status = DownloadStatus.STOPPED), result)
     }
 
     @Test

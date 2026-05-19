@@ -61,7 +61,6 @@
     <string name="status_waiting_for_wifi">Waiting for Wi-Fi</string>
     <string name="status_metadata">Downloading metadata</string>
     <string name="status_downloading">Downloading</string>
-    <string name="status_paused">Paused</string>
     <string name="status_completed">Completed</string>
     <string name="status_failed">Failed</string>
     <string name="status_stopped">Stopped</string>

@@ -119,7 +119,6 @@ class DownloadWorker(
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
                     DownloadStatus.WAITING_FOR_WIFI,
-                    DownloadStatus.PAUSED,
                     DownloadStatus.FAILED,
                     DownloadStatus.METADATA,
                     DownloadStatus.DOWNLOADING -> true
