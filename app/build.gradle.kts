@@ -49,12 +49,13 @@ android {
         versionName = BuildInfo.VERSION_NAME
         stringField("VERSION", BuildInfo.BASE_VERSION)
         stringField("VERSION_TAG", "v${BuildInfo.BASE_VERSION}")
-        applyFirebaseProperties()
         ndk {
             ndkVersion = "29.0.14206865"
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        applyFirebaseProperties()
     }
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
