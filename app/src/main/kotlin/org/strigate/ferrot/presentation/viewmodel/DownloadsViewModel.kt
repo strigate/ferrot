@@ -36,7 +36,6 @@ import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.AvailableUpdateUiData
-import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadsUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
@@ -105,12 +104,20 @@ class DownloadsViewModel @Inject constructor(
                 .filter { it.pendingDelete }
                 .map { it.id }
                 .toSet()
-            val filteredDownloads = downloadsWithMetadata
+            val visibleDownloads = downloadsWithMetadata
                 .asSequence()
                 .filter { !it.pendingDelete }
                 .filter {
                     query.isBlank() || it.title.contains(query, ignoreCase = true)
                 }
+                .toList()
+            val retryFailedDownloadIds = visibleDownloads
+                .asSequence()
+                .filter { it.status == DownloadStatus.FAILED }
+                .map { it.id }
+                .toSet()
+            val filteredDownloads = visibleDownloads
+                .asSequence()
                 .map { it.toUiData() }
                 .toList()
 
@@ -129,6 +136,7 @@ class DownloadsViewModel @Inject constructor(
                     downloads = filteredDownloads,
                     availableUpdate = availableUpdateUiData,
                     pendingDeleteIds = pendingDeleteIds,
+                    retryFailedDownloadIds = retryFailedDownloadIds,
                     leftSwipeAction = leftSwipeAction,
                     rightSwipeAction = rightSwipeAction,
                 ),
@@ -187,12 +195,7 @@ class DownloadsViewModel @Inject constructor(
 
     fun retryFailedDownloads() {
         val data = uiState.value as? DownloadsUiState.Data ?: return
-        val failedDownloadIds = data.data.downloads
-            .asSequence()
-            .filter { it.status == DownloadStatusUiData.FAILED }
-            .map { it.id }
-            .toList()
-
+        val failedDownloadIds = data.data.retryFailedDownloadIds.toList()
         if (failedDownloadIds.isEmpty()) {
             return
         }

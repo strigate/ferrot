@@ -160,6 +160,7 @@ class DownloadsViewModelTest {
         assertEquals("v1.2.3", state.data.availableUpdate?.tag)
         assertEquals("/tmp/update.apk", state.data.availableUpdate?.localFilePath)
         assertTrue(state.data.pendingDeleteIds.isEmpty())
+        assertTrue(state.data.retryFailedDownloadIds.isEmpty())
         assertEquals(DownloadSwipeActionUiData.ARCHIVE, state.data.leftSwipeAction)
         assertEquals(DownloadSwipeActionUiData.DELETE, state.data.rightSwipeAction)
 
@@ -191,6 +192,7 @@ class DownloadsViewModelTest {
         val state = viewModel.uiState.value as DownloadsUiState.Data
         assertEquals(listOf(1L), state.data.downloads.map { it.id })
         assertEquals(setOf(2L), state.data.pendingDeleteIds)
+        assertTrue(state.data.retryFailedDownloadIds.isEmpty())
 
         collector.cancel()
     }
@@ -382,6 +384,8 @@ class DownloadsViewModelTest {
         viewModel.retryFailedDownloads()
         advanceUntilIdle()
 
+        val state = viewModel.uiState.value as DownloadsUiState.Data
+        assertEquals(setOf(1L, 4L), state.data.retryFailedDownloadIds)
         verify(analyticsLogger)
             .logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
         verify(startDownloadUseCase)
@@ -390,6 +394,101 @@ class DownloadsViewModelTest {
             .invoke(4L)
         verify(startDownloadUseCase, never())
             .invoke(2L)
+        verify(startDownloadUseCase, never())
+            .invoke(3L)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun retryFailedDownloads_skipsPendingDelete() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(
+                        id = 1L,
+                        title = "Failed",
+                        status = DownloadStatus.FAILED,
+                    ),
+                    createDownload(
+                        id = 2L,
+                        title = "Pending Delete",
+                        status = DownloadStatus.FAILED,
+                        pendingDelete = true,
+                    ),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+            data.data.pendingDeleteIds == setOf(2L) &&
+                    data.data.retryFailedDownloadIds == setOf(1L)
+        }
+
+        viewModel.retryFailedDownloads()
+        advanceUntilIdle()
+
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
+        verify(startDownloadUseCase)
+            .invoke(1L)
+        verify(startDownloadUseCase, never())
+            .invoke(2L)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun retryFailedDownloads_respectsSearch() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(
+                        id = 1L,
+                        title = "Alpha Failed",
+                        status = DownloadStatus.FAILED,
+                    ),
+                    createDownload(
+                        id = 2L,
+                        title = "Beta Failed",
+                        status = DownloadStatus.FAILED,
+                    ),
+                    createDownload(
+                        id = 3L,
+                        title = "Beta Stopped",
+                        status = DownloadStatus.STOPPED
+                    ),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.updateSearchQuery(TextFieldValue("Beta", TextRange(4)))
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
+            data.data.downloads.map { it.id } == listOf(2L, 3L) &&
+                    data.data.retryFailedDownloadIds == setOf(2L)
+        }
+
+        viewModel.retryFailedDownloads()
+        advanceUntilIdle()
+
+        verify(analyticsLogger)
+            .logEvent(AnalyticsEvents.DOWNLOADS_RETRY)
+        verify(startDownloadUseCase)
+            .invoke(2L)
+        verify(startDownloadUseCase, never())
+            .invoke(1L)
         verify(startDownloadUseCase, never())
             .invoke(3L)
         collector.cancel()
