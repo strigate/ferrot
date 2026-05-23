@@ -28,7 +28,6 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                 val downloadStatuses = setOf(
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
-                    DownloadStatus.PAUSED,
                     DownloadStatus.METADATA,
                     DownloadStatus.DOWNLOADING,
                 )

@@ -119,7 +119,6 @@ class DownloadWorker(
                     DownloadStatus.QUEUED,
                     DownloadStatus.WAITING_FOR_NETWORK,
                     DownloadStatus.WAITING_FOR_WIFI,
-                    DownloadStatus.PAUSED,
                     DownloadStatus.FAILED,
                     DownloadStatus.METADATA,
                     DownloadStatus.DOWNLOADING -> true
@@ -866,6 +865,6 @@ class DownloadWorker(
             WorkManager.getInstance(context).cancelUniqueWork(uniqueWorkName(id))
         }
 
-        private fun uniqueWorkName(downloadId: Long): String = "$ONETIME_DOWNLOAD-$downloadId"
+        fun uniqueWorkName(downloadId: Long): String = "$ONETIME_DOWNLOAD-$downloadId"
     }
 }

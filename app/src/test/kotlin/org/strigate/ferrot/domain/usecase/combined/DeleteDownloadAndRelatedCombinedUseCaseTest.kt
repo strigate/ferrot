@@ -110,23 +110,60 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
     }
 
     @Test
-    fun invoke_returnsFalse_whenAnyDeleteFails() = runTest(testDispatcher) {
+    fun invoke_returnsTrue_whenRelatedRowsAreAlreadyMissing() = runTest(testDispatcher) {
         stubDeletes(
             files = true,
             metadata = false,
-            progress = true,
-            audio = true,
-            video = true,
+            progress = false,
+            audio = false,
+            video = false,
             download = true
         )
 
         val result = createUseCase().invoke(32L)
 
+        assertTrue(result)
+        verifyDeleteSequence(32L)
+    }
+
+    @Test
+    fun invoke_returnsFalse_whenFileDeletionFails() = runTest(testDispatcher) {
+        stubDeletes(
+            files = false,
+            metadata = true,
+            progress = true,
+            audio = true,
+            video = true,
+            download = true,
+        )
+
+        val result = createUseCase().invoke(33L)
+
         assertFalse(result)
         verify(clearNotificationsByDownloadIdUseCase)
-            .invoke(32L)
+            .invoke(33L)
         verify(deleteDownloadByIdUseCase)
-            .invoke(32L)
+            .invoke(33L)
+    }
+
+    @Test
+    fun invoke_returnsFalse_whenPrimaryDownloadDeleteFails() = runTest(testDispatcher) {
+        stubDeletes(
+            files = true,
+            metadata = true,
+            progress = true,
+            audio = true,
+            video = true,
+            download = false,
+        )
+
+        val result = createUseCase().invoke(34L)
+
+        assertFalse(result)
+        verify(clearNotificationsByDownloadIdUseCase)
+            .invoke(34L)
+        verify(deleteDownloadByIdUseCase)
+            .invoke(34L)
     }
 
     private suspend fun stubDeletes(

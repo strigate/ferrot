@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
-import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.RequeueResumableDownloadsWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -52,9 +52,9 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
                             TimeUnit.SECONDS,
                         )
                         .build()
-                val requeuePendingDownloadsOneTimeWorkRequest =
-                    OneTimeWorkRequestBuilder<RequeuePendingDownloadsWorker>()
-                        .build()
+
+                val requeueResumableDownloadsOneTimeWorkRequest =
+                    OneTimeWorkRequestBuilder<RequeueResumableDownloadsWorker>().build()
 
                 WorkManager.getInstance(appContext)
                     .beginUniqueWork(
@@ -62,7 +62,7 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
                         ExistingWorkPolicy.REPLACE,
                         updateDependenciesOneTimeWorkRequest,
                     )
-                    .then(requeuePendingDownloadsOneTimeWorkRequest)
+                    .then(requeueResumableDownloadsOneTimeWorkRequest)
                     .enqueue()
 
             } catch (throwable: Throwable) {

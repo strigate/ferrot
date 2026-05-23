@@ -6,7 +6,6 @@ enum class DownloadStatusUiData {
     WAITING_FOR_WIFI,
     METADATA,
     DOWNLOADING,
-    PAUSED,
     COMPLETED,
     FAILED,
     STOPPED,
@@ -20,7 +19,6 @@ val DownloadStatusUiData.isActive: Boolean
         DownloadStatusUiData.METADATA,
         DownloadStatusUiData.DOWNLOADING -> true
 
-        DownloadStatusUiData.PAUSED,
         DownloadStatusUiData.COMPLETED,
         DownloadStatusUiData.FAILED,
         DownloadStatusUiData.STOPPED -> false

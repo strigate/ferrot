@@ -6,7 +6,6 @@ enum class DownloadStatus {
     WAITING_FOR_WIFI,
     METADATA,
     DOWNLOADING,
-    PAUSED,
     COMPLETED,
     FAILED,
     STOPPED,

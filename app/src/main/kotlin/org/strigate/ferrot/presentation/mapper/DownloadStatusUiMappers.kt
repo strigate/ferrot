@@ -9,7 +9,6 @@ fun DownloadStatus.toUiData(): DownloadStatusUiData = when (this) {
     DownloadStatus.WAITING_FOR_WIFI -> DownloadStatusUiData.WAITING_FOR_WIFI
     DownloadStatus.METADATA -> DownloadStatusUiData.METADATA
     DownloadStatus.DOWNLOADING -> DownloadStatusUiData.DOWNLOADING
-    DownloadStatus.PAUSED -> DownloadStatusUiData.PAUSED
     DownloadStatus.COMPLETED -> DownloadStatusUiData.COMPLETED
     DownloadStatus.FAILED -> DownloadStatusUiData.FAILED
     DownloadStatus.STOPPED -> DownloadStatusUiData.STOPPED

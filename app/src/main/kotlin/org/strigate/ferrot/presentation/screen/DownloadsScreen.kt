@@ -110,7 +110,6 @@ import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.isActive
-import org.strigate.ferrot.presentation.model.isFailed
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.theme.TextStyles
@@ -179,13 +178,14 @@ fun DownloadsScreen(
     val hasDownloads = allIds.isNotEmpty()
     val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
     val selectionMode = selectedIds.isNotEmpty()
-    val pendingDeleteIds = (uiState as? DownloadsUiState.Data)?.data?.pendingDeleteIds ?: emptySet()
+    val pendingDeleteIds = (uiState as? DownloadsUiState.Data)
+        ?.data
+        ?.pendingDeleteIds ?: emptySet()
     val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
-
-    val hasFailedDownloads = remember(uiState) {
-        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
-        downloads.any { it.status.isFailed }
-    }
+    val retryFailedDownloadIds = (uiState as? DownloadsUiState.Data)
+        ?.data
+        ?.retryFailedDownloadIds ?: emptySet()
+    val hasFailedDownloads = retryFailedDownloadIds.isNotEmpty()
     val hasActiveDownloads = remember(uiState) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
         downloads.any { it.status.isActive }

@@ -19,7 +19,7 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetPendingDownloadsCombinedUseCaseTest {
+class GetResumableDownloadsCombinedUseCaseTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
@@ -45,12 +45,11 @@ class GetPendingDownloadsCombinedUseCaseTest {
             sampleDownload(1L, DownloadStatus.QUEUED),
             sampleDownload(2L, DownloadStatus.WAITING_FOR_NETWORK),
             sampleDownload(3L, DownloadStatus.WAITING_FOR_WIFI),
-            sampleDownload(4L, DownloadStatus.PAUSED),
-            sampleDownload(5L, DownloadStatus.METADATA),
-            sampleDownload(6L, DownloadStatus.DOWNLOADING),
-            sampleDownload(7L, DownloadStatus.COMPLETED),
-            sampleDownload(8L, DownloadStatus.FAILED),
-            sampleDownload(9L, DownloadStatus.STOPPED),
+            sampleDownload(4L, DownloadStatus.METADATA),
+            sampleDownload(5L, DownloadStatus.DOWNLOADING),
+            sampleDownload(6L, DownloadStatus.COMPLETED),
+            sampleDownload(7L, DownloadStatus.FAILED),
+            sampleDownload(8L, DownloadStatus.STOPPED),
         )
         `when`(getAllDownloadsUseCase.invoke())
             .thenReturn(downloads)
@@ -62,7 +61,8 @@ class GetPendingDownloadsCombinedUseCaseTest {
                 sampleDownload(1L, DownloadStatus.QUEUED),
                 sampleDownload(2L, DownloadStatus.WAITING_FOR_NETWORK),
                 sampleDownload(3L, DownloadStatus.WAITING_FOR_WIFI),
-                sampleDownload(4L, DownloadStatus.PAUSED),
+                sampleDownload(4L, DownloadStatus.METADATA),
+                sampleDownload(5L, DownloadStatus.DOWNLOADING),
             ),
             result,
         )
@@ -73,7 +73,7 @@ class GetPendingDownloadsCombinedUseCaseTest {
         autoCloseable.close()
     }
 
-    private fun createUseCase() = GetPendingDownloadsCombinedUseCase(
+    private fun createUseCase() = GetResumableDownloadsCombinedUseCase(
         downloadUseCase = downloadUseCase,
     )
 

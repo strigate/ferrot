@@ -54,7 +54,6 @@ fun DownloadPrimaryActionButton(
             onClick = onPauseResume,
         )
 
-        DownloadStatusUiData.PAUSED,
         DownloadStatusUiData.STOPPED,
         DownloadStatusUiData.FAILED -> ActionConfig(
             icon = Icons.Filled.Refresh,

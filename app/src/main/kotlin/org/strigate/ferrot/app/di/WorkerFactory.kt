@@ -20,7 +20,7 @@ import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
-import org.strigate.ferrot.domain.usecase.combined.GetPendingDownloadsCombinedUseCase
+import org.strigate.ferrot.domain.usecase.combined.GetResumableDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
@@ -33,7 +33,7 @@ import org.strigate.ferrot.work.DeletePendingDownloadsImmediateWorker
 import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
 import org.strigate.ferrot.work.DownloadWorker
 import org.strigate.ferrot.work.RefreshDownloadMetadataWorker
-import org.strigate.ferrot.work.RequeuePendingDownloadsWorker
+import org.strigate.ferrot.work.RequeueResumableDownloadsWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,7 +51,7 @@ class WorkerFactory @Inject constructor(
     private val availableUpdateUseCase: AvailableUpdateUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
     private val stopDownloadUseCase: StopDownloadUseCase,
-    private val getPendingDownloadsCombinedUseCase: GetPendingDownloadsCombinedUseCase,
+    private val getResumableDownloadsCombinedUseCase: GetResumableDownloadsCombinedUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val refreshDownloadMetadataCombinedUseCase: RefreshDownloadMetadataCombinedUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
@@ -105,11 +105,11 @@ class WorkerFactory @Inject constructor(
                 )
             }
 
-            RequeuePendingDownloadsWorker::class.java.name -> {
-                RequeuePendingDownloadsWorker(
+            RequeueResumableDownloadsWorker::class.java.name -> {
+                RequeueResumableDownloadsWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
-                    getPendingDownloadsCombinedUseCase = getPendingDownloadsCombinedUseCase,
+                    getResumableDownloadsCombinedUseCase = getResumableDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
                 )
             }
