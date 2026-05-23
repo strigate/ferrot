@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.1 - 2026-05-23
+### Changed
+- Removed the unused `PAUSED` download status and simplified related download ordering and UI handling
+- Updated the Compose BOM and Gradle wrapper
+
+### Fixed
+- Hardened resumable download requeue recovery and skipped downloads that already have tracked running work
+- Corrected combined delete success reporting when related cleanup rows are already missing
+- Scoped `Retry failed` to visible, non-pending downloads that match the current filter
+- Reordered Firebase property application in the app Gradle configuration
+
 ## 1.9.0 - 2026-05-17
 ### Added
 - Selected download size in the downloads selection app bar
