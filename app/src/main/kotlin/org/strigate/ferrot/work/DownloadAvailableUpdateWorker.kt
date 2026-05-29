@@ -34,12 +34,12 @@ import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.util.calculateDailyInitialDelayMillis
 import org.strigate.ferrot.util.isAppInForeground
 import org.strigate.ferrot.util.setExpeditedIfAllowed
+import org.strigate.ferrot.util.sha256
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -401,22 +401,9 @@ class DownloadAvailableUpdateWorker(
         return false
     }
 
-    private fun calculateSha256(file: File): String {
-        val messageDigest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { fileInputStream ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val bytesRead = fileInputStream.read(buffer)
-                if (bytesRead == -1) break
-                messageDigest.update(buffer, 0, bytesRead)
-            }
-        }
-        return messageDigest.digest().joinToString("") { "%02x".format(it) }
-    }
-
     private fun validateSha256(file: File, digestString: String): Boolean {
         val expected = digestString.substringAfter(":", "").lowercase(Locale.ROOT)
-        val actual = calculateSha256(file)
+        val actual = sha256(file) ?: return false
         val ok = expected.equals(actual, ignoreCase = true)
         if (!ok) {
             val message = buildString {
