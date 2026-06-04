@@ -1,10 +1,8 @@
 package org.strigate.ferrot.presentation.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,20 +16,25 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.availableupdate.RequestAppUpdateCheckUseCase
+import org.strigate.ferrot.domain.usecase.dependencyupdate.RequestDependencyUpdateCheckUseCase
 import org.strigate.ferrot.presentation.event.UpdatesEvent
 import org.strigate.ferrot.presentation.model.UpdatesInfoUiData
 import org.strigate.ferrot.presentation.model.UpdatesSettingsUiData
 import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
-import org.strigate.ferrot.work.DownloadAvailableUpdateWorker
-import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
 
 @HiltViewModel
 class UpdatesViewModel @Inject constructor(
-    @param:ApplicationContext private val appContext: Context,
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
+    private val configureAutomaticAppUpdatesSettingUseCase: ConfigureAutomaticAppUpdatesSettingUseCase,
+    private val requestAppUpdateCheckUseCase: RequestAppUpdateCheckUseCase,
+    private val configureAutomaticDependencyUpdatesSettingUseCase: ConfigureAutomaticDependencyUpdatesSettingUseCase,
+    private val requestDependencyUpdateCheckUseCase: RequestDependencyUpdateCheckUseCase,
     private val stateUseCase: StateUseCase,
 ) : ViewModel() {
     private val _event = MutableSharedFlow<UpdatesEvent>()
@@ -70,36 +73,28 @@ class UpdatesViewModel @Inject constructor(
     fun setAutomaticUpdates(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveAutomaticUpdatesSettingUseCase(enabled)
-            if (enabled) {
-                DownloadAvailableUpdateWorker.enqueuePeriodicKeep(appContext)
-            } else {
-                DownloadAvailableUpdateWorker.cancelPeriodic(appContext)
-            }
+            configureAutomaticAppUpdatesSettingUseCase(enabled)
         }
     }
 
     fun checkForAvailableUpdate() {
         viewModelScope.launch {
             _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_app_updates))
-            DownloadAvailableUpdateWorker.enqueueOneTimeReplace(appContext)
+            requestAppUpdateCheckUseCase()
         }
     }
 
     fun setAutomaticDependencyUpdates(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveAutomaticDependencyUpdatesSettingUseCase(enabled)
-            if (enabled) {
-                UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
-            } else {
-                UpdateDependenciesWorker.cancelPeriodic(appContext)
-            }
+            configureAutomaticDependencyUpdatesSettingUseCase(enabled)
         }
     }
 
     fun checkForDependencyUpdates() {
         viewModelScope.launch {
             _event.emit(UpdatesEvent.ShowToast(R.string.toast_checking_for_dependency_updates))
-            UpdateDependenciesWorker.enqueueOneTimeReplace(appContext)
+            requestDependencyUpdateCheckUseCase()
         }
     }
 

@@ -1,5 +1,5 @@
 [versions]
-coreKtx = "1.18.0"
+coreKtx = "1.19.0"
 coreSplashscreen = "1.2.0"
 startupRuntime = "1.2.0"
 datastorePreferences = "1.2.1"

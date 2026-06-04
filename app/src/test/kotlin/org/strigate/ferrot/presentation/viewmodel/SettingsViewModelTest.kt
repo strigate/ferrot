@@ -18,14 +18,12 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
-import org.strigate.ferrot.domain.usecase.ApplyUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.domain.usecase.apply.ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
@@ -36,6 +34,7 @@ import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUse
 import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
+import org.strigate.ferrot.test.MainDispatcherRule
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,9 +52,6 @@ class SettingsViewModelTest {
     private lateinit var settingsUseCase: SettingsUseCase
 
     @Mock
-    private lateinit var applyUseCase: ApplyUseCase
-
-    @Mock
     private lateinit var getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase
 
     @Mock
@@ -71,7 +67,7 @@ class SettingsViewModelTest {
     private lateinit var applyWifiOnlyPolicyUseCase: ApplyWifiOnlyPolicyUseCase
 
     @Mock
-    private lateinit var applyAutomaticDuplicateDownloadDeletionSettingUseCase: ApplyAutomaticDuplicateDownloadDeletionSettingUseCase
+    private lateinit var configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
 
     @Mock
     private lateinit var getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase
@@ -164,10 +160,8 @@ class SettingsViewModelTest {
 
         verify(saveAutomaticDuplicateDownloadDeletionSettingUseCase)
             .invoke(true)
-        verify(applyAutomaticDuplicateDownloadDeletionSettingUseCase)
-            .invoke(
-                automaticDuplicateDownloadDeletion = true,
-            )
+        verify(configureAutomaticDuplicateDownloadDeletionSettingUseCase)
+            .invoke(true)
     }
 
     @Test
@@ -237,15 +231,12 @@ class SettingsViewModelTest {
             .thenReturn(saveLeftSwipeActionSettingUseCase)
         `when`(settingsUseCase.saveRightSwipeActionSettingUseCase)
             .thenReturn(saveRightSwipeActionSettingUseCase)
-        `when`(applyUseCase.applyWifiOnlyPolicyUseCase)
-            .thenReturn(applyWifiOnlyPolicyUseCase)
-        `when`(applyUseCase.applyAutomaticDuplicateDownloadDeletionSettingUseCase)
-            .thenReturn(applyAutomaticDuplicateDownloadDeletionSettingUseCase)
 
         return SettingsViewModel(
             analyticsLogger = analyticsLogger,
             settingsUseCase = settingsUseCase,
-            applyUseCase = applyUseCase,
+            applyWifiOnlyPolicyUseCase = applyWifiOnlyPolicyUseCase,
+            configureAutomaticDuplicateDownloadDeletionSettingUseCase = configureAutomaticDuplicateDownloadDeletionSettingUseCase,
         )
     }
 
