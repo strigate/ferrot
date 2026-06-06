@@ -119,6 +119,7 @@ import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
 private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
@@ -134,12 +135,10 @@ fun DownloadsScreen(
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val view = LocalView.current
-    val dimens = LocalDimens.current
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val lazyListState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -165,7 +164,7 @@ fun DownloadsScreen(
     }
     LaunchedEffect(searchActive) {
         if (searchActive) {
-            delay(SEARCH_FOCUS_DELAY_MILLIS)
+            delay(SEARCH_FOCUS_DELAY_MILLIS.milliseconds)
             searchFocusRequester.requestFocus()
             keyboardController?.show()
         }
@@ -185,6 +184,7 @@ fun DownloadsScreen(
     val retryFailedDownloadIds = (uiState as? DownloadsUiState.Data)
         ?.data
         ?.retryFailedDownloadIds ?: emptySet()
+
     val hasFailedDownloads = retryFailedDownloadIds.isNotEmpty()
     val hasActiveDownloads = remember(uiState) {
         val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
@@ -257,351 +257,31 @@ fun DownloadsScreen(
             .fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (selectionMode) {
-                TopAppBar(
-                    colors = RefineryTopAppBarDefaults.colors(),
-                    navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                selectedIds = emptySet()
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    title = {
-                        Column {
-                            Text(
-                                text = selectionCountTitle,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = selectionSizeTitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                selectedIds = if (allSelected) {
-                                    emptySet()
-                                } else {
-                                    allIds
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.SelectAll,
-                                contentDescription = stringResource(R.string.content_description_select_all),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                viewModel.toggleDownloadsSeen(selectedIds)
-                            },
-                        ) {
-                            Icon(
-                                imageVector = if (shouldMarkSelectionSeen) {
-                                    Icons.Filled.Visibility
-                                } else {
-                                    Icons.Filled.VisibilityOff
-                                },
-                                contentDescription = if (shouldMarkSelectionSeen) {
-                                    stringResource(R.string.content_description_mark_seen)
-                                } else {
-                                    stringResource(R.string.content_description_mark_unseen)
-                                },
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                val visibleSelectedIds = getBulkDeleteVisibleIds(
-                                    selectedIds = selectedIds,
-                                    visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
-                                )
-                                val hiddenSelectedIds = selectedIds - visibleSelectedIds
-                                archivingIds = archivingIds + visibleSelectedIds
-                                if (hiddenSelectedIds.isNotEmpty()) {
-                                    viewModel.updateDownloadsArchived(
-                                        downloadIds = hiddenSelectedIds,
-                                        archived = !isArchived,
-                                    )
-                                }
-                                selectedIds = emptySet()
-                            },
-                        ) {
-                            Icon(
-                                imageVector = if (isArchived) {
-                                    Icons.Filled.Unarchive
-                                } else {
-                                    Icons.Filled.Archive
-                                },
-                                contentDescription = if (isArchived) {
-                                    stringResource(R.string.content_description_unarchive)
-                                } else {
-                                    stringResource(R.string.content_description_archive)
-                                },
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                val visibleSelectedIds = getBulkDeleteVisibleIds(
-                                    selectedIds = selectedIds,
-                                    visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
-                                )
-                                val hiddenSelectedIds = selectedIds - visibleSelectedIds
-                                dismissingIds = dismissingIds + visibleSelectedIds
-                                if (hiddenSelectedIds.isNotEmpty()) {
-                                    viewModel.markDownloadsPendingDelete(hiddenSelectedIds)
-                                }
-                                selectedIds = emptySet()
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.content_description_delete),
-                            )
-                        }
-                    },
-                )
-            } else {
-                TopAppBar(
-                    colors = RefineryTopAppBarDefaults.colors(),
-                    navigationIcon = {
-                        if (isArchived) {
-                            IconButton(
-                                onClick = {
-                                    navController.navigateUp()
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.content_description_back),
-                                )
-                            }
-                        } else {
-                            IconButton(
-                                onClick = {},
-                            ) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(id = R.drawable.ic_logo_appbar),
-                                    contentDescription = stringResource(R.string.app_name),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                    },
-                    title = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            AnimatedVisibility(
-                                visible = !searchActive,
-                                enter = Transitions.titleEnter,
-                                exit = Transitions.titleExit,
-                            ) {
-                                Text(
-                                    modifier = Modifier
-                                        .combinedClickable {
-                                            coroutineScope.launch {
-                                                lazyListState.animateScrollToItem(0)
-                                            }
-                                        },
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = TextStyles.downloadsTitle(),
-                                    text = if (isArchived) {
-                                        stringResource(R.string.screen_title_archived)
-                                    } else {
-                                        stringResource(R.string.app_name)
-                                    },
-                                    maxLines = 1,
-                                )
-                            }
-                            AnimatedVisibility(
-                                visible = searchActive,
-                                enter = Transitions.searchEnter,
-                                exit = Transitions.searchExit,
-                            ) {
-                                TextField(
-                                    value = searchQuery,
-                                    onValueChange = viewModel::updateSearchQuery,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(end = dimens.spacingSmall)
-                                        .focusRequester(searchFocusRequester),
-                                    singleLine = true,
-                                    placeholder = {
-                                        Text(text = stringResource(R.string.hint_search))
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.Search,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent,
-                                        disabledContainerColor = Color.Transparent,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                        disabledIndicatorColor = Color.Transparent,
-                                    ),
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                searchActive = !searchActive
-                                if (!searchActive) {
-                                    viewModel.updateSearchQuery(TextFieldValue(""))
-                                    keyboardController?.hide()
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (searchActive) {
-                                    Icons.Filled.Close
-                                } else {
-                                    Icons.Filled.Search
-                                },
-                                contentDescription = null,
-                            )
-                        }
-                        var menuExpanded by remember { mutableStateOf(false) }
-                        IconButton(
-                            onClick = {
-                                menuExpanded = !menuExpanded
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.MoreVert,
-                                contentDescription = null,
-                            )
-                        }
-                        DropdownMenu(
-                            modifier = Modifier
-                                .padding(end = dimens.spacingSmall),
-                            expanded = menuExpanded,
-                            onDismissRequest = {
-                                menuExpanded = false
-                            },
-                        ) {
-                            if (hasDownloads) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.select_all),
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.SelectAll,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        selectedIds = allIds
-                                        menuExpanded = false
-                                    },
-                                )
-                            }
-                            if (hasFailedDownloads) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.retry_failed),
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.Refresh,
-                                            contentDescription = stringResource(R.string.content_description_retry_failed),
-                                        )
-                                    },
-                                    onClick = {
-                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                        viewModel.retryFailedDownloads()
-                                        coroutineScope.launch {
-                                            delay(RETRY_FAILED_SCROLL_DELAY_MILLIS)
-                                            lazyListState.animateScrollToItem(0)
-                                        }
-                                        menuExpanded = false
-                                    },
-                                )
-                            }
-                            if (hasActiveDownloads) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.notification_action_stop_all),
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = stringResource(R.string.notification_action_stop_all),
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.stopAllDownloads()
-                                        menuExpanded = false
-                                    },
-                                )
-                            }
-                            if (!isArchived) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.screen_title_archived),
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.Archive,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        navController.navigate(Screen.Archived.route)
-                                        menuExpanded = false
-                                    },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.screen_title_settings),
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Filled.Settings,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    navController.navigate(Screen.Settings.route)
-                                    menuExpanded = false
-                                },
-                            )
-                        }
-                    },
-                )
-            }
+            DownloadsTopBar(
+                navController = navController,
+                viewModel = viewModel,
+                selectionMode = selectionMode,
+                selectedIds = selectedIds,
+                dismissingIds = dismissingIds,
+                archivingIds = archivingIds,
+                allSelected = allSelected,
+                allIds = allIds,
+                hasDownloads = hasDownloads,
+                hasFailedDownloads = hasFailedDownloads,
+                hasActiveDownloads = hasActiveDownloads,
+                selectionCountTitle = selectionCountTitle,
+                selectionSizeTitle = selectionSizeTitle,
+                shouldMarkSelectionSeen = shouldMarkSelectionSeen,
+                searchActive = searchActive,
+                searchQuery = searchQuery,
+                isArchived = isArchived,
+                lazyListState = lazyListState,
+                searchFocusRequester = searchFocusRequester,
+                onSelectionChange = { selectedIds = it },
+                onDismissingIdsChange = { dismissingIds = it },
+                onArchivingIdsChange = { archivingIds = it },
+                onSearchActiveChange = { searchActive = it },
+            )
         },
         snackbarHost = {
             SnackbarHost(snackbarHostState) { snackbarData ->
@@ -714,6 +394,388 @@ fun DownloadsScreen(
                 is DownloadsUiState.Error -> DownloadsError()
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DownloadsTopBar(
+    navController: NavController,
+    viewModel: DownloadsViewModel,
+    selectionMode: Boolean,
+    selectedIds: Set<Long>,
+    dismissingIds: Set<Long>,
+    archivingIds: Set<Long>,
+    allSelected: Boolean,
+    allIds: Set<Long>,
+    hasDownloads: Boolean,
+    hasFailedDownloads: Boolean,
+    hasActiveDownloads: Boolean,
+    selectionCountTitle: String,
+    selectionSizeTitle: String,
+    shouldMarkSelectionSeen: Boolean,
+    searchActive: Boolean,
+    searchQuery: TextFieldValue,
+    isArchived: Boolean,
+    lazyListState: LazyListState,
+    searchFocusRequester: FocusRequester,
+    onSelectionChange: (Set<Long>) -> Unit,
+    onDismissingIdsChange: (Set<Long>) -> Unit,
+    onArchivingIdsChange: (Set<Long>) -> Unit,
+    onSearchActiveChange: (Boolean) -> Unit,
+) {
+    val view = LocalView.current
+    val dimens = LocalDimens.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val coroutineScope = rememberCoroutineScope()
+
+    if (selectionMode) {
+        TopAppBar(
+            colors = RefineryTopAppBarDefaults.colors(),
+            navigationIcon = {
+                IconButton(
+                    onClick = {
+                        onSelectionChange(emptySet())
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = null,
+                    )
+                }
+            },
+            title = {
+                Column {
+                    Text(
+                        text = selectionCountTitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = selectionSizeTitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            },
+            actions = {
+                IconButton(
+                    onClick = {
+                        onSelectionChange(
+                            if (allSelected) {
+                                emptySet()
+                            } else {
+                                allIds
+                            }
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SelectAll,
+                        contentDescription = stringResource(R.string.content_description_select_all),
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        viewModel.toggleDownloadsSeen(selectedIds)
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (shouldMarkSelectionSeen) {
+                            Icons.Filled.Visibility
+                        } else {
+                            Icons.Filled.VisibilityOff
+                        },
+                        contentDescription = if (shouldMarkSelectionSeen) {
+                            stringResource(R.string.content_description_mark_seen)
+                        } else {
+                            stringResource(R.string.content_description_mark_unseen)
+                        },
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        val visibleSelectedIds = getBulkDeleteVisibleIds(
+                            selectedIds = selectedIds,
+                            visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                        )
+                        val hiddenSelectedIds = selectedIds - visibleSelectedIds
+                        onArchivingIdsChange(archivingIds + visibleSelectedIds)
+                        if (hiddenSelectedIds.isNotEmpty()) {
+                            viewModel.updateDownloadsArchived(
+                                downloadIds = hiddenSelectedIds,
+                                archived = !isArchived,
+                            )
+                        }
+                        onSelectionChange(emptySet())
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (isArchived) {
+                            Icons.Filled.Unarchive
+                        } else {
+                            Icons.Filled.Archive
+                        },
+                        contentDescription = if (isArchived) {
+                            stringResource(R.string.content_description_unarchive)
+                        } else {
+                            stringResource(R.string.content_description_archive)
+                        },
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        val visibleSelectedIds = getBulkDeleteVisibleIds(
+                            selectedIds = selectedIds,
+                            visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                        )
+                        val hiddenSelectedIds = selectedIds - visibleSelectedIds
+                        onDismissingIdsChange(dismissingIds + visibleSelectedIds)
+                        if (hiddenSelectedIds.isNotEmpty()) {
+                            viewModel.markDownloadsPendingDelete(hiddenSelectedIds)
+                        }
+                        onSelectionChange(emptySet())
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.content_description_delete),
+                    )
+                }
+            },
+        )
+    } else {
+        TopAppBar(
+            colors = RefineryTopAppBarDefaults.colors(),
+            navigationIcon = {
+                if (isArchived) {
+                    IconButton(
+                        onClick = {
+                            navController.navigateUp()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.content_description_back),
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = {},
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(id = R.drawable.ic_logo_appbar),
+                            contentDescription = stringResource(R.string.app_name),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            },
+            title = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    AnimatedVisibility(
+                        visible = !searchActive,
+                        enter = Transitions.titleEnter,
+                        exit = Transitions.titleExit,
+                    ) {
+                        Text(
+                            modifier = Modifier
+                                .combinedClickable {
+                                    coroutineScope.launch {
+                                        lazyListState.animateScrollToItem(0)
+                                    }
+                                },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = TextStyles.downloadsTitle(),
+                            text = if (isArchived) {
+                                stringResource(R.string.screen_title_archived)
+                            } else {
+                                stringResource(R.string.app_name)
+                            },
+                            maxLines = 1,
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = searchActive,
+                        enter = Transitions.searchEnter,
+                        exit = Transitions.searchExit,
+                    ) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = viewModel::updateSearchQuery,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = dimens.spacingSmall)
+                                .focusRequester(searchFocusRequester),
+                            singleLine = true,
+                            placeholder = {
+                                Text(text = stringResource(R.string.hint_search))
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    contentDescription = null,
+                                )
+                            },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent,
+                            ),
+                        )
+                    }
+                }
+            },
+            actions = {
+                IconButton(
+                    onClick = {
+                        onSearchActiveChange(!searchActive)
+                        if (searchActive) {
+                            viewModel.updateSearchQuery(TextFieldValue(""))
+                            keyboardController?.hide()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (searchActive) {
+                            Icons.Filled.Close
+                        } else {
+                            Icons.Filled.Search
+                        },
+                        contentDescription = null,
+                    )
+                }
+                var menuExpanded by remember { mutableStateOf(false) }
+                IconButton(
+                    onClick = {
+                        menuExpanded = !menuExpanded
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = null,
+                    )
+                }
+                DropdownMenu(
+                    modifier = Modifier
+                        .padding(end = dimens.spacingSmall),
+                    expanded = menuExpanded,
+                    onDismissRequest = {
+                        menuExpanded = false
+                    },
+                ) {
+                    if (hasDownloads) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.select_all),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.SelectAll,
+                                    contentDescription = null,
+                                )
+                            },
+                            onClick = {
+                                onSelectionChange(allIds)
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                    if (hasFailedDownloads) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.retry_failed),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = stringResource(R.string.content_description_retry_failed),
+                                )
+                            },
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                viewModel.retryFailedDownloads()
+                                coroutineScope.launch {
+                                    delay(RETRY_FAILED_SCROLL_DELAY_MILLIS.milliseconds)
+                                    lazyListState.animateScrollToItem(0)
+                                }
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                    if (hasActiveDownloads) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.notification_action_stop_all),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.notification_action_stop_all),
+                                )
+                            },
+                            onClick = {
+                                viewModel.stopAllDownloads()
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                    if (!isArchived) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(R.string.screen_title_archived),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Archive,
+                                    contentDescription = null,
+                                )
+                            },
+                            onClick = {
+                                navController.navigate(Screen.Archived.route)
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = stringResource(R.string.screen_title_settings),
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            navController.navigate(Screen.Settings.route)
+                            menuExpanded = false
+                        },
+                    )
+                }
+            },
+        )
     }
 }
 
