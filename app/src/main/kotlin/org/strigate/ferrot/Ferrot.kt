@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
 import androidx.work.Configuration
-import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +44,6 @@ class Ferrot : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        WorkManager.initialize(this, workManagerConfiguration)
         notificationService.initializeNotificationChannels()
         registerReceivers()
         analyticsLogger.setConsent(!BuildConfig.DEBUG)
