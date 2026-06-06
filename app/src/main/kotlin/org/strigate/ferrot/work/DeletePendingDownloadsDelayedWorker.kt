@@ -21,6 +21,7 @@ import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombi
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.util.setExpeditedIfAllowed
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 class DeletePendingDownloadsDelayedWorker(
     appContext: Context,
@@ -37,7 +38,7 @@ class DeletePendingDownloadsDelayedWorker(
 
         if (delayMillis > 0L) {
             Log.d(LOG_TAG, "$tag Waiting ${delayMillis}ms before delete")
-            delay(delayMillis)
+            delay(delayMillis.milliseconds)
         }
 
         val pendingDeleteIds = downloadUseCase
