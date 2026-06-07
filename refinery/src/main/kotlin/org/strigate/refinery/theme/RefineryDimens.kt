@@ -20,6 +20,14 @@ data class RefineryDimens(
     val spacingXLarge: Dp = 32.dp,
     val spacingXXLarge: Dp = 48.dp,
 
+    val radiusSmall: Dp = 4.dp,
+    val radiusMedium: Dp = 8.dp,
+    val radiusLarge: Dp = 16.dp,
+    val radiusPill: Dp = 999.dp,
+
+    val dividerThin: Dp = Dp.Hairline,
+    val divider: Dp = 1.dp,
+
     val iconXXSmall: Dp = 16.dp,
     val iconXSmallAlt: Dp = 20.dp,
     val iconXSmall: Dp = 24.dp,
@@ -28,11 +36,6 @@ data class RefineryDimens(
     val iconLarge: Dp = 72.dp,
     val iconXLarge: Dp = 96.dp,
     val iconXXLarge: Dp = 128.dp,
-
-    val radiusSmall: Dp = 4.dp,
-    val radiusMedium: Dp = 8.dp,
-    val radiusLarge: Dp = 16.dp,
-    val radiusPill: Dp = 999.dp,
 
     val tonalElevationLow: Dp = 1.dp,
     val tonalElevationHigh: Dp = 4.dp,

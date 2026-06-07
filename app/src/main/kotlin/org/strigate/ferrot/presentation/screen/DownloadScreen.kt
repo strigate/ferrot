@@ -100,6 +100,7 @@ import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadViewModel
+import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import java.io.File
 
@@ -456,6 +457,7 @@ private fun DownloadPageContent(
     onRetryClick: () -> Unit,
     onRefreshMetadataClick: () -> Unit,
 ) {
+    val refineryDimens = LocalRefineryDimens.current
     val dimens = LocalDimens.current
     with(data) {
         LaunchedEffect(id, status, seen, isCurrentPage) {
@@ -466,9 +468,9 @@ private fun DownloadPageContent(
         LaunchedEffect(video?.filePath, audio?.filePath, selectedMedia) {
             val hasVideo = !video?.filePath.isNullOrBlank()
             val hasAudio = !audio?.filePath.isNullOrBlank()
-            val fallback = when {
-                selectedMedia == DownloadMediaType.VIDEO && !hasVideo && hasAudio -> DownloadMediaType.AUDIO
-                selectedMedia == DownloadMediaType.AUDIO && !hasAudio && hasVideo -> DownloadMediaType.VIDEO
+            val fallback = when (selectedMedia) {
+                DownloadMediaType.VIDEO if !hasVideo && hasAudio -> DownloadMediaType.AUDIO
+                DownloadMediaType.AUDIO if !hasAudio && hasVideo -> DownloadMediaType.VIDEO
                 else -> null
             }
             if (fallback != null) {
@@ -581,7 +583,9 @@ private fun DownloadPageContent(
                 )
             }
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
-            HorizontalDivider()
+            HorizontalDivider(
+                thickness = refineryDimens.divider,
+            )
             Spacer(modifier = Modifier.height(dimens.spacingSmall))
             Column {
                 MetaItem(
