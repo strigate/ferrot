@@ -31,12 +31,6 @@ object BuildInfo {
     const val ARTIFACT_BASE_NAME = "ferrot"
 }
 
-val releaseArtifactName = "${BuildInfo.ARTIFACT_BASE_NAME}-release"
-extra["prepareReleaseAabFileName"] = "$releaseArtifactName.aab"
-extra["prepareReleaseApkFileName"] = "$releaseArtifactName.apk"
-
-apply(from = "$rootDir/app/prepare-release.gradle.kts")
-
 android {
     namespace = BuildInfo.PACKAGE_NAME
     compileSdk = 37
@@ -158,6 +152,125 @@ private fun Properties.getString(key: String): String {
 
 private fun String.escapeForBuildConfig(): String {
     return "\"" + this.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+}
+
+abstract class ReleaseArtifactsTask : DefaultTask() {
+    @get:Input
+    abstract val releaseArtifactsDirectoryPath: Property<String>
+
+    @get:Input
+    abstract val debugUnitTestReportPath: Property<String>
+
+    @get:Input
+    abstract val releaseApkSourcePath: Property<String>
+
+    @get:Input
+    abstract val releaseAabSourcePath: Property<String>
+
+    @get:Input
+    abstract val releaseMappingSourcePath: Property<String>
+
+    @get:Input
+    abstract val releaseApkTargetFileName: Property<String>
+
+    @get:Input
+    abstract val releaseAabTargetFileName: Property<String>
+
+    @TaskAction
+    fun buildReleaseArtifacts() {
+        val releaseDir = File(releaseArtifactsDirectoryPath.get())
+        releaseDir.deleteRecursively()
+        releaseDir.mkdirs()
+
+        copyArtifact(
+            sourcePath = releaseApkSourcePath.get(),
+            targetPath = File(releaseDir, releaseApkTargetFileName.get()).absolutePath,
+        )
+        copyArtifact(
+            sourcePath = releaseAabSourcePath.get(),
+            targetPath = File(releaseDir, releaseAabTargetFileName.get()).absolutePath,
+        )
+        copyArtifact(
+            sourcePath = releaseMappingSourcePath.get(),
+            targetPath = File(releaseDir, "mapping.txt").absolutePath,
+        )
+        println()
+        println("Release artifacts prepared in: ${releaseArtifactsDirectoryPath.get()}")
+        println("Test report: ${debugUnitTestReportPath.get()}")
+    }
+
+    private fun copyArtifact(
+        sourcePath: String,
+        targetPath: String,
+    ) {
+        val sourceFile = File(sourcePath)
+        check(sourceFile.exists()) {
+            "Expected artifact was not found: $sourcePath"
+        }
+        sourceFile.copyTo(File(targetPath), overwrite = true)
+    }
+}
+
+tasks.configureEach {
+    val isCleanTask = name == "clean" || name.contains("Clean")
+    val isBuildReleaseArtifacts = name == "buildReleaseArtifacts"
+    val isReleaseTask = name.contains("Release")
+            && !isCleanTask && !isBuildReleaseArtifacts
+
+    if (!isCleanTask && !isBuildReleaseArtifacts) {
+        mustRunAfter("clean")
+    }
+    if (isReleaseTask) {
+        mustRunAfter("testDebugUnitTest")
+    }
+}
+
+tasks.register("buildReleaseArtifacts", ReleaseArtifactsTask::class.java) {
+    val releaseArtifactName = buildString {
+        append(BuildInfo.ARTIFACT_BASE_NAME)
+        append('-')
+        append("release")
+    }
+
+    group = "distribution"
+    description = buildString {
+        append("Cleans the build, runs debug unit tests, ")
+        append("builds release APK and AAB and collects ")
+        append("them into one directory.")
+    }
+    dependsOn(
+        "clean",
+        "testDebugUnitTest",
+        "assembleRelease",
+        "bundleRelease",
+    )
+    releaseArtifactsDirectoryPath.set(
+        layout.buildDirectory
+            .dir("outputs/release")
+            .map { it.asFile.absolutePath },
+    )
+    debugUnitTestReportPath.set(
+        layout.buildDirectory
+            .file("reports/tests/testDebugUnitTest/index.html")
+            .map { it.asFile.absolutePath },
+    )
+    releaseApkSourcePath.set(
+        layout.buildDirectory
+            .file("outputs/apk/release/${project.name}-release.apk")
+            .map { it.asFile.absolutePath },
+    )
+    releaseAabSourcePath.set(
+        layout.buildDirectory
+            .file("outputs/bundle/release/${project.name}-release.aab")
+            .map { it.asFile.absolutePath },
+    )
+    releaseMappingSourcePath.set(
+        layout.buildDirectory
+            .file("outputs/mapping/release/mapping.txt")
+            .map { it.asFile.absolutePath },
+    )
+    releaseApkTargetFileName.set("$releaseArtifactName.apk")
+    releaseAabTargetFileName.set("$releaseArtifactName.aab")
 }
 
 dependencies {
