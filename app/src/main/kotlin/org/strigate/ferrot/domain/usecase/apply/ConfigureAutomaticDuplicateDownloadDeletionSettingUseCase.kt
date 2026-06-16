@@ -5,7 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
 import javax.inject.Inject
 
-class ApplyAutomaticDuplicateDownloadDeletionSettingUseCase @Inject constructor(
+class ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
 ) {
     operator fun invoke(automaticDuplicateDownloadDeletion: Boolean) {

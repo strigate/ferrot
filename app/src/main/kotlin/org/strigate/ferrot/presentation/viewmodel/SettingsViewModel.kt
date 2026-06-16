@@ -11,8 +11,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
-import org.strigate.ferrot.domain.usecase.ApplyUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.presentation.mapper.toDomain
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
@@ -24,7 +25,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
-    private val applyUseCase: ApplyUseCase,
+    private val applyWifiOnlyPolicyUseCase: ApplyWifiOnlyPolicyUseCase,
+    private val configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -55,16 +57,14 @@ class SettingsViewModel @Inject constructor(
     fun setDownloadWifiOnly(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveDownloadWifiOnlySettingUseCase(enabled)
-            applyUseCase.applyWifiOnlyPolicyUseCase(enabled)
+            applyWifiOnlyPolicyUseCase(enabled)
         }
     }
 
     fun setAutomaticDuplicateDownloadDeletion(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
-            applyUseCase.applyAutomaticDuplicateDownloadDeletionSettingUseCase(
-                automaticDuplicateDownloadDeletion = enabled,
-            )
+            configureAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
         }
     }
 

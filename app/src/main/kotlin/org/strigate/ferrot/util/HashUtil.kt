@@ -5,8 +5,9 @@ import java.io.FileInputStream
 import java.security.MessageDigest
 import java.util.Locale
 
-fun sha256(filePath: String): String? {
-    val file = File(filePath)
+fun sha256(filePath: String): String? = sha256(File(filePath))
+
+fun sha256(file: File): String? {
     if (!file.exists() || !file.isFile) {
         return null
     }
