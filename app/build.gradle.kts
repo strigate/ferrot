@@ -330,6 +330,7 @@ dependencies {
     testImplementation(libs.byte.buddy)
     testImplementation(libs.byte.buddy.agent)
     testImplementation(libs.mockito.core)
+    testImplementation(libs.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
