@@ -22,6 +22,7 @@ espressoCore = "3.7.0"
 coroutinesTest = "1.11.0"
 mockito = "5.23.0"
 byteBuddy = "1.18.10"
+json = "20260522"
 agp = "9.2.1"
 kotlin = "2.3.21"
 ksp = "2.3.9"
@@ -84,6 +85,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
+json = { group = "org.json", name = "json", version.ref = "json" }
 # Debug
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
