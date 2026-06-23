@@ -888,7 +888,6 @@ private fun DownloadsList(
                 restoredItemIds = restoringItemIds,
                 currentItemIds = itemIds,
                 firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
-                firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset,
             )
         ) {
             lazyListState.scrollToItem(0)
@@ -1586,12 +1585,11 @@ internal fun shouldScrollToTopOnRestore(
     restoredItemIds: Set<Long>,
     currentItemIds: List<Long>,
     firstVisibleItemIndex: Int,
-    firstVisibleItemScrollOffset: Int,
 ): Boolean {
     if (restoredItemIds.isEmpty() || currentItemIds.isEmpty()) {
         return false
     }
-    val userWasNearTop = firstVisibleItemIndex <= 1 || firstVisibleItemScrollOffset == 0
+    val userWasNearTop = firstVisibleItemIndex <= 1
     return userWasNearTop && currentItemIds.first() in restoredItemIds
 }
 
