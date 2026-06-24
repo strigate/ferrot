@@ -135,7 +135,6 @@ fun AboutScreen(
                     ) {
                         val urlWebsite = stringResource(R.string.url_website)
                         val urlGitHub = stringResource(R.string.url_github)
-                        val urlX = stringResource(R.string.url_x)
                         val urlPrivacy = stringResource(R.string.url_privacy)
                         val urlLicense = stringResource(R.string.url_license)
                         TextSetting(
@@ -155,15 +154,6 @@ fun AboutScreen(
                             },
                         ) {
                             viewModel.onUrlClicked(urlGitHub)
-                        }
-                        TextSetting(
-                            text = stringResource(R.string.settings_title_x),
-                            description = stringResource(R.string.settings_description_x),
-                            onLongClick = {
-                                context.copyToClipboard(urlX)
-                            },
-                        ) {
-                            viewModel.onUrlClicked(urlX)
                         }
                         TextSetting(
                             text = stringResource(R.string.settings_title_privacy),
