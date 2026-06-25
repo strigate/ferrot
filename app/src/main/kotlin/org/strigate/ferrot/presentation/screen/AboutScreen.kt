@@ -4,15 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,14 +19,12 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +38,8 @@ import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
+import org.strigate.refinery.component.settings.SettingsIconRow
+import org.strigate.refinery.component.settings.SettingsIconRowItem
 import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -184,45 +181,24 @@ fun AboutScreen(
                     StaticSettingsSection {
                         val urlGitHubStrigate = stringResource(R.string.url_github_strigate)
                         val urlX = stringResource(R.string.url_x)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = refineryDimens.spacingSmallAlt),
-                            horizontalArrangement = Arrangement.spacedBy(refineryDimens.zero),
-                        ) {
-                            CompositionLocalProvider(
-                                LocalMinimumInteractiveComponentSize provides refineryDimens.zero,
-                            ) {
-                                IconButton(
-                                    modifier = Modifier
-                                        .size(refineryDimens.iconSmall + refineryDimens.spacingXSmallAlt),
+                        SettingsIconRow(
+                            items = listOf(
+                                SettingsIconRowItem(
+                                    painter = painterResource(R.drawable.ic_github),
+                                    contentDescription = stringResource(R.string.content_description_github),
                                     onClick = {
                                         viewModel.onUrlClicked(urlGitHubStrigate)
                                     },
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .size(refineryDimens.iconXSmall),
-                                        painter = painterResource(R.drawable.ic_github),
-                                        contentDescription = stringResource(R.string.content_description_github),
-                                    )
-                                }
-                                IconButton(
-                                    modifier = Modifier
-                                        .size(refineryDimens.iconSmall + refineryDimens.spacingXSmallAlt),
+                                ),
+                                SettingsIconRowItem(
+                                    painter = painterResource(R.drawable.ic_x),
+                                    contentDescription = stringResource(R.string.content_description_x),
                                     onClick = {
                                         viewModel.onUrlClicked(urlX)
                                     },
-                                ) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .size(refineryDimens.iconXSmall),
-                                        painter = painterResource(R.drawable.ic_x),
-                                        contentDescription = stringResource(R.string.content_description_x),
-                                    )
-                                }
-                            }
-                        }
+                                ),
+                            ),
+                        )
                     }
                     Copyright(
                         modifier = Modifier
