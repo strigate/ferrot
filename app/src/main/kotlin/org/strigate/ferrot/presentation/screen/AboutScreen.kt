@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,6 +38,8 @@ import org.strigate.ferrot.extensions.copyToClipboard
 import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
+import org.strigate.refinery.component.settings.SettingsIconRow
+import org.strigate.refinery.component.settings.SettingsIconRowItem
 import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -135,7 +138,6 @@ fun AboutScreen(
                     ) {
                         val urlWebsite = stringResource(R.string.url_website)
                         val urlGitHub = stringResource(R.string.url_github)
-                        val urlX = stringResource(R.string.url_x)
                         val urlPrivacy = stringResource(R.string.url_privacy)
                         val urlLicense = stringResource(R.string.url_license)
                         TextSetting(
@@ -157,15 +159,6 @@ fun AboutScreen(
                             viewModel.onUrlClicked(urlGitHub)
                         }
                         TextSetting(
-                            text = stringResource(R.string.settings_title_x),
-                            description = stringResource(R.string.settings_description_x),
-                            onLongClick = {
-                                context.copyToClipboard(urlX)
-                            },
-                        ) {
-                            viewModel.onUrlClicked(urlX)
-                        }
-                        TextSetting(
                             text = stringResource(R.string.settings_title_privacy),
                             description = stringResource(R.string.settings_description_privacy),
                             onLongClick = {
@@ -183,6 +176,29 @@ fun AboutScreen(
                         ) {
                             viewModel.onUrlClicked(urlLicense)
                         }
+                    }
+                    Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+                    StaticSettingsSection {
+                        val urlGitHubStrigate = stringResource(R.string.url_github_strigate)
+                        val urlX = stringResource(R.string.url_x)
+                        SettingsIconRow(
+                            items = listOf(
+                                SettingsIconRowItem(
+                                    painter = painterResource(R.drawable.ic_github),
+                                    contentDescription = stringResource(R.string.content_description_github),
+                                    onClick = {
+                                        viewModel.onUrlClicked(urlGitHubStrigate)
+                                    },
+                                ),
+                                SettingsIconRowItem(
+                                    painter = painterResource(R.drawable.ic_x),
+                                    contentDescription = stringResource(R.string.content_description_x),
+                                    onClick = {
+                                        viewModel.onUrlClicked(urlX)
+                                    },
+                                ),
+                            ),
+                        )
                     }
                     Copyright(
                         modifier = Modifier

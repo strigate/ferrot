@@ -1,4 +1,5 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+    <!-- Notifications: channels -->
     <string name="notification_channel_group_name_foreground">Foreground</string>
     <string name="notification_channel_group_name_general">General</string>
     <string name="notification_channel_name_active_tasks">Active tasks</string>
@@ -8,6 +9,7 @@
     <string name="notification_channel_description_downloaded">Downloaded</string>
     <string name="notification_channel_description_updates">Updates</string>
 
+    <!-- Notifications: titles and actions -->
     <string name="notification_title_summary">You have new notifications</string>
     <string name="notification_title_download">Downloading</string>
     <string name="notification_title_downloads_in_progress">Downloads in progress</string>
@@ -22,6 +24,7 @@
     <string name="notification_action_stop_all">Stop all</string>
     <string name="notification_action_undo">Undo</string>
 
+    <!-- Notifications: text -->
     <string name="notification_text_updating_dependencies">Updating dependencies</string>
     <string name="notification_text_downloading_app_update">Downloading app update</string>
     <string name="notification_text_downloading">Downloading</string>
@@ -30,8 +33,10 @@
         <item quantity="other">Deleting downloads</item>
     </plurals>
 
+    <!-- Activity labels -->
     <string name="activity_label_download">Download</string>
 
+    <!-- Screen titles -->
     <string name="screen_title_download">Download</string>
     <string name="screen_title_archived_download">Archived download</string>
     <string name="screen_title_archived">Archived</string>
@@ -39,23 +44,27 @@
     <string name="screen_title_updates">Updates</string>
     <string name="screen_title_about">About</string>
 
+    <!-- Empty states -->
     <string name="downloads_intro_title">No downloads yet</string>
     <string name="downloads_intro_body">Share a video or post from any app. Tap Share and pick %1$s.</string>
     <string name="archived_intro_title">No archived downloads</string>
     <string name="archived_intro_body">Archived downloads will appear here.</string>
 
+    <!-- Updates -->
     <string name="available_update_ready">Update %1$s is ready to install</string>
 
+    <!-- Search -->
     <string name="hint_search">Search</string>
     <string name="search_no_results_title">No results for \"%1$s\"</string>
     <string name="search_no_results_body">Try a different search term</string>
 
-    <string name="download_url">URL</string>
+    <!-- Download details -->
     <string name="download_filename">Filename</string>
     <string name="download_duration">Duration</string>
     <string name="download_error_message">Failed error message</string>
     <string name="download_completed_at">Downloaded</string>
 
+    <!-- Download status -->
     <string name="status_queued">Queued</string>
     <string name="status_waiting_for_network">Waiting for network</string>
     <string name="status_waiting_for_wifi">Waiting for Wi-Fi</string>
@@ -65,9 +74,9 @@
     <string name="status_failed">Failed</string>
     <string name="status_stopped">Stopped</string>
 
+    <!-- Common actions and values -->
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="percent_0">0%</string>
     <string name="share_to">Share to…</string>
     <string name="select_all">Select all</string>
     <string name="retry_failed">Retry failed</string>
@@ -75,17 +84,21 @@
     <string name="video">Video</string>
     <string name="audio">Audio</string>
 
+    <!-- Dialogs -->
     <string name="confirm_dialog_delete_download_title">Delete download</string>
     <string name="confirm_dialog_delete_download_description">Are you sure you want to delete this download?</string>
 
+    <!-- Download results -->
     <string name="download_complete">Download complete</string>
     <string name="download_failed">Download failed</string>
 
+    <!-- Snackbars -->
     <string name="snackbar_bulk_delete_bulk_delete">downloads deleted</string>
     <string name="snackbar_delete_single_delete">Download deleted</string>
     <string name="snackbar_delete_undo">Undo</string>
     <string name="bulk_selected">selected</string>
 
+    <!-- Toasts -->
     <string name="toast_saved_to">Saved to %1$s</string>
     <string name="toast_already_saved">Already saved in %1$s</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
@@ -96,6 +109,7 @@
     <string name="toast_no_app_updates_available">No app updates available</string>
     <string name="toast_no_dependency_updates_available">No dependency updates available</string>
 
+    <!-- Settings: sections -->
     <string name="settings_section_general">General</string>
     <string name="settings_section_swipe_actions">Swipe actions</string>
     <string name="settings_section_app_info">App info</string>
@@ -103,9 +117,11 @@
     <string name="settings_section_app">App</string>
     <string name="settings_section_dependencies">Dependencies</string>
 
+    <!-- Settings: navigation -->
     <string name="settings_navigate_title_updates">Updates</string>
     <string name="settings_navigate_title_about">About</string>
 
+    <!-- Settings: titles -->
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
     <string name="settings_title_automatic_duplicate_deletion">Automatically delete duplicate downloads</string>
     <string name="settings_title_swipe_left">Swipe left</string>
@@ -118,11 +134,10 @@
     <string name="settings_title_last_checked_for_dependency_updates">Last checked for dependency updates</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_website">Website</string>
-    <string name="settings_title_github">GitHub</string>
-    <string name="settings_title_x">X</string>
     <string name="settings_title_privacy">Privacy</string>
     <string name="settings_title_license">License</string>
 
+    <!-- Settings: descriptions -->
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
     <string name="settings_description_automatic_duplicate_deletion">Automatically delete older downloads when an exact duplicate is found.</string>
     <string name="settings_description_swipe_left">Select the left swipe action</string>
@@ -131,21 +146,21 @@
     <string name="settings_description_check_for_app_updates">Check for app updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
-    <string name="settings_description_github">github.com/strigate/ferrot</string>
-    <string name="settings_description_x">x.com/ferrotapp</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
-    <string name="settings_description_license">GNU General Public License v3.0</string>
 
+    <!-- Settings: values -->
     <string name="settings_value_swipe_action_none">None</string>
     <string name="settings_value_swipe_action_archive">Archive</string>
     <string name="settings_value_swipe_action_seen">Mark seen</string>
     <string name="settings_value_swipe_action_delete">Delete</string>
 
+    <!-- Errors -->
     <string name="error_failed_to_load_downloads">Failed to load downloads</string>
     <string name="error_failed_to_load_download">Failed to load download</string>
     <string name="error_failed_to_load_settings">Failed to load settings</string>
     <string name="error_failed_to_load_update_settings">Failed to load update settings</string>
 
+    <!-- Accessibility -->
     <string name="content_description_back">Back</string>
     <string name="content_description_thumbnail">Preview</string>
     <string name="content_description_retry">Retry</string>
@@ -165,4 +180,5 @@
     <string name="content_description_delete_download">Delete download</string>
     <string name="content_description_share_download">Share download</string>
     <string name="content_description_copy_to_clipboard">Copy to clipboard</string>
+    <string name="content_description_strigate_logo">Strigate logo</string>
 </resources>

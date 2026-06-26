@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.3 - 2026-06-26
+### Changed
+- Updated About screen external links and social link presentation
+- Prepared localization resources by separating fixed, non-translatable values
+- Updated AndroidX Lifecycle, Compose BOM, Firebase BOM, and Gradle wrapper versions
+- Added worker unit test coverage for download and cleanup background work
+
+### Fixed
+- Corrected restored download scroll behavior near the top of the downloads list
+
 ## 1.9.2 - 2026-06-16
 ### Changed
 - Refined background work organization by splitting scheduling and update handling into dedicated use cases

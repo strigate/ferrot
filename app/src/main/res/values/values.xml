@@ -1,15 +1,29 @@
 <resources>
-    <string name="app_name">Ferrot</string>
-    <string name="copyright">© Strigate %1$d</string>
-    <string name="file_provider">fileprovider</string>
-    <string name="settings_description_website">ferrot.org</string>
-    <string name="url_website">https://ferrot.org/</string>
-    <string name="url_github">https://github.com/strigate/ferrot</string>
-    <string name="url_x">https://x.com/ferrotapp</string>
-    <string name="url_strigate">https://x.com/strigate</string>
-    <string name="url_privacy">https://github.com/strigate/ferrot/blob/main/PRIVACY.md</string>
-    <string name="url_license">https://github.com/strigate/ferrot/blob/main/LICENSE</string>
-    <string name="github_latest_release">https://api.github.com/repos/strigate/ferrot/releases/latest</string>
-    <string name="github_release_apk_name">ferrot-release.apk</string>
-    <string name="content_description_strigate_logo">Strigate logo</string>
+    <!-- App identity -->
+    <string name="app_name" translatable="false">Ferrot</string>
+    <string name="copyright" translatable="false">© Strigate %1$d</string>
+
+    <!-- Provider and update constants -->
+    <string name="file_provider" translatable="false">fileprovider</string>
+    <string name="github_latest_release" translatable="false">https://api.github.com/repos/strigate/ferrot/releases/latest</string>
+    <string name="github_release_apk_name" translatable="false">ferrot-release.apk</string>
+
+    <!-- External links -->
+    <string name="url_website" translatable="false">https://ferrot.org/</string>
+    <string name="url_github" translatable="false">https://github.com/strigate/ferrot</string>
+    <string name="url_github_strigate" translatable="false">https://github.com/strigate</string>
+    <string name="url_strigate" translatable="false">https://strigate.org/</string>
+    <string name="url_privacy" translatable="false">https://github.com/strigate/ferrot/blob/main/PRIVACY.md</string>
+    <string name="url_license" translatable="false">https://github.com/strigate/ferrot/blob/main/LICENSE</string>
+    <string name="url_x" translatable="false">https://x.com/strigate</string>
+
+    <!-- Fixed display values -->
+    <string name="download_url" translatable="false">URL</string>
+    <string name="content_description_github" translatable="false">GitHub</string>
+    <string name="content_description_x" translatable="false">X</string>
+    <string name="percent_0" translatable="false">0%</string>
+    <string name="settings_title_github" translatable="false">GitHub</string>
+    <string name="settings_description_website" translatable="false">ferrot.org</string>
+    <string name="settings_description_github" translatable="false">github.com/strigate/ferrot</string>
+    <string name="settings_description_license" translatable="false">GNU General Public License v3.0</string>
 </resources>
