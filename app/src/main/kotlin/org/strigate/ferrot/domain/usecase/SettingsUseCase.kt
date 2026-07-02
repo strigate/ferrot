@@ -6,12 +6,14 @@ import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsF
 import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetUseCookiesSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveDownloadWifiOnlySettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveUseCookiesSettingUseCase
 import javax.inject.Inject
 
 class SettingsUseCase @Inject constructor(
@@ -19,6 +21,8 @@ class SettingsUseCase @Inject constructor(
     val getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase,
     val saveAutomaticDuplicateDownloadDeletionSettingUseCase: SaveAutomaticDuplicateDownloadDeletionSettingUseCase,
     val getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase,
+    val saveUseCookiesSettingUseCase: SaveUseCookiesSettingUseCase,
+    val getUseCookiesSettingAsFlowUseCase: GetUseCookiesSettingAsFlowUseCase,
     val saveLeftSwipeActionSettingUseCase: SaveLeftSwipeActionSettingUseCase,
     val getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase,
     val saveRightSwipeActionSettingUseCase: SaveRightSwipeActionSettingUseCase,

@@ -43,6 +43,12 @@ interface DownloadDao {
     @Query("UPDATE download SET completedAtMillis = :completedAtMillis WHERE id = :id")
     suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int
 
+    @Query("UPDATE download SET cookieSetId = :cookieSetId WHERE id = :id")
+    suspend fun updateCookieSetIdById(id: Long, cookieSetId: Long?): Int
+
+    @Query("UPDATE download SET cookieSetId = NULL WHERE cookieSetId = :cookieSetId")
+    suspend fun clearCookieSetId(cookieSetId: Long): Int
+
     @Query("DELETE FROM download WHERE id = :id")
     suspend fun deleteById(id: Long): Int
 }

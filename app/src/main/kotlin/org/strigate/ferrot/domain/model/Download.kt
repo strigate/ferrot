@@ -10,4 +10,5 @@ data class Download(
     val archived: Boolean = false,
     val errorMessage: String? = null,
     val completedAtMillis: Long? = null,
+    val cookieSetId: Long? = null,
 )

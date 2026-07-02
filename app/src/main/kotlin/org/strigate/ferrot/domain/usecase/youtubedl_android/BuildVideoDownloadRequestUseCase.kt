@@ -14,11 +14,15 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         noProgress: Boolean,
         outputPathFilePath: String? = null,
         printFilename: Boolean = false,
+        cookieFilePath: String? = null,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
             addOption("-o", template)
             addOption("--windows-filenames")
+            if (!cookieFilePath.isNullOrBlank()) {
+                addOption("--cookies", cookieFilePath)
+            }
             if (!outputPathFilePath.isNullOrBlank()) {
                 addCommands(
                     listOf(

@@ -17,6 +17,7 @@ import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+import org.strigate.ferrot.domain.usecase.cookieset.DeleteCookieSetsWithMissingFilesUseCase
 import org.strigate.ferrot.domain.usecase.orphancleanup.EnqueueOrphanDownloadFilesCleanupUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
@@ -42,6 +43,9 @@ class ConfigureBackgroundWorkUseCaseTest {
 
     @Mock
     private lateinit var configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+
+    @Mock
+    private lateinit var deleteCookieSetsWithMissingFilesUseCase: DeleteCookieSetsWithMissingFilesUseCase
 
     @Mock
     private lateinit var enqueueOrphanDownloadFilesCleanupUseCase: EnqueueOrphanDownloadFilesCleanupUseCase
@@ -77,6 +81,8 @@ class ConfigureBackgroundWorkUseCaseTest {
             .invoke(false)
         verify(configureAutomaticDuplicateDownloadDeletionSettingUseCase)
             .invoke(true)
+        verify(deleteCookieSetsWithMissingFilesUseCase)
+            .invoke()
         verify(enqueueOrphanDownloadFilesCleanupUseCase)
             .invoke()
     }
@@ -109,6 +115,7 @@ class ConfigureBackgroundWorkUseCaseTest {
             configureAutomaticAppUpdatesSettingUseCase = configureAutomaticAppUpdatesSettingUseCase,
             configureAutomaticDependencyUpdatesSettingUseCase = configureAutomaticDependencyUpdatesSettingUseCase,
             configureAutomaticDuplicateDownloadDeletionSettingUseCase = configureAutomaticDuplicateDownloadDeletionSettingUseCase,
+            deleteCookieSetsWithMissingFilesUseCase = deleteCookieSetsWithMissingFilesUseCase,
             enqueueOrphanDownloadFilesCleanupUseCase = enqueueOrphanDownloadFilesCleanupUseCase,
         )
     }

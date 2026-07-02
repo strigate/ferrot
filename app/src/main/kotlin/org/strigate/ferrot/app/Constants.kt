@@ -16,6 +16,7 @@ object Constants {
 
     object Paths {
         const val DOWNLOADS = "downloads"
+        const val COOKIES = "cookies"
         const val UPDATES = "updates"
     }
 
@@ -24,6 +25,8 @@ object Constants {
         const val DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY = true
         const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = "auto_duplicate_download_deletion"
         const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = true
+        const val KEY_USE_COOKIES = "use_cookies"
+        const val DEFAULT_VALUE_USE_COOKIES = true
         const val KEY_LEFT_SWIPE_ACTION = "left_swipe_action"
         val DEFAULT_VALUE_LEFT_SWIPE_ACTION = DownloadSwipeAction.DELETE
         const val KEY_RIGHT_SWIPE_ACTION = "right_swipe_action"

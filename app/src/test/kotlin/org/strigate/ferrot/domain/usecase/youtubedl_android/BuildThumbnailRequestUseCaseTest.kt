@@ -42,4 +42,17 @@ class BuildThumbnailRequestUseCaseTest {
 
         assertFalse(request.hasOption("--convert-thumbnails"))
     }
+
+    @Test
+    fun invoke_addsCookies_whenCookieFilePathProvided() {
+        val outputDir = Files.createTempDirectory("thumb-request-cookies").toFile()
+        val request = useCase(
+            url = "https://example.com/video",
+            outputDir = outputDir,
+            videoId = "plain-id",
+            cookieFilePath = "/tmp/cookies.txt",
+        )
+
+        assertEquals("/tmp/cookies.txt", request.getOption("--cookies"))
+    }
 }

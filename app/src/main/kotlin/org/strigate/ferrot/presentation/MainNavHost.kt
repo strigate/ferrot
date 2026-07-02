@@ -12,8 +12,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.strigate.ferrot.presentation.screen.AboutScreen
 import org.strigate.ferrot.presentation.screen.ArchivedScreen
+import org.strigate.ferrot.presentation.screen.CookiesScreen
 import org.strigate.ferrot.presentation.screen.DownloadScreen
 import org.strigate.ferrot.presentation.screen.DownloadsScreen
+import org.strigate.ferrot.presentation.screen.GetCookiesScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
 import org.strigate.ferrot.presentation.screen.UpdatesScreen
 
@@ -63,6 +65,16 @@ fun MainNavHost(
                 navController = navController,
             )
         }
+        composable(Screen.Cookies.route) {
+            CookiesScreen(
+                navController = navController,
+            )
+        }
+        composable(Screen.GetCookies.route) {
+            GetCookiesScreen(
+                navController = navController,
+            )
+        }
         composable(Screen.Updates.route) {
             UpdatesScreen()
         }
@@ -85,6 +97,8 @@ sealed class Screen(val route: String) {
     }
 
     data object Settings : Screen("settings")
+    data object Cookies : Screen("cookies")
+    data object GetCookies : Screen("cookies/get")
     data object Updates : Screen("updates")
     data object About : Screen("about")
 }

@@ -38,13 +38,19 @@ class SettingsViewModel @Inject constructor(
         return combine(
             settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase(),
             settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase(),
+            settingsUseCase.getUseCookiesSettingAsFlowUseCase(),
             settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase(),
             settingsUseCase.getRightSwipeActionSettingAsFlowUseCase(),
-        ) { downloadWifiOnly, automaticDuplicateDownloadDeletion, leftSwipeAction, rightSwipeAction ->
+        ) { downloadWifiOnly,
+            automaticDuplicateDownloadDeletion,
+            useCookies,
+            leftSwipeAction,
+            rightSwipeAction ->
             SettingsUiState.Data(
                 SettingsUiData(
                     downloadWifiOnly = downloadWifiOnly,
                     automaticDuplicateDownloadDeletion = automaticDuplicateDownloadDeletion,
+                    useCookies = useCookies,
                     leftSwipeAction = leftSwipeAction.toUiData(),
                     rightSwipeAction = rightSwipeAction.toUiData(),
                 )
@@ -65,6 +71,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
             configureAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
+        }
+    }
+
+    fun setUseCookies(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsUseCase.saveUseCookiesSettingUseCase(enabled)
         }
     }
 

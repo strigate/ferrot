@@ -1,6 +1,7 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import com.yausername.youtubedl_android.YoutubeDL
+import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
@@ -18,10 +19,11 @@ class DownloadThumbnailUseCase @Inject constructor(
         url: String,
         outputDir: File,
         videoId: String? = null,
+        cookieFilePath: String? = null,
     ): String? {
         youtubeDlRuntimeInitializer.initializeIfNeeded()
         return withContext(Dispatchers.IO) {
-            val id = videoId ?: YoutubeDL.getInstance().getInfo(url).id ?: return@withContext null
+            val id = videoId ?: getInfo(url, cookieFilePath).id ?: return@withContext null
             val thumbnailBaseName = thumbnailOutputBaseName(id)
 
             val tempDir = File(outputDir, ".tmp_${thumbnailBaseName}")
@@ -37,6 +39,7 @@ class DownloadThumbnailUseCase @Inject constructor(
                 outputDir = tempDir,
                 videoId = id,
                 convertToJpg = true,
+                cookieFilePath = cookieFilePath,
             )
             val youtubeDLResponse = YoutubeDL.getInstance().execute(youtubeDLRequest)
             if (youtubeDLResponse.exitCode != 0) {
@@ -83,6 +86,14 @@ class DownloadThumbnailUseCase @Inject constructor(
             finalFile.absolutePath
         }
     }
+
+    private fun getInfo(url: String, cookieFilePath: String?) = YoutubeDL.getInstance().getInfo(
+        YoutubeDLRequest(url).apply {
+            if (!cookieFilePath.isNullOrBlank()) {
+                addOption("--cookies", cookieFilePath)
+            }
+        }
+    )
 }
 
 private fun thumbnailOutputBaseName(videoId: String): String =

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -17,13 +18,27 @@ class StartDownloadUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val settingsUseCase: SettingsUseCase,
     private val downloadUseCase: DownloadUseCase,
+    private val cookieSetUseCase: CookieSetUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val downloadWorkScheduler: DownloadWorkScheduler,
 ) {
     suspend operator fun invoke(downloadId: Long) {
+        val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
         val wifiOnly = settingsUseCase
             .getDownloadWifiOnlySettingAsFlowUseCase()
             .first()
+
+        if (download != null && download.cookieSetId == null) {
+            val cookieSet = cookieSetUseCase
+                .resolveCookieSetForUrlUseCase(download.url)
+                ?.cookieSet
+            if (cookieSet != null) {
+                downloadUseCase.updateDownloadCookieSetUseCase(
+                    downloadId = downloadId,
+                    cookieSetId = cookieSet.id,
+                )
+            }
+        }
 
         val hasInternet = NetworkOps.hasInternetConnection(appContext)
         val isOnWifi = NetworkOps.isOnWifiConnection(appContext)

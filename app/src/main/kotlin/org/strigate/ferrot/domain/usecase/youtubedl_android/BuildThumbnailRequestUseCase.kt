@@ -11,10 +11,14 @@ class BuildThumbnailRequestUseCase @Inject constructor() {
         outputDir: File,
         videoId: String,
         convertToJpg: Boolean = true,
+        cookieFilePath: String? = null,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             val outputFilePath = File(outputDir, thumbnailOutputTemplate(videoId)).absolutePath
             addOption("-o", outputFilePath)
+            if (!cookieFilePath.isNullOrBlank()) {
+                addOption("--cookies", cookieFilePath)
+            }
             addOption("--restrict-filenames")
             addOption("--skip-download")
             addOption("--write-thumbnail")

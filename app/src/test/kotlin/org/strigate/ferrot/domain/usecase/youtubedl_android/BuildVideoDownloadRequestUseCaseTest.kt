@@ -72,4 +72,17 @@ class BuildVideoDownloadRequestUseCaseTest {
         assertEquals("mp4", request.getOption("--merge-output-format"))
         assertTrue(request.hasOption("--get-filename"))
     }
+
+    @Test
+    fun invoke_addsCookies_whenCookieFilePathProvided() {
+        val request = useCase(
+            url = "https://example.com/video",
+            template = "/tmp/%(title)s.%(ext)s",
+            qualityProfile = QualityProfile.MAX,
+            noProgress = false,
+            cookieFilePath = "/tmp/cookies.txt",
+        )
+
+        assertEquals("/tmp/cookies.txt", request.getOption("--cookies"))
+    }
 }

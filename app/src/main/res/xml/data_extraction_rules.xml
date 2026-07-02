@@ -27,5 +27,8 @@
         <include
             domain="sharedpref"
             path="." />
+        <exclude
+            domain="file"
+            path="cookies/" />
     </device-transfer>
 </data-extraction-rules>

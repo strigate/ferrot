@@ -107,6 +107,31 @@ class DownloadWithProgressUseCaseTest {
     }
 
     @Test
+    fun invoke_addsCookiesToRequest_whenCookieFilePathProvided() = runTest(testDispatcher) {
+        fakeClient.onExecute = { request, _, _, _ ->
+            fakeClient.capturedRequest = request
+            YoutubeDLResponse(
+                command = listOf("yt-dlp"),
+                exitCode = 0,
+                elapsedTime = 50L,
+                out = "",
+                err = "",
+            )
+        }
+
+        createUseCase().invoke(
+            url = "https://example.com/video",
+            template = "/tmp/%(title)s.%(ext)s",
+            profile = QualityProfile.MAX,
+            processId = "process-cookies",
+            bytesProvider = { 456L },
+            cookieFilePath = "/tmp/cookies.txt",
+        ).toList()
+
+        assertEquals("/tmp/cookies.txt", fakeClient.capturedRequest?.getOption("--cookies"))
+    }
+
+    @Test
     fun invoke_throwsWhenYoutubeDlReturnsNonZeroExitCode() = runTest(testDispatcher) {
         fakeClient.onExecute = { _, _, _, _ ->
             YoutubeDLResponse(

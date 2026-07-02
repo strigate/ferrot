@@ -12,6 +12,7 @@ import androidx.room.PrimaryKey
         Index("status"),
         Index("enqueuedAtMillis"),
         Index("uid"),
+        Index("cookieSetId"),
     ],
 )
 data class DownloadEntity(
@@ -27,4 +28,5 @@ data class DownloadEntity(
     val enqueuedAtMillis: Long = System.currentTimeMillis(),
     val startedAtMillis: Long? = null,
     val completedAtMillis: Long? = null,
+    val cookieSetId: Long? = null,
 )

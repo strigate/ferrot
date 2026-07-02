@@ -23,12 +23,15 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.test.MainDispatcherRule
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
+import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
@@ -58,6 +61,15 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
     @Mock
     private lateinit var downloadPathProvider: DownloadPathProvider
+
+    @Mock
+    private lateinit var settingsUseCase: SettingsUseCase
+
+    @Mock
+    private lateinit var cookieSetUseCase: CookieSetUseCase
+
+    @Mock
+    private lateinit var cookieFileStore: CookieFileStore
 
     @Mock
     private lateinit var getDownloadByIdUseCase: GetDownloadByIdUseCase
@@ -282,6 +294,9 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         downloadMetadataUseCase = downloadMetadataUseCase,
         youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
         downloadPathProvider = downloadPathProvider,
+        settingsUseCase = settingsUseCase,
+        cookieSetUseCase = cookieSetUseCase,
+        cookieFileStore = cookieFileStore,
     )
 
     private fun sampleDownload(id: Long = 7L) = Download(
