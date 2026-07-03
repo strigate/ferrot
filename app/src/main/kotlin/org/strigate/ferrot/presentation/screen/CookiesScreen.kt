@@ -1,6 +1,8 @@
 package org.strigate.ferrot.presentation.screen
 
 import android.net.Uri
+import android.webkit.CookieManager
+import android.webkit.WebStorage
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -114,6 +116,9 @@ fun CookiesScreen(
             positiveButtonText = stringResource(R.string.notification_action_delete),
             negativeButtonText = stringResource(R.string.cancel),
             onPositiveClick = {
+                if (cookieSet.source == CookieSetSourceUiData.WEBVIEW) {
+                    clearWebViewData()
+                }
                 viewModel.deleteCookieSet(cookieSet.id)
                 cookieSetPendingDelete = null
             },
@@ -341,3 +346,11 @@ private data class CookiePreview(
     val title: String,
     val text: String,
 )
+
+private fun clearWebViewData() {
+    val cookieManager = CookieManager.getInstance()
+    cookieManager.removeAllCookies {
+        cookieManager.flush()
+    }
+    WebStorage.getInstance().deleteAllData()
+}

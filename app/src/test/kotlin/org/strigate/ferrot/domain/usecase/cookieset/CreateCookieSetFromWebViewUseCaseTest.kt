@@ -54,7 +54,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             assertEquals(true, result.domains.single().includeSubdomains)
             assertTrue(
                 File(result.cookieSet.cookieFilePath).readText()
-                    .contains(".x.com\tTRUE\t/\tTRUE\t0\tauth\tone")
+                    .contains(".x.com\tTRUE\t/\tTRUE\t\tauth\tone")
             )
         } finally {
             rootDir.deleteRecursively()

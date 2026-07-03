@@ -18,8 +18,8 @@ class CookieHeaderFileBuilderTest {
         )
 
         assertTrue(result.contains("# Netscape HTTP Cookie File"))
-        assertTrue(result.contains(".x.com\tTRUE\t/\tTRUE\t0\tauth\tone"))
-        assertTrue(result.contains("twitter.com\tFALSE\t/\tTRUE\t0\tct0\ttwo"))
+        assertTrue(result.contains(".x.com\tTRUE\t/\tTRUE\t\tauth\tone"))
+        assertTrue(result.contains("twitter.com\tFALSE\t/\tTRUE\t\tct0\ttwo"))
     }
 
     @Test

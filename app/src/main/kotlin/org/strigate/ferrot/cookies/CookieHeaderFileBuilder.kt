@@ -18,7 +18,7 @@ class CookieHeaderFileBuilder @Inject constructor() {
                             if (domain.includeSubdomains) "TRUE" else "FALSE",
                             "/",
                             "TRUE",
-                            "0",
+                            SESSION_COOKIE_EXPIRES,
                             cookie.name,
                             cookie.value,
                         ).joinToString("\t")
@@ -63,6 +63,8 @@ class CookieHeaderFileBuilder @Inject constructor() {
     }
 
     companion object {
+        private const val SESSION_COOKIE_EXPIRES = ""
+
         private val RESERVED_ATTRIBUTES = setOf(
             "domain",
             "expires",
