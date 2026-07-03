@@ -74,17 +74,6 @@ class CookiesViewModel @Inject constructor(
         }
     }
 
-    fun showCookieText(cookieSetId: Long, title: String) {
-        viewModelScope.launch {
-            val text = cookieSetUseCase.getCookieSetCookiesTextUseCase(cookieSetId)
-            if (text.isNullOrBlank()) {
-                _event.emit(CookiesEvent.ShowToast(R.string.toast_cookie_set_preview_failed))
-            } else {
-                _event.emit(CookiesEvent.ShowCookieText(title, text))
-            }
-        }
-    }
-
     companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }

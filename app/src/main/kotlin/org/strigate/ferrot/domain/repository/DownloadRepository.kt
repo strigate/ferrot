@@ -16,7 +16,5 @@ interface DownloadRepository {
     suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int
     suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int
     suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int
-    suspend fun updateCookieSetIdById(id: Long, cookieSetId: Long?): Int
-    suspend fun clearCookieSetId(cookieSetId: Long): Int
     suspend fun deleteById(id: Long): Int
 }

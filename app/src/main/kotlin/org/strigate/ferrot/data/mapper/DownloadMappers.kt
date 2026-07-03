@@ -13,7 +13,6 @@ internal fun DownloadEntity.toDomain() = Download(
     archived = archived,
     errorMessage = errorMessage,
     completedAtMillis = completedAtMillis,
-    cookieSetId = cookieSetId,
 )
 
 internal fun Download.toEntity() = DownloadEntity(
@@ -26,5 +25,4 @@ internal fun Download.toEntity() = DownloadEntity(
     archived = archived,
     errorMessage = errorMessage,
     completedAtMillis = completedAtMillis,
-    cookieSetId = cookieSetId,
 )

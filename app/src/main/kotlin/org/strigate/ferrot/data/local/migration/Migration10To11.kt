@@ -55,17 +55,5 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
             ON cookie_set_domain(cookieSetId, domain)
             """.trimIndent()
         )
-        db.execSQL(
-            """
-            ALTER TABLE download
-            ADD COLUMN cookieSetId INTEGER
-            """.trimIndent()
-        )
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS index_download_cookieSetId
-            ON download(cookieSetId)
-            """.trimIndent()
-        )
     }
 }

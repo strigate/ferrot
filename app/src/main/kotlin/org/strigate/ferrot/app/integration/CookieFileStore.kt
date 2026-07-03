@@ -63,4 +63,32 @@ class CookieFileStore @Inject constructor(
             file?.delete()
         }
     }
+
+    suspend fun deleteStaleTempCookies() {
+        withContext(Dispatchers.IO) {
+            val cutoffMillis = System.currentTimeMillis() - STALE_TEMP_COOKIE_MAX_AGE_MILLIS
+            listOf(
+                cookieSetPathProvider.tempDir(),
+                legacyTempDir(),
+            ).distinctBy { directory -> directory.absolutePath }
+                .forEach { directory -> deleteStaleTempCookies(directory, cutoffMillis) }
+        }
+    }
+
+    private fun deleteStaleTempCookies(directory: File, cutoffMillis: Long) {
+        directory
+            .listFiles()
+            .orEmpty()
+            .filter { file -> file.isFile && file.lastModified() < cutoffMillis }
+            .forEach { file -> file.delete() }
+    }
+
+    private fun legacyTempDir(): File {
+        return File(cookieSetPathProvider.cookiesDir(), LEGACY_TEMP_DIR_NAME)
+    }
+
+    companion object {
+        private const val LEGACY_TEMP_DIR_NAME = "temp"
+        private const val STALE_TEMP_COOKIE_MAX_AGE_MILLIS = 24 * 60 * 60 * 1_000L
+    }
 }

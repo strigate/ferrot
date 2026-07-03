@@ -6,7 +6,6 @@ import android.webkit.WebStorage
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,13 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Cookie
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
@@ -79,7 +74,6 @@ fun CookiesScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var cookieSetPendingDelete by remember { mutableStateOf<CookieSetUiData?>(null) }
-    var cookiePreview by remember { mutableStateOf<CookiePreview?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -96,12 +90,6 @@ fun CookiesScreen(
         viewModel.event.collect { event ->
             when (event) {
                 is CookiesEvent.ShowToast -> context.toast(event.textRes)
-                is CookiesEvent.ShowCookieText -> {
-                    cookiePreview = CookiePreview(
-                        title = event.title,
-                        text = event.text,
-                    )
-                }
             }
         }
     }
@@ -130,30 +118,6 @@ fun CookiesScreen(
             },
         )
     }
-    cookiePreview?.let { preview ->
-        AlertDialog(
-            onDismissRequest = { cookiePreview = null },
-            title = {
-                Text(text = preview.title)
-            },
-            text = {
-                SelectionContainer {
-                    Text(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        text = preview.text,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { cookiePreview = null }) {
-                    Text(text = stringResource(R.string.close))
-                }
-            },
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -228,12 +192,6 @@ fun CookiesScreen(
                                         CookieSetSetting(
                                             cookieSet = cookieSet,
                                             description = cookieSetDescription(cookieSet),
-                                            onClick = {
-                                                viewModel.showCookieText(
-                                                    cookieSetId = cookieSet.id,
-                                                    title = cookieSet.name,
-                                                )
-                                            },
                                             onDelete = { cookieSetPendingDelete = cookieSet },
                                         )
                                     }
@@ -254,7 +212,6 @@ fun CookiesScreen(
 private fun CookieSetSetting(
     cookieSet: CookieSetUiData,
     description: String,
-    onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -263,7 +220,6 @@ private fun CookieSetSetting(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .padding(
                 horizontal = refineryDimens.spacingMedium,
                 vertical = refineryDimens.spacingMediumAlt,
@@ -340,11 +296,6 @@ private fun cookieSetDescription(cookieSet: CookieSetUiData): String {
 private val COOKIE_FILE_MIME_TYPES = arrayOf(
     "text/*",
     "application/octet-stream",
-)
-
-private data class CookiePreview(
-    val title: String,
-    val text: String,
 )
 
 private fun clearWebViewData() {

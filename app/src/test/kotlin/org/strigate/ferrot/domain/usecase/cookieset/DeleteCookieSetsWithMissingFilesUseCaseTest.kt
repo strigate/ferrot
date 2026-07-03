@@ -3,7 +3,6 @@ package org.strigate.ferrot.domain.usecase.cookieset
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,10 +12,7 @@ import org.strigate.ferrot.domain.model.CookieSet
 import org.strigate.ferrot.domain.model.CookieSetDomain
 import org.strigate.ferrot.domain.model.CookieSetSource
 import org.strigate.ferrot.domain.model.CookieSetWithDomains
-import org.strigate.ferrot.domain.model.Download
-import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.repository.CookieSetRepository
-import org.strigate.ferrot.domain.repository.DownloadRepository
 import java.io.File
 import java.nio.file.Files
 
@@ -27,13 +23,11 @@ class DeleteCookieSetsWithMissingFilesUseCaseTest {
         val pathProvider = TempCookieSetPathProvider(rootDir)
         val cookieFileStore = CookieFileStore(pathProvider)
         val cookieSetRepository = SavingCookieSetRepository()
-        val downloadRepository = RecordingDownloadRepository()
         val useCase = DeleteCookieSetsWithMissingFilesUseCase(
             cookieSetRepository = cookieSetRepository,
             cookieFileStore = cookieFileStore,
             deleteCookieSetUseCase = DeleteCookieSetUseCase(
                 cookieSetRepository = cookieSetRepository,
-                downloadRepository = downloadRepository,
                 cookieFileStore = cookieFileStore,
             ),
         )
@@ -56,7 +50,6 @@ class DeleteCookieSetsWithMissingFilesUseCaseTest {
             assertTrue(cookieSetRepository.containsCookieSet(1L))
             assertFalse(cookieSetRepository.containsCookieSet(2L))
             assertFalse(cookieSetRepository.containsCookieSet(3L))
-            assertEquals(listOf(2L, 3L), downloadRepository.clearedCookieSetIds)
         } finally {
             rootDir.deleteRecursively()
         }
@@ -134,53 +127,6 @@ class DeleteCookieSetsWithMissingFilesUseCaseTest {
                 )
             }
         }
-    }
-
-    private class RecordingDownloadRepository : DownloadRepository {
-        val clearedCookieSetIds = mutableListOf<Long>()
-
-        override suspend fun save(download: Download): Long = error("unused")
-
-        override suspend fun getAll(): List<Download> = error("unused")
-
-        override suspend fun getById(id: Long): Download? = error("unused")
-
-        override fun getByIdAsFlow(id: Long): Flow<Download?> = error("unused")
-
-        override suspend fun updateStatusById(id: Long, status: DownloadStatus): Int =
-            error("unused")
-
-        override suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int =
-            error("unused")
-
-        override suspend fun updateSeenByIds(ids: Collection<Long>, seen: Boolean): Int =
-            error("unused")
-
-        override suspend fun updatePendingDeleteByIds(
-            ids: Collection<Long>,
-            pendingDelete: Boolean
-        ): Int {
-            error("unused")
-        }
-
-        override suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int =
-            error("unused")
-
-        override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int =
-            error("unused")
-
-        override suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int =
-            error("unused")
-
-        override suspend fun updateCookieSetIdById(id: Long, cookieSetId: Long?): Int =
-            error("unused")
-
-        override suspend fun clearCookieSetId(cookieSetId: Long): Int {
-            clearedCookieSetIds += cookieSetId
-            return 1
-        }
-
-        override suspend fun deleteById(id: Long): Int = error("unused")
     }
 
     private class TempCookieSetPathProvider(

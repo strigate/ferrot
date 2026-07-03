@@ -13,6 +13,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
@@ -43,6 +44,9 @@ class ConfigureBackgroundWorkUseCaseTest {
 
     @Mock
     private lateinit var configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+
+    @Mock
+    private lateinit var cookieFileStore: CookieFileStore
 
     @Mock
     private lateinit var deleteCookieSetsWithMissingFilesUseCase: DeleteCookieSetsWithMissingFilesUseCase
@@ -81,6 +85,8 @@ class ConfigureBackgroundWorkUseCaseTest {
             .invoke(false)
         verify(configureAutomaticDuplicateDownloadDeletionSettingUseCase)
             .invoke(true)
+        verify(cookieFileStore)
+            .deleteStaleTempCookies()
         verify(deleteCookieSetsWithMissingFilesUseCase)
             .invoke()
         verify(enqueueOrphanDownloadFilesCleanupUseCase)
@@ -115,6 +121,7 @@ class ConfigureBackgroundWorkUseCaseTest {
             configureAutomaticAppUpdatesSettingUseCase = configureAutomaticAppUpdatesSettingUseCase,
             configureAutomaticDependencyUpdatesSettingUseCase = configureAutomaticDependencyUpdatesSettingUseCase,
             configureAutomaticDuplicateDownloadDeletionSettingUseCase = configureAutomaticDuplicateDownloadDeletionSettingUseCase,
+            cookieFileStore = cookieFileStore,
             deleteCookieSetsWithMissingFilesUseCase = deleteCookieSetsWithMissingFilesUseCase,
             enqueueOrphanDownloadFilesCleanupUseCase = enqueueOrphanDownloadFilesCleanupUseCase,
         )

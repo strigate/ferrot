@@ -47,4 +47,24 @@ class CookieSetDomainParserTest {
             result,
         )
     }
+
+    @Test
+    fun parseNetscapeDomains_mergesDuplicateDomainsWithSubdomainsEnabled() {
+        val file = Files.createTempFile("cookies", ".txt").toFile().apply {
+            writeText(
+                """
+                # Netscape HTTP Cookie File
+                example.com	FALSE	/	TRUE	0	auth	one
+                .example.com	TRUE	/	TRUE	0	ct0	two
+                """.trimIndent()
+            )
+        }
+
+        val result = parser.parseNetscapeDomains(file)
+
+        assertEquals(
+            listOf(ParsedCookieDomain("example.com", includeSubdomains = true)),
+            result,
+        )
+    }
 }

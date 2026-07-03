@@ -11,7 +11,6 @@ import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
-import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import java.io.File
 import javax.inject.Inject
@@ -21,7 +20,6 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadPathProvider: DownloadPathProvider,
-    private val settingsUseCase: SettingsUseCase,
     private val cookieSetUseCase: CookieSetUseCase,
     private val cookieFileStore: CookieFileStore,
 ) {
@@ -33,7 +31,7 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
         var workerCookieFile: File? = null
         try {
             workerCookieFile = prepareCookieFile(
-                cookieSetId = download.cookieSetId,
+                url = download.url,
                 downloadId = downloadId,
             )
             val cookieFilePath = workerCookieFile?.absolutePath
@@ -97,24 +95,18 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
         }
     }
 
-    private suspend fun prepareCookieFile(cookieSetId: Long?, downloadId: Long): File? {
-        val id = cookieSetId ?: return null
-        val useCookies = settingsUseCase
-            .getUseCookiesSettingAsFlowUseCase()
-            .first()
-        if (!useCookies) {
-            return null
-        }
-        cookieSetUseCase
-            .getCookieSetByIdWithDomainsUseCase(id)
+    private suspend fun prepareCookieFile(url: String, downloadId: Long): File? {
+        val cookieSet = cookieSetUseCase
+            .resolveCookieSetForUrlUseCase(url)
             ?.cookieSet
             ?: return null
+        val cookieSetId = cookieSet.id
         val tempFile = cookieFileStore.copyCookiesToTemp(
-            cookieSetId = id,
+            cookieSetId = cookieSetId,
             name = "metadata-$downloadId-${System.nanoTime()}.txt",
         ) ?: return null
 
-        cookieSetUseCase.updateCookieSetLastUsedAtUseCase(id)
+        cookieSetUseCase.updateCookieSetLastUsedAtUseCase(cookieSetId)
         return tempFile
     }
 

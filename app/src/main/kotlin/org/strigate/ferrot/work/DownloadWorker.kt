@@ -111,7 +111,7 @@ class DownloadWorker(
             var workerCookieFile: File? = null
             try {
                 workerCookieFile = prepareCookieFile(
-                    cookieSetId = download.cookieSetId,
+                    url = download.url,
                     downloadId = downloadId,
                 )
                 val cookieFilePath = workerCookieFile?.absolutePath
@@ -464,24 +464,18 @@ class DownloadWorker(
         }
     }
 
-    private suspend fun prepareCookieFile(cookieSetId: Long?, downloadId: Long): File? {
-        val id = cookieSetId ?: return null
-        val useCookies = settingsUseCase
-            .getUseCookiesSettingAsFlowUseCase()
-            .first()
-        if (!useCookies) {
-            return null
-        }
-        cookieSetUseCase
-            .getCookieSetByIdWithDomainsUseCase(id)
+    private suspend fun prepareCookieFile(url: String, downloadId: Long): File? {
+        val cookieSet = cookieSetUseCase
+            .resolveCookieSetForUrlUseCase(url)
             ?.cookieSet
             ?: return null
+        val cookieSetId = cookieSet.id
         val tempFile = cookieFileStore.copyCookiesToTemp(
-            cookieSetId = id,
+            cookieSetId = cookieSetId,
             name = "download-$downloadId-${System.nanoTime()}.txt",
         ) ?: return null
 
-        cookieSetUseCase.updateCookieSetLastUsedAtUseCase(id)
+        cookieSetUseCase.updateCookieSetLastUsedAtUseCase(cookieSetId)
         return tempFile
     }
 

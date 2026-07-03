@@ -32,7 +32,7 @@ class CookieSetPathProviderImpl @Inject constructor(
     }
 
     override fun tempDir(): File {
-        return File(cookiesDir(), TEMP_DIR_NAME).apply { mkdirs() }
+        return File(appContext.cacheDir, "$COOKIES/$TEMP_DIR_NAME").apply { mkdirs() }
     }
 
     override fun tempCookieFile(cookieSetId: Long, fileName: String): File {

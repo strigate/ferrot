@@ -26,7 +26,7 @@ class CookieSetDomainParser @Inject constructor() {
         return file
             .readLines()
             .mapNotNull(::parseNetscapeDomain)
-            .distinctBy { it.domain }
+            .mergeDuplicateDomains()
     }
 
     fun normalizeDomain(rawDomain: String): String? {
@@ -67,6 +67,16 @@ class CookieSetDomainParser @Inject constructor() {
             domain = domain,
             includeSubdomains = includeSubdomains,
         )
+    }
+
+    private fun List<ParsedCookieDomain>.mergeDuplicateDomains(): List<ParsedCookieDomain> {
+        return groupBy { it.domain }
+            .map { (domain, domains) ->
+                ParsedCookieDomain(
+                    domain = domain,
+                    includeSubdomains = domains.any { it.includeSubdomains },
+                )
+            }
     }
 
     companion object {

@@ -121,9 +121,11 @@ fun GetCookiesScreen(
     LaunchedEffect(Unit) {
         viewModel.logShown()
     }
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
+    LaunchedEffect(requestedUrl) {
+        if (requestedUrl == null) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
     LaunchedEffect(Unit) {
         viewModel.event.collect { event ->

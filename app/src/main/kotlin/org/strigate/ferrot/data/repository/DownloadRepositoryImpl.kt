@@ -66,14 +66,6 @@ class DownloadRepositoryImpl @Inject constructor(
         return downloadDao.updateCompletedAtById(id, completedAtMillis)
     }
 
-    override suspend fun updateCookieSetIdById(id: Long, cookieSetId: Long?): Int {
-        return downloadDao.updateCookieSetIdById(id, cookieSetId)
-    }
-
-    override suspend fun clearCookieSetId(cookieSetId: Long): Int {
-        return downloadDao.clearCookieSetId(cookieSetId)
-    }
-
     override suspend fun deleteById(id: Long): Int {
         return downloadDao.deleteById(id)
     }

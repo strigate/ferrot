@@ -23,7 +23,6 @@ import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
-import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -60,9 +59,6 @@ class StartDownloadUseCaseTest {
     private lateinit var downloadUseCase: DownloadUseCase
 
     @Mock
-    private lateinit var cookieSetUseCase: CookieSetUseCase
-
-    @Mock
     private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
     @Mock
@@ -70,9 +66,6 @@ class StartDownloadUseCaseTest {
 
     @Mock
     private lateinit var updateDownloadStatusUseCase: UpdateDownloadStatusUseCase
-
-    @Mock
-    private lateinit var getDownloadByIdUseCase: GetDownloadByIdUseCase
 
     @Before
     fun setUp() {
@@ -83,8 +76,6 @@ class StartDownloadUseCaseTest {
             .thenReturn(getDownloadWifiOnlySettingAsFlowUseCase)
         `when`(downloadUseCase.updateDownloadStatusUseCase)
             .thenReturn(updateDownloadStatusUseCase)
-        `when`(downloadUseCase.getDownloadByIdUseCase)
-            .thenReturn(getDownloadByIdUseCase)
         `when`(appContext.getSystemService(Context.CONNECTIVITY_SERVICE))
             .thenReturn(connectivityManager)
     }
@@ -172,7 +163,6 @@ class StartDownloadUseCaseTest {
         appContext = appContext,
         settingsUseCase = settingsUseCase,
         downloadUseCase = downloadUseCase,
-        cookieSetUseCase = cookieSetUseCase,
         clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
         downloadWorkScheduler = downloadWorkScheduler,
     )

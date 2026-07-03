@@ -16,10 +16,7 @@ import org.strigate.ferrot.domain.model.CookieSet
 import org.strigate.ferrot.domain.model.CookieSetDomain
 import org.strigate.ferrot.domain.model.CookieSetSource
 import org.strigate.ferrot.domain.model.CookieSetWithDomains
-import org.strigate.ferrot.domain.model.Download
-import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.repository.CookieSetRepository
-import org.strigate.ferrot.domain.repository.DownloadRepository
 import java.io.File
 import java.nio.file.Files
 
@@ -28,7 +25,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
     fun invoke_savesWebViewCookiesForCurrentDomain() = runTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
-        val downloadRepository = RecordingDownloadRepository()
         val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
         val useCase = CreateCookieSetFromWebViewUseCase(
             cookieSetRepository = repository,
@@ -37,7 +33,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
             cookieFileStore = cookieFileStore,
             deleteCookieSetUseCase = DeleteCookieSetUseCase(
                 cookieSetRepository = repository,
-                downloadRepository = downloadRepository,
                 cookieFileStore = cookieFileStore,
             ),
         )
@@ -65,7 +60,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
     fun invoke_deletesExistingCookieSetForSameDomain() = runTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
-        val downloadRepository = RecordingDownloadRepository()
         repository.seedCookieSet(
             CookieSetWithDomains(
                 cookieSet = CookieSet(
@@ -91,7 +85,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
             cookieFileStore = cookieFileStore,
             deleteCookieSetUseCase = DeleteCookieSetUseCase(
                 cookieSetRepository = repository,
-                downloadRepository = downloadRepository,
                 cookieFileStore = cookieFileStore,
             ),
         )
@@ -103,7 +96,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
             )
 
             assertFalse(repository.containsCookieSet(99L))
-            assertEquals(listOf(99L), downloadRepository.clearedCookieSetIds)
             assertEquals(
                 result.cookieSet.id,
                 repository.getCookieSetIdsByDomains(listOf("x.com")).single()
@@ -111,52 +103,6 @@ class CreateCookieSetFromWebViewUseCaseTest {
         } finally {
             rootDir.deleteRecursively()
         }
-    }
-
-    private class RecordingDownloadRepository : DownloadRepository {
-        val clearedCookieSetIds = mutableListOf<Long>()
-
-        override suspend fun save(download: Download): Long = error("unused")
-
-        override suspend fun getAll(): List<Download> = error("unused")
-
-        override suspend fun getById(id: Long): Download? = error("unused")
-
-        override fun getByIdAsFlow(id: Long): Flow<Download?> = error("unused")
-
-        override suspend fun updateStatusById(id: Long, status: DownloadStatus): Int =
-            error("unused")
-
-        override suspend fun updateErrorMessageById(id: Long, errorMessage: String?): Int =
-            error("unused")
-
-        override suspend fun updateSeenByIds(ids: Collection<Long>, seen: Boolean): Int =
-            error("unused")
-
-        override suspend fun updatePendingDeleteByIds(
-            ids: Collection<Long>,
-            pendingDelete: Boolean
-        ): Int =
-            error("unused")
-
-        override suspend fun updateArchivedByIds(ids: Collection<Long>, archived: Boolean): Int =
-            error("unused")
-
-        override suspend fun updateStartedAtById(id: Long, startedAtMillis: Long?): Int =
-            error("unused")
-
-        override suspend fun updateCompletedAtById(id: Long, completedAtMillis: Long?): Int =
-            error("unused")
-
-        override suspend fun updateCookieSetIdById(id: Long, cookieSetId: Long?): Int =
-            error("unused")
-
-        override suspend fun clearCookieSetId(cookieSetId: Long): Int {
-            clearedCookieSetIds += cookieSetId
-            return 1
-        }
-
-        override suspend fun deleteById(id: Long): Int = error("unused")
     }
 
     private class SavingCookieSetRepository : CookieSetRepository {
