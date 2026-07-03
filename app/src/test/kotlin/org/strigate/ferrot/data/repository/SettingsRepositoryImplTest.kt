@@ -72,7 +72,7 @@ class SettingsRepositoryImplTest {
 
         repository.saveDownloadWifiOnly(false)
         repository.saveAutomaticDuplicateDownloadDeletion(false)
-        repository.saveUseCookies(false)
+        repository.saveUseCookies(true)
         repository.saveLeftSwipeAction(DownloadSwipeAction.NONE)
         repository.saveRightSwipeAction(DownloadSwipeAction.ARCHIVE)
         repository.saveAutomaticUpdates(false)
@@ -80,7 +80,7 @@ class SettingsRepositoryImplTest {
 
         assertEquals(false, repository.getDownloadWifiOnlyAsFlow().first())
         assertEquals(false, repository.getAutomaticDuplicateDownloadDeletionAsFlow().first())
-        assertEquals(false, repository.getUseCookiesAsFlow().first())
+        assertEquals(true, repository.getUseCookiesAsFlow().first())
         assertEquals(DownloadSwipeAction.NONE, repository.getLeftSwipeActionAsFlow().first())
         assertEquals(
             DownloadSwipeAction.ARCHIVE,
