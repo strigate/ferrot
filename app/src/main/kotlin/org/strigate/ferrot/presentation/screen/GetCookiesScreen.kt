@@ -1,8 +1,11 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -288,6 +291,7 @@ private data class CookieOverwritePrompt(
     val domain: String,
 )
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun GetCookiesWebView(
     requestedUrl: String?,
@@ -326,6 +330,27 @@ private fun GetCookiesWebView(
                         if (!url.isNullOrBlank()) {
                             onCurrentUrlChanged(url)
                         }
+                    }
+
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                    ): Boolean {
+                        val uri = request?.url ?: return false
+                        if (uri.scheme != "intent") {
+                            return false
+                        }
+                        if (!request.isForMainFrame) {
+                            return true
+                        }
+                        val fallbackUrl = runCatching {
+                            Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
+                                .getStringExtra("browser_fallback_url")
+                        }.getOrNull()?.let(::normalizeWebViewUrl)
+                        if (fallbackUrl != null) {
+                            view?.loadUrl(fallbackUrl)
+                        }
+                        return true
                     }
                 }
                 webChromeClient = object : WebChromeClient() {}
