@@ -316,8 +316,7 @@ private fun GetCookiesWebView(
                     domStorageEnabled = true
                     loadsImagesAutomatically = true
                     safeBrowsingEnabled = true
-                    userAgentString =
-                        WebSettings.getDefaultUserAgent(context).withoutWebViewMarker()
+                    userAgentString = WebSettings.getDefaultUserAgent(context)
                     useWideViewPort = true
                     loadWithOverviewMode = false
                     builtInZoomControls = false
@@ -365,11 +364,6 @@ private fun GetCookiesWebView(
             view.loadRequestedUrl(url)
         },
     )
-}
-
-private fun String.withoutWebViewMarker(): String {
-    return replace("; wv", "")
-        .replace(" Version/4.0", "")
 }
 
 private fun WebView.loadRequestedUrl(url: String) {
