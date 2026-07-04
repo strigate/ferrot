@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Cookie
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -160,6 +161,27 @@ fun SettingsScreen(
                                             viewModel.setAutomaticDuplicateDownloadDeletion(checked)
                                         },
                                     )
+                                }
+                                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+                                ExpandableSettingsSection(
+                                    icon = Icons.Outlined.Cookie,
+                                    title = stringResource(id = R.string.settings_section_cookies),
+                                    initialExpanded = true,
+                                ) {
+                                    SwitchSetting(
+                                        text = stringResource(id = R.string.settings_title_use_cookies),
+                                        description = stringResource(id = R.string.settings_description_use_cookies),
+                                        checked = useCookies,
+                                        onCheckedChange = { checked ->
+                                            viewModel.setUseCookies(checked)
+                                        },
+                                    )
+                                    TextNavigateSetting(
+                                        text = stringResource(R.string.settings_navigate_title_manage_cookies),
+                                        description = stringResource(R.string.settings_description_manage_cookies),
+                                    ) {
+                                        navController.navigate(Screen.Cookies.route)
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                 ExpandableSettingsSection(

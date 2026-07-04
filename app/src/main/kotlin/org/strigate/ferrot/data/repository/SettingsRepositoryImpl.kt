@@ -13,12 +13,14 @@ import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_UPDATE
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_RIGHT_SWIPE_ACTION
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_USE_COOKIES
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DEPENDENCY_UPDATES
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_UPDATES
 import org.strigate.ferrot.app.Constants.Settings.KEY_DOWNLOAD_WIFI_ONLY
 import org.strigate.ferrot.app.Constants.Settings.KEY_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.KEY_RIGHT_SWIPE_ACTION
+import org.strigate.ferrot.app.Constants.Settings.KEY_USE_COOKIES
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import javax.inject.Inject
@@ -32,6 +34,8 @@ class SettingsRepositoryImpl @Inject constructor(
         booleanPreferencesKey(KEY_DOWNLOAD_WIFI_ONLY)
     private val automaticDuplicateDownloadDeletionKey =
         booleanPreferencesKey(KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION)
+    private val useCookiesKey =
+        booleanPreferencesKey(KEY_USE_COOKIES)
     private val leftSwipeActionKey =
         stringPreferencesKey(KEY_LEFT_SWIPE_ACTION)
     private val rightSwipeActionKey =
@@ -63,6 +67,18 @@ class SettingsRepositoryImpl @Inject constructor(
         return preferencesDataStore.data.map {
             it[automaticDuplicateDownloadDeletionKey]
                 ?: DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
+        }
+    }
+
+    override suspend fun saveUseCookies(enabled: Boolean) {
+        preferencesDataStore.edit {
+            it[useCookiesKey] = enabled
+        }
+    }
+
+    override fun getUseCookiesAsFlow(): Flow<Boolean> {
+        return preferencesDataStore.data.map {
+            it[useCookiesKey] ?: DEFAULT_VALUE_USE_COOKIES
         }
     }
 

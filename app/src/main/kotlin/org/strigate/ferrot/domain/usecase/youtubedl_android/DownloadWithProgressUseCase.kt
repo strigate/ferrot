@@ -29,6 +29,7 @@ class DownloadWithProgressUseCase @Inject constructor(
         downloadMediaType: DownloadMediaType = DownloadMediaType.VIDEO,
         outputPathFile: File? = null,
         onOutputFilePath: ((String) -> Unit)? = null,
+        cookieFilePath: String? = null,
     ) = callbackFlow {
         val progressMappingPolicy = ProgressMappingPolicy()
         val job = launch {
@@ -42,6 +43,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         qualityProfile = profile,
                         noProgress = false,
                         outputPathFilePath = outputPathFile?.absolutePath,
+                        cookieFilePath = cookieFilePath,
                     )
                 }
 
@@ -51,6 +53,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         template = template,
                         noProgress = false,
                         outputPathFilePath = outputPathFile?.absolutePath,
+                        cookieFilePath = cookieFilePath,
                     )
                 }
             }

@@ -25,8 +25,10 @@ import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.NotificationService
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -63,6 +65,12 @@ class DownloadWorkerTest {
 
     @Mock
     private lateinit var settingsUseCase: SettingsUseCase
+
+    @Mock
+    private lateinit var cookieSetUseCase: CookieSetUseCase
+
+    @Mock
+    private lateinit var cookieFileStore: CookieFileStore
 
     @Mock
     private lateinit var downloadPathProvider: DownloadPathProvider
@@ -159,6 +167,8 @@ class DownloadWorkerTest {
         analyticsLogger = analyticsLogger,
         notificationService = notificationService,
         settingsUseCase = settingsUseCase,
+        cookieSetUseCase = cookieSetUseCase,
+        cookieFileStore = cookieFileStore,
         downloadPathProvider = downloadPathProvider,
         youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
         downloadUseCase = downloadUseCase,

@@ -33,6 +33,7 @@ import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
 import org.strigate.ferrot.app.actions.buildShareDownloadNotificationAction
 import org.strigate.ferrot.app.actions.downloadNotificationExtras
 import org.strigate.ferrot.app.actions.downloadNotificationTag
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadAudio
 import org.strigate.ferrot.domain.model.DownloadMediaType
@@ -40,6 +41,7 @@ import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadVideo
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -64,6 +66,8 @@ class DownloadWorker(
     private val analyticsLogger: AnalyticsLogger,
     private val notificationService: NotificationService,
     private val settingsUseCase: SettingsUseCase,
+    private val cookieSetUseCase: CookieSetUseCase,
+    private val cookieFileStore: CookieFileStore,
     private val downloadPathProvider: DownloadPathProvider,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
     private val downloadUseCase: DownloadUseCase,
@@ -104,7 +108,13 @@ class DownloadWorker(
 
         var wasDownloadDeleted = false
         return coroutineScope mainScope@{
+            var workerCookieFile: File? = null
             try {
+                workerCookieFile = prepareCookieFile(
+                    url = download.url,
+                    downloadId = downloadId,
+                )
+                val cookieFilePath = workerCookieFile?.absolutePath
                 var thumbnailFilePath: String? = null
                 suspend fun throwIfDownloadDeleted() {
                     if (downloadUseCase.getDownloadByIdUseCase(downloadId) != null) {
@@ -147,7 +157,10 @@ class DownloadWorker(
                 downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     runCatching {
-                        youtubeDlAndroidUseCase.getVideoInfoUseCase(download.url)
+                        youtubeDlAndroidUseCase.getVideoInfoUseCase(
+                            url = download.url,
+                            cookieFilePath = cookieFilePath,
+                        )
                     }.getOrNull()
                 }
                 val metadataMessage = if (videoInfo != null) {
@@ -184,6 +197,7 @@ class DownloadWorker(
                                     url = download.url,
                                     outputDir = uidDir,
                                     videoId = videoInfo.id,
+                                    cookieFilePath = cookieFilePath,
                                 )
                             throwIfDownloadDeleted()
                             downloadMetadataUseCase.saveDownloadMetadataUseCase(
@@ -269,6 +283,7 @@ class DownloadWorker(
                             wasDownloadDeleted = true
                         },
                         onCombined = {},
+                        cookieFilePath = cookieFilePath,
                     )
                 }
                 Log.d(LOG_TAG, "$tag Video: downloaded")
@@ -335,6 +350,7 @@ class DownloadWorker(
                                 wasDownloadDeleted = true
                             },
                             onCombined = {},
+                            cookieFilePath = cookieFilePath,
                         )
                     }
                     Log.d(LOG_TAG, "$tag Audio: downloaded")
@@ -440,8 +456,27 @@ class DownloadWorker(
 
                     else -> handleDownloadFailure()
                 }
+            } finally {
+                withContext(NonCancellable) {
+                    cookieFileStore.delete(workerCookieFile)
+                }
             }
         }
+    }
+
+    private suspend fun prepareCookieFile(url: String, downloadId: Long): File? {
+        val cookieSet = cookieSetUseCase
+            .resolveCookieSetForUrlUseCase(url)
+            ?.cookieSet
+            ?: return null
+        val cookieSetId = cookieSet.id
+        val tempFile = cookieFileStore.copyCookiesToTemp(
+            cookieSetId = cookieSetId,
+            name = "download-$downloadId-${System.nanoTime()}.txt",
+        ) ?: return null
+
+        cookieSetUseCase.updateCookieSetLastUsedAtUseCase(cookieSetId)
+        return tempFile
     }
 
     private suspend fun handleDownloadFailure(
@@ -711,6 +746,7 @@ class DownloadWorker(
         initialVideoPercent: Float,
         onCanceled: () -> Unit,
         onCombined: (Float) -> Unit,
+        cookieFilePath: String?,
     ): String? {
         val throttle = ProgressThrottle()
         var outputFilePath: String? = null
@@ -724,6 +760,7 @@ class DownloadWorker(
             downloadMediaType = phaseContext.phase,
             outputPathFile = outputPathFile,
             onOutputFilePath = { outputFilePath = it },
+            cookieFilePath = cookieFilePath,
         )
         try {
             downloadTickFlow.collect { tick ->

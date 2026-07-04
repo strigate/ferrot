@@ -2,10 +2,12 @@ package org.strigate.ferrot.domain.usecase.combined
 
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
 import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+import org.strigate.ferrot.domain.usecase.cookieset.DeleteCookieSetsWithMissingFilesUseCase
 import org.strigate.ferrot.domain.usecase.orphancleanup.EnqueueOrphanDownloadFilesCleanupUseCase
 import javax.inject.Inject
 
@@ -14,6 +16,8 @@ class ConfigureBackgroundWorkUseCase @Inject constructor(
     private val configureAutomaticAppUpdatesSettingUseCase: ConfigureAutomaticAppUpdatesSettingUseCase,
     private val configureAutomaticDependencyUpdatesSettingUseCase: ConfigureAutomaticDependencyUpdatesSettingUseCase,
     private val configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase,
+    private val cookieFileStore: CookieFileStore,
+    private val deleteCookieSetsWithMissingFilesUseCase: DeleteCookieSetsWithMissingFilesUseCase,
     private val enqueueOrphanDownloadFilesCleanupUseCase: EnqueueOrphanDownloadFilesCleanupUseCase,
 ) {
     suspend operator fun invoke() {
@@ -38,6 +42,8 @@ class ConfigureBackgroundWorkUseCase @Inject constructor(
         configureAutomaticDuplicateDownloadDeletionSettingUseCase(
             automaticDuplicateDownloadDeletion = settings.automaticDuplicateDownloadDeletion,
         )
+        cookieFileStore.deleteStaleTempCookies()
+        deleteCookieSetsWithMissingFilesUseCase()
         enqueueOrphanDownloadFilesCleanupUseCase()
     }
 

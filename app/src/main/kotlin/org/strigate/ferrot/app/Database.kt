@@ -3,6 +3,7 @@ package org.strigate.ferrot.app
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
+import org.strigate.ferrot.data.local.dao.CookieSetDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
@@ -10,11 +11,14 @@ import org.strigate.ferrot.data.local.dao.DownloadProgressDao
 import org.strigate.ferrot.data.local.dao.DownloadVideoDao
 import org.strigate.ferrot.data.local.dao.DownloadWithMetadataViewDao
 import org.strigate.ferrot.data.local.entity.AvailableUpdateEntity
+import org.strigate.ferrot.data.local.entity.CookieSetDomainEntity
+import org.strigate.ferrot.data.local.entity.CookieSetEntity
 import org.strigate.ferrot.data.local.entity.DownloadAudioEntity
 import org.strigate.ferrot.data.local.entity.DownloadEntity
 import org.strigate.ferrot.data.local.entity.DownloadMetadataEntity
 import org.strigate.ferrot.data.local.entity.DownloadProgressEntity
 import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
+import org.strigate.ferrot.data.local.migration.MIGRATION_10_11
 import org.strigate.ferrot.data.local.migration.MIGRATION_1_2
 import org.strigate.ferrot.data.local.migration.MIGRATION_2_3
 import org.strigate.ferrot.data.local.migration.MIGRATION_3_4
@@ -30,6 +34,8 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 @androidx.room.Database(
     entities = [
         AvailableUpdateEntity::class,
+        CookieSetEntity::class,
+        CookieSetDomainEntity::class,
         DownloadEntity::class,
         DownloadVideoEntity::class,
         DownloadAudioEntity::class,
@@ -40,13 +46,14 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
         DownloadWithMetadataView::class,
     ],
     exportSchema = false,
-    version = 10,
+    version = 11,
 )
 @TypeConverters(
     DownloadStatusTypeConverter::class,
 )
 abstract class Database : RoomDatabase() {
     abstract fun availableUpdateDao(): AvailableUpdateDao
+    abstract fun cookieSetDao(): CookieSetDao
     abstract fun downloadDao(): DownloadDao
     abstract fun downloadVideoDao(): DownloadVideoDao
     abstract fun downloadAudioDao(): DownloadAudioDao
@@ -66,5 +73,6 @@ internal fun <T : RoomDatabase> RoomDatabase.Builder<T>.applyMigrations(): RoomD
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
+        MIGRATION_10_11,
     )
 }

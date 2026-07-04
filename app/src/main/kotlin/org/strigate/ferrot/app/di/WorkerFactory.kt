@@ -8,9 +8,11 @@ import androidx.work.WorkerParameters
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -46,6 +48,8 @@ class WorkerFactory @Inject constructor(
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
     private val stateUseCase: StateUseCase,
     private val settingsUseCase: SettingsUseCase,
+    private val cookieSetUseCase: CookieSetUseCase,
+    private val cookieFileStore: CookieFileStore,
     private val updatePathProvider: UpdatePathProvider,
     private val downloadPathProvider: DownloadPathProvider,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
@@ -94,6 +98,8 @@ class WorkerFactory @Inject constructor(
                     analyticsLogger = analyticsLogger,
                     notificationService = notificationService,
                     settingsUseCase = settingsUseCase,
+                    cookieSetUseCase = cookieSetUseCase,
+                    cookieFileStore = cookieFileStore,
                     downloadPathProvider = downloadPathProvider,
                     youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
                     downloadUseCase = downloadUseCase,
