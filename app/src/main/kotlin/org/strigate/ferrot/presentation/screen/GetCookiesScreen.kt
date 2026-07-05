@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -251,39 +252,68 @@ fun GetCookiesScreen(
                             .fillMaxWidth(),
                         exit = slideOutVertically { -it } + fadeOut(),
                     ) {
-                        OutlinedTextField(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
                                     start = refineryDimens.spacingMediumAlt,
                                     end = refineryDimens.spacingMediumAlt,
                                     bottom = refineryDimens.spacingMediumAlt,
-                                )
-                                .focusRequester(focusRequester),
-                            value = addressText,
-                            onValueChange = { addressText = it },
-                            label = { Text(stringResource(R.string.cookies_label_login_url)) },
-                            singleLine = true,
-                            trailingIcon = {
-                                IconButton(onClick = ::loadAddress) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = stringResource(R.string.cookies_action_go),
-                                    )
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                autoCorrectEnabled = false,
-                                capitalization = KeyboardCapitalization.None,
-                                imeAction = ImeAction.Go,
-                            ),
-                            keyboardActions = KeyboardActions(onGo = { loadAddress() }),
-                        )
+                                ),
+                        ) {
+                            CookieLoginWarning()
+                            OutlinedTextField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = refineryDimens.spacingSmall)
+                                    .focusRequester(focusRequester),
+                                value = addressText,
+                                onValueChange = { addressText = it },
+                                label = {
+                                    Text(text = stringResource(R.string.cookies_label_login_url))
+                                },
+                                singleLine = true,
+                                trailingIcon = {
+                                    IconButton(onClick = ::loadAddress) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = stringResource(R.string.cookies_action_go),
+                                        )
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    autoCorrectEnabled = false,
+                                    capitalization = KeyboardCapitalization.None,
+                                    imeAction = ImeAction.Go,
+                                ),
+                                keyboardActions = KeyboardActions(onGo = { loadAddress() }),
+                            )
+                        }
                     }
                 }
             }
         },
     )
+}
+
+@Composable
+private fun CookieLoginWarning(
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+    ) {
+        Text(
+            modifier = Modifier.padding(refineryDimens.spacingMedium),
+            style = MaterialTheme.typography.bodySmall,
+            text = stringResource(R.string.cookies_webview_warning),
+        )
+    }
 }
 
 private data class CookieOverwritePrompt(

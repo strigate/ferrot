@@ -186,6 +186,7 @@
     <string name="cookies_action_replace">Replace</string>
     <string name="cookies_label_login_url">URL</string>
     <string name="cookies_webview_start_description">Enter a site, log in, then Save.</string>
+    <string name="cookies_webview_warning">Some sites may lock, restrict, or ban accounts after login attempts from embedded browsers. Use cookies.txt import when possible.</string>
     <string name="cookies_source_imported_file">Imported file</string>
     <string name="cookies_source_webview">WebView</string>
     <string name="cookies_no_domains">No domains</string>
