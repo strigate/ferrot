@@ -9,7 +9,7 @@ class GetExistingCookieSetDomainForWebViewUrlUseCase @Inject constructor(
     private val webViewCookieDomainResolver: WebViewCookieDomainResolver,
 ) {
     suspend operator fun invoke(url: String): String? {
-        val domain = webViewCookieDomainResolver(url)
+        val domain = webViewCookieDomainResolver(url) ?: return null
         val cookieSetIds = cookieSetRepository.getCookieSetIdsByDomains(listOf(domain))
         return domain.takeIf { cookieSetIds.isNotEmpty() }
     }

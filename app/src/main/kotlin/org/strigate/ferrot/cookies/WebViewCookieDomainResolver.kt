@@ -6,12 +6,11 @@ import javax.inject.Inject
 class WebViewCookieDomainResolver @Inject constructor(
     private val cookieSetDomainParser: CookieSetDomainParser,
 ) {
-    operator fun invoke(url: String): String {
+    operator fun invoke(url: String): String? {
         val host = runCatching { URI(url).host }
             .getOrNull()
-        val normalizedHost = requireNotNull(cookieSetDomainParser.normalizeDomain(host.orEmpty())) {
-            "Could not determine cookie domain"
-        }
+        val normalizedHost = cookieSetDomainParser.normalizeDomain(host.orEmpty())
+            ?: return null
         return normalizedHost.withoutCommonSitePrefix()
     }
 

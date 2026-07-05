@@ -19,7 +19,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +26,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.test.MainDispatcherRule
@@ -154,25 +154,62 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun constructor_requiresDownloadIdArgument() {
-        try {
-            DownloadViewModel(
-                savedStateHandle = SavedStateHandle(),
-                analyticsLogger = analyticsLogger,
-                downloadUseCase = downloadUseCase,
-                downloadVideoUseCase = downloadVideoUseCase,
-                downloadAudioUseCase = downloadAudioUseCase,
-                downloadProgressUseCase = downloadProgressUseCase,
-                downloadMetadataUseCase = downloadMetadataUseCase,
-                clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
-                startDownloadUseCase = startDownloadUseCase,
-                requestRefreshDownloadMetadataUseCase = requestRefreshDownloadMetadataUseCase,
-                downloadWithMetadataUseCase = downloadWithMetadataUseCase,
-            )
-            fail("Expected IllegalStateException")
-        } catch (_: IllegalStateException) {
+    fun constructor_fallsBackWhenDownloadIdArgumentIsMissing() = runTest(testDispatcher) {
+        val viewModel = createViewModel(initialId = null)
+        val collector = collectUiState(backgroundScope, viewModel)
+
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.id in listOf(10L, 20L, 30L)
         }
+
+        val state = viewModel.uiState.value as DownloadUiState.Data
+        assertEquals(true, state.data.id in listOf(10L, 20L, 30L))
+
+        collector.cancel()
     }
+
+    @Test
+    fun noArgActionsDoNothing_whenDownloadIdIsMissingAndNoDownloadsExist() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                initialId = null,
+                downloadIdsFlow = MutableStateFlow(emptyList()),
+            )
+            val mediaCollector = collectSelectedMedia(backgroundScope, viewModel)
+            val eventDeferred = backgroundScope.async {
+                runCatching {
+                    withTimeout(250L) {
+                        viewModel.events.first()
+                    }
+                }
+            }
+
+            viewModel.markUnseenAndNavigateBack()
+            viewModel.setSelectedMedia(DownloadMediaType.AUDIO)
+            viewModel.deleteDownload()
+            viewModel.updateArchived(archived = true)
+            viewModel.shareDownload()
+            viewModel.saveDownload()
+            viewModel.playDownload()
+            viewModel.retryDownload()
+            viewModel.refreshDownloadMetadata()
+            advanceUntilIdle()
+
+            assertEquals(DownloadMediaType.VIDEO, viewModel.selectedMedia.value)
+            assertNull(eventDeferred.await().getOrNull())
+            verifyNoInteractions(
+                updateDownloadsSeenUseCase,
+                requestDeleteDownloadsUseCase,
+                startDownloadUseCase,
+                requestRefreshDownloadMetadataUseCase,
+                getDownloadByIdAsFlowUseCase,
+            )
+            verify(analyticsLogger, never())
+                .logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
+
+            mediaCollector.cancel()
+        }
 
     @Test
     fun uiState_returnsNullId_whenDownloadIdsAreEmpty() = runTest(testDispatcher) {
@@ -773,7 +810,7 @@ class DownloadViewModelTest {
     }
 
     private fun createViewModel(
-        initialId: Long = 20L,
+        initialId: Long? = 20L,
         downloadIdsFlow: MutableStateFlow<List<Long>> = MutableStateFlow(listOf(10L, 20L, 30L)),
         downloadsWithMetadataFlow: MutableStateFlow<List<DownloadWithMetadata>>? = null,
     ): DownloadViewModel {
@@ -806,10 +843,14 @@ class DownloadViewModelTest {
         `when`(downloadProgressUseCase.getDownloadProgressByDownloadIdAsFlowUseCase)
             .thenReturn(getDownloadProgressByDownloadIdAsFlowUseCase)
 
+        val savedStateHandle = if (initialId == null) {
+            SavedStateHandle()
+        } else {
+            SavedStateHandle(mapOf(Screen.Download.ARG_DOWNLOAD_ID to initialId))
+        }
+
         return DownloadViewModel(
-            savedStateHandle = SavedStateHandle(
-                mapOf(Screen.Download.ARG_DOWNLOAD_ID to initialId)
-            ),
+            savedStateHandle = savedStateHandle,
             analyticsLogger = analyticsLogger,
             downloadUseCase = downloadUseCase,
             downloadVideoUseCase = downloadVideoUseCase,

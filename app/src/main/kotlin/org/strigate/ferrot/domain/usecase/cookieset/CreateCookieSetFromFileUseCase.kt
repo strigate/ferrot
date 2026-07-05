@@ -29,7 +29,7 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
         uri: Uri,
         rawDomains: String,
         includeSubdomains: Boolean,
-    ): CookieSetWithDomains {
+    ): CookieSetWithDomains? {
         val cookieSetName = name.trim().ifBlank {
             displayNameFromUri(uri) ?: DEFAULT_PROFILE_NAME
         }
@@ -42,14 +42,16 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
         )
 
         return runCatching {
-            val tempFile = copyUriToTempFile(uri)
+            val tempFile = copyUriToTempFile(uri) ?: return@runCatching null
             try {
                 val cookieFile = cookieFileStore.copyCookies(cookieSetId, tempFile)
                 val parsedDomains = cookieSetDomainParser
                     .parseDomainList(rawDomains, includeSubdomains)
                     .ifEmpty { cookieSetDomainParser.parseNetscapeDomains(cookieFile) }
 
-                require(parsedDomains.isNotEmpty()) { "No cookie domains were found" }
+                if (parsedDomains.isEmpty()) {
+                    return@runCatching null
+                }
 
                 cookieSetRepository.updateCookieFilePath(cookieSetId, cookieFile.absolutePath)
                 cookieSetRepository.saveDomains(
@@ -62,13 +64,17 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
                     }
                 )
                 deleteCookieSetsWithMatchingDomains(cookieSetId, parsedDomains)
-                requireNotNull(cookieSetRepository.getByIdWithDomains(cookieSetId))
+                cookieSetRepository.getByIdWithDomains(cookieSetId)
             } finally {
                 tempFile.delete()
             }
         }.getOrElse { throwable ->
             deleteCookieSetUseCase(cookieSetId)
             throw throwable
+        }.also { cookieSetWithDomains ->
+            if (cookieSetWithDomains == null) {
+                deleteCookieSetUseCase(cookieSetId)
+            }
         }
     }
 
@@ -84,16 +90,25 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
             }
     }
 
-    private suspend fun copyUriToTempFile(uri: Uri): File {
+    private suspend fun copyUriToTempFile(uri: Uri): File? {
         return withContext(Dispatchers.IO) {
             val tempFile = File.createTempFile("cookie-import", ".txt", appContext.cacheDir)
-            appContext.contentResolver.openInputStream(uri).use { inputStream ->
-                requireNotNull(inputStream) { "Could not open cookie file" }
-                tempFile.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
+            try {
+                val inputStream = appContext.contentResolver.openInputStream(uri)
+                if (inputStream == null) {
+                    tempFile.delete()
+                    return@withContext null
                 }
+                inputStream.use {
+                    tempFile.outputStream().use { outputStream ->
+                        it.copyTo(outputStream)
+                    }
+                }
+                tempFile
+            } catch (throwable: Throwable) {
+                tempFile.delete()
+                throw throwable
             }
-            tempFile
         }
     }
 

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.strigate.ferrot.app.integration.CookieFileStore
@@ -41,7 +42,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             val result = useCase(
                 url = "https://mobile.x.com/home",
                 rawCookieHeader = "auth=one; ct0=two",
-            )
+            ) ?: throw AssertionError("Expected cookie set")
 
             assertEquals("x.com", result.cookieSet.name)
             assertEquals(CookieSetSource.WEBVIEW, result.cookieSet.source)
@@ -51,6 +52,35 @@ class CreateCookieSetFromWebViewUseCaseTest {
                 File(result.cookieSet.cookieFilePath).readText()
                     .contains(".x.com\tTRUE\t/\tTRUE\t\tauth\tone")
             )
+        } finally {
+            rootDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun invoke_returnsNull_whenCookieHeaderIsEmpty() = runTest {
+        val rootDir = Files.createTempDirectory("cookie-webview").toFile()
+        val repository = SavingCookieSetRepository()
+        val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
+        val useCase = CreateCookieSetFromWebViewUseCase(
+            cookieSetRepository = repository,
+            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
+            cookieHeaderFileBuilder = CookieHeaderFileBuilder(),
+            cookieFileStore = cookieFileStore,
+            deleteCookieSetUseCase = DeleteCookieSetUseCase(
+                cookieSetRepository = repository,
+                cookieFileStore = cookieFileStore,
+            ),
+        )
+
+        try {
+            val result = useCase(
+                url = "https://x.com/home",
+                rawCookieHeader = "",
+            )
+
+            assertNull(result)
+            assertTrue(repository.getAllWithDomains().isEmpty())
         } finally {
             rootDir.deleteRecursively()
         }
@@ -93,7 +123,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             val result = useCase(
                 url = "https://x.com/home",
                 rawCookieHeader = "auth=new",
-            )
+            ) ?: throw AssertionError("Expected cookie set")
 
             assertFalse(repository.containsCookieSet(99L))
             assertEquals(

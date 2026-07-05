@@ -52,16 +52,17 @@ class CookiesViewModel @Inject constructor(
 
     fun importCookieFile(uri: Uri) {
         viewModelScope.launch {
-            runCatching {
+            val saved = runCatching {
                 cookieSetUseCase.createCookieSetFromFileUseCase(
                     name = "",
                     uri = uri,
                     rawDomains = "",
                     includeSubdomains = true,
-                )
-            }.onSuccess {
+                ) != null
+            }.getOrDefault(false)
+            if (saved) {
                 _event.emit(CookiesEvent.ShowToast(R.string.toast_cookie_set_saved))
-            }.onFailure {
+            } else {
                 _event.emit(CookiesEvent.ShowToast(R.string.toast_cookie_set_failed))
             }
         }

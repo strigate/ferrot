@@ -21,8 +21,8 @@ class CreateCookieSetFromWebViewUseCase @Inject constructor(
     suspend operator fun invoke(
         url: String,
         rawCookieHeader: String,
-    ): CookieSetWithDomains {
-        val domain = webViewCookieDomainResolver(url)
+    ): CookieSetWithDomains? {
+        val domain = webViewCookieDomainResolver(url) ?: return null
         val domains = listOf(
             ParsedCookieDomain(
                 domain = domain,
@@ -30,6 +30,8 @@ class CreateCookieSetFromWebViewUseCase @Inject constructor(
             )
         )
         val cookieFileContent = cookieHeaderFileBuilder.build(domains, rawCookieHeader)
+            ?: return null
+
         val cookieSetId = cookieSetRepository.saveCookieSet(
             CookieSet(
                 name = domain,
@@ -51,10 +53,14 @@ class CreateCookieSetFromWebViewUseCase @Inject constructor(
                 }
             )
             deleteCookieSetsWithMatchingDomains(cookieSetId, domains)
-            requireNotNull(cookieSetRepository.getByIdWithDomains(cookieSetId))
+            cookieSetRepository.getByIdWithDomains(cookieSetId)
         }.getOrElse { throwable ->
             deleteCookieSetUseCase(cookieSetId)
             throw throwable
+        }.also { cookieSetWithDomains ->
+            if (cookieSetWithDomains == null) {
+                deleteCookieSetUseCase(cookieSetId)
+            }
         }
     }
 
