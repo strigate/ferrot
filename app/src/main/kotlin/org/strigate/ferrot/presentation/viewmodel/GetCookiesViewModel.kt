@@ -29,7 +29,7 @@ class GetCookiesViewModel @Inject constructor(
         confirmOverwrite: Boolean = true,
     ) {
         viewModelScope.launch {
-            runCatching {
+            val saved = runCatching {
                 if (confirmOverwrite) {
                     val existingDomain =
                         cookieSetUseCase.getExistingCookieSetDomainForWebViewUrlUseCase(url)
@@ -46,11 +46,12 @@ class GetCookiesViewModel @Inject constructor(
                 cookieSetUseCase.createCookieSetFromWebViewUseCase(
                     url = url,
                     rawCookieHeader = cookieHeader,
-                )
-            }.onSuccess {
+                ) != null
+            }.getOrDefault(false)
+            if (saved) {
                 _event.emit(GetCookiesEvent.ShowToast(R.string.toast_cookie_set_saved))
                 _event.emit(GetCookiesEvent.Saved)
-            }.onFailure {
+            } else {
                 _event.emit(GetCookiesEvent.ShowToast(R.string.toast_cookie_set_failed))
             }
         }

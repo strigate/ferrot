@@ -41,6 +41,19 @@ class GetExistingCookieSetDomainForWebViewUrlUseCaseTest {
         assertNull(result)
     }
 
+    @Test
+    fun invoke_returnsNullWhenUrlHasNoValidDomain() = runTest {
+        val repository = DomainMatchingCookieSetRepository(existingDomains = setOf("x.com"))
+        val useCase = GetExistingCookieSetDomainForWebViewUrlUseCase(
+            cookieSetRepository = repository,
+            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
+        )
+
+        val result = useCase("not a url")
+
+        assertNull(result)
+    }
+
     private class DomainMatchingCookieSetRepository(
         private val existingDomains: Set<String>,
     ) : CookieSetRepository {

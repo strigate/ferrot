@@ -3,10 +3,11 @@ package org.strigate.ferrot.cookies
 import javax.inject.Inject
 
 class CookieHeaderFileBuilder @Inject constructor() {
-    fun build(domains: List<ParsedCookieDomain>, rawCookieHeader: String): String {
+    fun build(domains: List<ParsedCookieDomain>, rawCookieHeader: String): String? {
         val cookies = parseCookieHeader(rawCookieHeader)
-        require(domains.isNotEmpty()) { "At least one domain is required" }
-        require(cookies.isNotEmpty()) { "At least one cookie is required" }
+        if (domains.isEmpty() || cookies.isEmpty()) {
+            return null
+        }
 
         return buildString {
             appendLine("# Netscape HTTP Cookie File")

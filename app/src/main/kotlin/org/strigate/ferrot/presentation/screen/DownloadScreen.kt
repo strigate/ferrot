@@ -330,7 +330,7 @@ private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
     pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
-    selectedId: Long,
+    selectedId: Long?,
     selectedMedia: DownloadMediaType,
     onEnsureDefaults: (List<Long>) -> Unit,
     onDownloadPageSelected: (Long) -> Unit,
