@@ -4,6 +4,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import org.strigate.ferrot.app.provider.CookieSetPathProvider
+import org.strigate.ferrot.app.provider.CookieSetPathProviderImpl
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.app.provider.DownloadPathProviderImpl
 import org.strigate.ferrot.app.provider.UpdatePathProvider
@@ -24,4 +26,10 @@ abstract class FilesModule {
     abstract fun bindDownloadPathProvider(
         implementation: DownloadPathProviderImpl,
     ): DownloadPathProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindCookieSetPathProvider(
+        implementation: CookieSetPathProviderImpl,
+    ): CookieSetPathProvider
 }

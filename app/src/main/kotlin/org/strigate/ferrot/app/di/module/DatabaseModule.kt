@@ -11,6 +11,7 @@ import org.strigate.ferrot.app.Constants.Database.DATABASE_NAME
 import org.strigate.ferrot.app.Database
 import org.strigate.ferrot.app.applyMigrations
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
+import org.strigate.ferrot.data.local.dao.CookieSetDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
@@ -35,6 +36,12 @@ object DatabaseModule {
     @Singleton
     fun provideAvailableUpdateDao(database: Database): AvailableUpdateDao {
         return database.availableUpdateDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCookieSetDao(database: Database): CookieSetDao {
+        return database.cookieSetDao()
     }
 
     @Provides

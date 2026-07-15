@@ -42,6 +42,8 @@
     <string name="screen_title_archived">Archived</string>
     <string name="screen_title_settings">Settings</string>
     <string name="screen_title_updates">Updates</string>
+    <string name="screen_title_cookies">Cookies</string>
+    <string name="screen_title_get_cookies">Get cookies</string>
     <string name="screen_title_about">About</string>
 
     <!-- Empty states -->
@@ -77,6 +79,8 @@
     <!-- Common actions and values -->
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="share_to">Share to…</string>
     <string name="select_all">Select all</string>
     <string name="retry_failed">Retry failed</string>
@@ -87,6 +91,10 @@
     <!-- Dialogs -->
     <string name="confirm_dialog_delete_download_title">Delete download</string>
     <string name="confirm_dialog_delete_download_description">Are you sure you want to delete this download?</string>
+    <string name="confirm_dialog_delete_cookie_set_title">Delete cookies</string>
+    <string name="confirm_dialog_delete_cookie_set_description">Are you sure you want to delete %1$s cookies?</string>
+    <string name="confirm_dialog_replace_cookie_set_title">Replace cookies</string>
+    <string name="confirm_dialog_replace_cookie_set_description">Cookies for %1$s already exist. Replace them?</string>
 
     <!-- Download results -->
     <string name="download_complete">Download complete</string>
@@ -108,9 +116,15 @@
     <string name="toast_dependencies_updated">Dependencies updated</string>
     <string name="toast_no_app_updates_available">No app updates available</string>
     <string name="toast_no_dependency_updates_available">No dependency updates available</string>
+    <string name="toast_cookie_set_saved">Cookies saved</string>
+    <string name="toast_cookie_set_deleted">Cookies deleted</string>
+    <string name="toast_cookie_set_failed">Could not save cookies</string>
+    <string name="toast_cookie_set_preview_failed">Could not load cookies</string>
+    <string name="toast_cookie_webview_invalid_url">Enter a valid site URL</string>
 
     <!-- Settings: sections -->
     <string name="settings_section_general">General</string>
+    <string name="settings_section_cookies">Cookies</string>
     <string name="settings_section_swipe_actions">Swipe actions</string>
     <string name="settings_section_app_info">App info</string>
     <string name="settings_section_links">Resources</string>
@@ -120,10 +134,12 @@
     <!-- Settings: navigation -->
     <string name="settings_navigate_title_updates">Updates</string>
     <string name="settings_navigate_title_about">About</string>
+    <string name="settings_navigate_title_manage_cookies">Manage cookies</string>
 
     <!-- Settings: titles -->
     <string name="settings_title_download_wifi_only">Download over Wi-Fi only</string>
     <string name="settings_title_automatic_duplicate_deletion">Automatically delete duplicate downloads</string>
+    <string name="settings_title_use_cookies">Use cookies</string>
     <string name="settings_title_swipe_left">Swipe left</string>
     <string name="settings_title_swipe_right">Swipe right</string>
     <string name="settings_title_automatic_app_updates">Automatic app updates</string>
@@ -140,6 +156,8 @@
     <!-- Settings: descriptions -->
     <string name="settings_description_download_wifi_only">Restrict downloads to Wi-Fi connections only</string>
     <string name="settings_description_automatic_duplicate_deletion">Automatically delete older downloads when an exact duplicate is found.</string>
+    <string name="settings_description_use_cookies">Use saved cookies for matching downloads.</string>
+    <string name="settings_description_manage_cookies">Add or delete cookies.</string>
     <string name="settings_description_swipe_left">Select the left swipe action</string>
     <string name="settings_description_swipe_right">Select the right swipe action</string>
     <string name="settings_description_automatic_updates">Automatically check for and download app updates, and notify when ready to install</string>
@@ -154,11 +172,31 @@
     <string name="settings_value_swipe_action_seen">Mark seen</string>
     <string name="settings_value_swipe_action_delete">Delete</string>
 
+    <!-- Cookies -->
+    <string name="cookies_section_add">Add</string>
+    <string name="cookies_section_saved">Saved cookies</string>
+    <string name="cookies_title_get_cookies">Get cookies</string>
+    <string name="cookies_description_get_cookies">Log in to save site cookies.</string>
+    <string name="cookies_title_import_file">Import cookies.txt</string>
+    <string name="cookies_description_import_file">Import cookies file.</string>
+    <string name="cookies_empty_title">No cookies saved</string>
+    <string name="cookies_empty_description">Add cookies for sites that require a logged-in session.</string>
+    <string name="cookies_action_save">Save</string>
+    <string name="cookies_action_go">Go</string>
+    <string name="cookies_action_replace">Replace</string>
+    <string name="cookies_label_login_url">URL</string>
+    <string name="cookies_webview_start_description">Enter a site, log in, then Save.</string>
+    <string name="cookies_webview_warning">Some sites may lock, restrict, or ban accounts after login attempts from embedded browsers. Use cookies.txt import when possible.</string>
+    <string name="cookies_source_imported_file">Imported file</string>
+    <string name="cookies_source_webview">WebView</string>
+    <string name="cookies_no_domains">No domains</string>
+
     <!-- Errors -->
     <string name="error_failed_to_load_downloads">Failed to load downloads</string>
     <string name="error_failed_to_load_download">Failed to load download</string>
     <string name="error_failed_to_load_settings">Failed to load settings</string>
     <string name="error_failed_to_load_update_settings">Failed to load update settings</string>
+    <string name="error_failed_to_load_cookies">Failed to load cookies</string>
 
     <!-- Accessibility -->
     <string name="content_description_back">Back</string>

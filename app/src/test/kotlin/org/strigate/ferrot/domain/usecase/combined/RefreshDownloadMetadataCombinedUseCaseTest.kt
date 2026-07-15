@@ -23,14 +23,17 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.test.MainDispatcherRule
+import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
+import org.strigate.ferrot.domain.usecase.cookieset.ResolveCookieSetForUrlUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.SaveDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.youtubedl_android.DownloadThumbnailUseCase
@@ -58,6 +61,15 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
     @Mock
     private lateinit var downloadPathProvider: DownloadPathProvider
+
+    @Mock
+    private lateinit var cookieSetUseCase: CookieSetUseCase
+
+    @Mock
+    private lateinit var resolveCookieSetForUrlUseCase: ResolveCookieSetForUrlUseCase
+
+    @Mock
+    private lateinit var cookieFileStore: CookieFileStore
 
     @Mock
     private lateinit var getDownloadByIdUseCase: GetDownloadByIdUseCase
@@ -89,6 +101,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
             .thenReturn(getVideoInfoUseCase)
         `when`(youtubeDlAndroidUseCase.downloadThumbnailUseCase)
             .thenReturn(downloadThumbnailUseCase)
+        `when`(cookieSetUseCase.resolveCookieSetForUrlUseCase)
+            .thenReturn(resolveCookieSetForUrlUseCase)
     }
 
     @Test
@@ -118,6 +132,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
+        stubNoCookieSet(download.url)
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(download.id))
             .thenReturn(flowOf(sampleMetadata()))
         `when`(downloadPathProvider.uidDir(download.uid))
@@ -173,6 +188,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
+        stubNoCookieSet(download.url)
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(download.id))
             .thenReturn(flowOf(existingMetadata))
         `when`(downloadPathProvider.uidDir(download.uid))
@@ -205,6 +221,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
+        stubNoCookieSet(download.url)
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(download.id))
             .thenReturn(flowOf(null))
         `when`(downloadPathProvider.uidDir(download.uid))
@@ -244,6 +261,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
+        stubNoCookieSet(download.url)
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(download.id))
             .thenReturn(flowOf(existingMetadata))
         `when`(downloadPathProvider.uidDir(download.uid))
@@ -282,6 +300,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         downloadMetadataUseCase = downloadMetadataUseCase,
         youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,
         downloadPathProvider = downloadPathProvider,
+        cookieSetUseCase = cookieSetUseCase,
+        cookieFileStore = cookieFileStore,
     )
 
     private fun sampleDownload(id: Long = 7L) = Download(
@@ -307,6 +327,11 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         thumbnailFilePath = thumbnailFilePath,
         durationSeconds = durationSeconds,
     )
+
+    private suspend fun stubNoCookieSet(url: String) {
+        `when`(resolveCookieSetForUrlUseCase.invoke(url))
+            .thenReturn(null)
+    }
 
     private fun videoInfo(
         id: String?,

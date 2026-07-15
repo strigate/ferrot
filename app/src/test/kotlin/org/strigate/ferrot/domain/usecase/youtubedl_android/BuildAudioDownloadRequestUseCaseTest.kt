@@ -60,4 +60,16 @@ class BuildAudioDownloadRequestUseCaseTest {
         assertEquals("filename", request.getOption("--print"))
         assertFalse(request.hasOption("--get-filename"))
     }
+
+    @Test
+    fun invoke_addsCookies_whenCookieFilePathProvided() {
+        val request = useCase(
+            url = "https://example.com/audio",
+            template = "/tmp/%(title)s.%(ext)s",
+            noProgress = false,
+            cookieFilePath = "/tmp/cookies.txt",
+        )
+
+        assertEquals("/tmp/cookies.txt", request.getOption("--cookies"))
+    }
 }

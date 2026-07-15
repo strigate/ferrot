@@ -8,6 +8,8 @@ interface SettingsRepository {
     fun getDownloadWifiOnlyAsFlow(): Flow<Boolean>
     suspend fun saveAutomaticDuplicateDownloadDeletion(enabled: Boolean)
     fun getAutomaticDuplicateDownloadDeletionAsFlow(): Flow<Boolean>
+    suspend fun saveUseCookies(enabled: Boolean)
+    fun getUseCookiesAsFlow(): Flow<Boolean>
     suspend fun saveLeftSwipeAction(action: DownloadSwipeAction)
     fun getLeftSwipeActionAsFlow(): Flow<DownloadSwipeAction>
     suspend fun saveRightSwipeAction(action: DownloadSwipeAction)

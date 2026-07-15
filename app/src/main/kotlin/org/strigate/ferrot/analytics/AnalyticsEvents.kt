@@ -12,6 +12,8 @@ object AnalyticsEvents {
         const val DOWNLOAD = "download_screen"
         const val SETTINGS = "settings_screen"
         const val UPDATES = "updates_screen"
+        const val COOKIES = "cookies_screen"
+        const val GET_COOKIES = "get_cookies_screen"
         const val ABOUT = "about_screen"
     }
 }
