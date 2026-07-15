@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.10.0 - 2026-07-15
+### Added
+- Opt-in cookie-set management with file import and embedded browser capture
+- Domain-based cookie resolution for metadata requests and downloads
+- Security warning before embedded browser sign-in
+- Unit test coverage for cookie storage, parsing, capture, resolution, and download integration
+
+### Changed
+- Updated Android build plugins, Kotlin, KSP, Dagger, Hilt, Coil, Compose BOM, Firebase BOM, Byte Buddy, and Gradle wrapper versions
+
+### Fixed
+- Resolved cookies at execution time so background work uses current cookie data
+- Corrected embedded browser cookie handling, user agent matching, and fallback navigation
+- Hardened cookie imports and download handling for missing or nullable inputs
+
 ## 1.9.3 - 2026-06-26
 ### Changed
 - Updated About screen external links and social link presentation
