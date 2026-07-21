@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.DpOffset
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 internal data class SettingsDropdownMenuItem(
-    val id: String,
     val text: String,
     val enabled: Boolean = true,
     val leadingIcon: (@Composable (() -> Unit))? = null,
