@@ -40,7 +40,6 @@ import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
 import org.strigate.refinery.component.settings.DropdownSetting
-import org.strigate.refinery.component.settings.DropdownSettingOption
 import org.strigate.refinery.component.settings.ExpandableSettingsSection
 import org.strigate.refinery.component.settings.SwitchSetting
 import org.strigate.refinery.component.settings.TextNavigateSetting
@@ -70,25 +69,6 @@ fun SettingsScreen(
             DownloadSwipeActionUiData.DELETE -> deleteSwipeActionLabel
         }
     }
-
-    val swipeActionOptions = listOf(
-        DropdownSettingOption(
-            id = DownloadSwipeActionUiData.NONE.name,
-            text = noneSwipeActionLabel,
-        ),
-        DropdownSettingOption(
-            id = DownloadSwipeActionUiData.ARCHIVE.name,
-            text = archiveSwipeActionLabel,
-        ),
-        DropdownSettingOption(
-            id = DownloadSwipeActionUiData.SEEN.name,
-            text = seenSwipeActionLabel,
-        ),
-        DropdownSettingOption(
-            id = DownloadSwipeActionUiData.DELETE.name,
-            text = deleteSwipeActionLabel,
-        ),
-    )
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -192,24 +172,18 @@ fun SettingsScreen(
                                     DropdownSetting(
                                         text = stringResource(R.string.settings_title_swipe_left),
                                         description = stringResource(R.string.settings_description_swipe_left),
-                                        selectedText = swipeActionLabel(leftSwipeAction),
-                                        options = swipeActionOptions,
-                                        onOptionSelected = { option ->
-                                            viewModel.setLeftSwipeAction(
-                                                DownloadSwipeActionUiData.valueOf(option.id),
-                                            )
-                                        },
+                                        selectedOption = leftSwipeAction,
+                                        options = DownloadSwipeActionUiData.entries,
+                                        optionText = { option -> swipeActionLabel(option) },
+                                        onOptionSelected = viewModel::setLeftSwipeAction,
                                     )
                                     DropdownSetting(
                                         text = stringResource(R.string.settings_title_swipe_right),
                                         description = stringResource(R.string.settings_description_swipe_right),
-                                        selectedText = swipeActionLabel(rightSwipeAction),
-                                        options = swipeActionOptions,
-                                        onOptionSelected = { option ->
-                                            viewModel.setRightSwipeAction(
-                                                DownloadSwipeActionUiData.valueOf(option.id),
-                                            )
-                                        },
+                                        selectedOption = rightSwipeAction,
+                                        options = DownloadSwipeActionUiData.entries,
+                                        optionText = { option -> swipeActionLabel(option) },
+                                        onOptionSelected = viewModel::setRightSwipeAction,
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))

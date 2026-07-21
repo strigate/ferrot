@@ -39,79 +39,83 @@ fun ColorPickerSetting(
     val chipColor = MaterialTheme.colorScheme.surface
     val chipTextColor = MaterialTheme.colorScheme.onSurface
     val clickableModifier = if (onClick != null) {
+        Modifier.combinedClickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(),
+            onClick = onClick,
+        )
+    } else {
         Modifier
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
-                onClick = {
-                    onClick()
-                },
-            )
-    } else Modifier
+    }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .then(clickableModifier)
-            .padding(
-                horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMediumAlt,
-            ),
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .fillMaxWidth()
+                .then(clickableModifier)
+                .padding(
+                    horizontal = refineryDimens.spacingMedium,
+                    vertical = refineryDimens.spacingMediumAlt,
+                ),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = refineryDimens.spacingLarge),
-            ) {
-                Text(
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    text = text,
-                )
-                description?.let { currentDescription ->
-                    Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
-                    Text(
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        text = currentDescription,
-                    )
-                }
-            }
             Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(refineryDimens.radiusPill))
-                        .background(chipColor)
-                        .padding(
-                            start = refineryDimens.spacingSmall,
-                            end = refineryDimens.spacingMediumAlt,
-                            top = refineryDimens.spacingXSmallAlt,
-                            bottom = refineryDimens.spacingXSmallAlt,
-                        ),
+                        .weight(1f)
+                        .padding(end = refineryDimens.spacingLarge),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(refineryDimens.spacingSmallAlt),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(refineryDimens.iconXSmall)
-                                .clip(RoundedCornerShape(refineryDimens.radiusMedium))
-                                .background(color),
-                        )
+                    Text(
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        text = text,
+                    )
+                    description?.let { currentDescription ->
+                        Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
                         Text(
-                            text = color.toHexString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = chipTextColor,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            text = currentDescription,
                         )
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(refineryDimens.radiusPill))
+                            .background(chipColor)
+                            .padding(
+                                start = refineryDimens.spacingSmall,
+                                end = refineryDimens.spacingMediumAlt,
+                                top = refineryDimens.spacingXSmallAlt,
+                                bottom = refineryDimens.spacingXSmallAlt,
+                            ),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(refineryDimens.spacingSmallAlt),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(refineryDimens.iconXSmall)
+                                    .clip(RoundedCornerShape(refineryDimens.radiusMedium))
+                                    .background(color),
+                            )
+                            Text(
+                                text = color.toHexString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = chipTextColor,
+                            )
+                        }
                     }
                 }
             }
