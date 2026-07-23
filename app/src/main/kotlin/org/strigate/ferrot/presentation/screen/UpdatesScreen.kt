@@ -115,21 +115,21 @@ fun UpdatesScreen(
                                     title = stringResource(R.string.settings_section_app),
                                 ) {
                                     SwitchSetting(
-                                        text = stringResource(R.string.settings_title_automatic_app_updates),
+                                        text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
-                                        checked = settings.automaticUpdates,
+                                        checked = settings.automaticAppUpdatesEnabled,
                                         onCheckedChange = { checked ->
-                                            viewModel.setAutomaticUpdates(checked)
+                                            viewModel.setAutomaticAppUpdatesEnabled(checked)
                                         },
                                     )
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_check_for_app_updates),
+                                        text = stringResource(R.string.settings_title_check_now),
                                         description = stringResource(R.string.settings_description_check_for_app_updates),
                                     ) {
                                         viewModel.checkForAvailableUpdate()
                                     }
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_last_checked_for_app_updates),
+                                        text = stringResource(R.string.settings_title_last_checked),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
                                             info.lastAvailableUpdateCheckMillis,
@@ -142,21 +142,21 @@ fun UpdatesScreen(
                                     title = stringResource(R.string.settings_section_dependencies),
                                 ) {
                                     SwitchSetting(
-                                        text = stringResource(R.string.settings_title_automatic_dependency_updates),
+                                        text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_dependency_updates),
-                                        checked = settings.automaticDependencyUpdates,
+                                        checked = settings.automaticDependencyUpdatesEnabled,
                                         onCheckedChange = { checked ->
-                                            viewModel.setAutomaticDependencyUpdates(checked)
+                                            viewModel.setAutomaticDependencyUpdatesEnabled(checked)
                                         },
                                     )
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_check_dependencies_now),
+                                        text = stringResource(R.string.settings_title_check_now),
                                         description = stringResource(R.string.settings_description_check_dependencies_now),
                                     ) {
                                         viewModel.checkForDependencyUpdates()
                                     }
                                     TextSetting(
-                                        text = stringResource(R.string.settings_title_last_checked_for_dependency_updates),
+                                        text = stringResource(R.string.settings_title_last_checked),
                                         description = UiFormatter.formatLastCheckedTime(
                                             context,
                                             info.lastDependencyUpdateCheckMillis,

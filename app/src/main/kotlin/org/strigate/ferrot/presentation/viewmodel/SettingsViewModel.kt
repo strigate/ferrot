@@ -13,7 +13,7 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.apply.ApplyWifiOnlyPolicyUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionWorkUseCase
 import org.strigate.ferrot.presentation.mapper.toDomain
 import org.strigate.ferrot.presentation.mapper.toUiData
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
@@ -26,7 +26,7 @@ class SettingsViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
     private val applyWifiOnlyPolicyUseCase: ApplyWifiOnlyPolicyUseCase,
-    private val configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase,
+    private val configureAutomaticDuplicateDownloadDeletionWorkUseCase: ConfigureAutomaticDuplicateDownloadDeletionWorkUseCase,
 ) : ViewModel() {
     val uiState: StateFlow<SettingsUiState> = getUiState().stateIn(
         scope = viewModelScope,
@@ -36,21 +36,21 @@ class SettingsViewModel @Inject constructor(
 
     private fun getUiState(): Flow<SettingsUiState> {
         return combine(
-            settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase(),
-            settingsUseCase.getUseCookiesSettingAsFlowUseCase(),
+            settingsUseCase.getWifiOnlyDownloadsEnabledSettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase(),
+            settingsUseCase.getCookiesEnabledSettingAsFlowUseCase(),
             settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase(),
             settingsUseCase.getRightSwipeActionSettingAsFlowUseCase(),
-        ) { downloadWifiOnly,
-            automaticDuplicateDownloadDeletion,
-            useCookies,
+        ) { wifiOnlyDownloadsEnabled,
+            automaticDuplicateDownloadDeletionEnabled,
+            cookiesEnabled,
             leftSwipeAction,
             rightSwipeAction ->
             SettingsUiState.Data(
                 SettingsUiData(
-                    downloadWifiOnly = downloadWifiOnly,
-                    automaticDuplicateDownloadDeletion = automaticDuplicateDownloadDeletion,
-                    useCookies = useCookies,
+                    wifiOnlyDownloadsEnabled = wifiOnlyDownloadsEnabled,
+                    automaticDuplicateDownloadDeletionEnabled = automaticDuplicateDownloadDeletionEnabled,
+                    cookiesEnabled = cookiesEnabled,
                     leftSwipeAction = leftSwipeAction.toUiData(),
                     rightSwipeAction = rightSwipeAction.toUiData(),
                 )
@@ -60,23 +60,23 @@ class SettingsViewModel @Inject constructor(
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.SETTINGS)
 
-    fun setDownloadWifiOnly(enabled: Boolean) {
+    fun setWifiOnlyDownloadsEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveDownloadWifiOnlySettingUseCase(enabled)
+            settingsUseCase.saveWifiOnlyDownloadsEnabledSettingUseCase(enabled)
             applyWifiOnlyPolicyUseCase(enabled)
         }
     }
 
-    fun setAutomaticDuplicateDownloadDeletion(enabled: Boolean) {
+    fun setAutomaticDuplicateDownloadDeletionEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
-            configureAutomaticDuplicateDownloadDeletionSettingUseCase(enabled)
+            settingsUseCase.saveAutomaticDuplicateDownloadDeletionEnabledSettingUseCase(enabled)
+            configureAutomaticDuplicateDownloadDeletionWorkUseCase(enabled)
         }
     }
 
-    fun setUseCookies(enabled: Boolean) {
+    fun setCookiesEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveUseCookiesSettingUseCase(enabled)
+            settingsUseCase.saveCookiesEnabledSettingUseCase(enabled)
         }
     }
 

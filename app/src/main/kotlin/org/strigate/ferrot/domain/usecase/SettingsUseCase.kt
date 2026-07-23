@@ -1,34 +1,34 @@
 package org.strigate.ferrot.domain.usecase
 
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetCookiesEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetUseCookiesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveDownloadWifiOnlySettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticAppUpdatesEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveCookiesEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveUseCookiesSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveWifiOnlyDownloadsEnabledSettingUseCase
 import javax.inject.Inject
 
 class SettingsUseCase @Inject constructor(
-    val saveDownloadWifiOnlySettingUseCase: SaveDownloadWifiOnlySettingUseCase,
-    val getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase,
-    val saveAutomaticDuplicateDownloadDeletionSettingUseCase: SaveAutomaticDuplicateDownloadDeletionSettingUseCase,
-    val getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase,
-    val saveUseCookiesSettingUseCase: SaveUseCookiesSettingUseCase,
-    val getUseCookiesSettingAsFlowUseCase: GetUseCookiesSettingAsFlowUseCase,
+    val saveWifiOnlyDownloadsEnabledSettingUseCase: SaveWifiOnlyDownloadsEnabledSettingUseCase,
+    val getWifiOnlyDownloadsEnabledSettingAsFlowUseCase: GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase,
+    val saveAutomaticDuplicateDownloadDeletionEnabledSettingUseCase: SaveAutomaticDuplicateDownloadDeletionEnabledSettingUseCase,
+    val getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase,
+    val saveCookiesEnabledSettingUseCase: SaveCookiesEnabledSettingUseCase,
+    val getCookiesEnabledSettingAsFlowUseCase: GetCookiesEnabledSettingAsFlowUseCase,
     val saveLeftSwipeActionSettingUseCase: SaveLeftSwipeActionSettingUseCase,
     val getLeftSwipeActionSettingAsFlowUseCase: GetLeftSwipeActionSettingAsFlowUseCase,
     val saveRightSwipeActionSettingUseCase: SaveRightSwipeActionSettingUseCase,
     val getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase,
-    val saveAutomaticUpdatesSettingUseCase: SaveAutomaticUpdatesSettingUseCase,
-    val getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase,
-    val saveAutomaticDependencyUpdatesSettingUseCase: SaveAutomaticDependencyUpdatesSettingUseCase,
-    val getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase,
+    val saveAutomaticAppUpdatesEnabledSettingUseCase: SaveAutomaticAppUpdatesEnabledSettingUseCase,
+    val getAutomaticAppUpdatesEnabledSettingAsFlowUseCase: GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase,
+    val saveAutomaticDependencyUpdatesEnabledSettingUseCase: SaveAutomaticDependencyUpdatesEnabledSettingUseCase,
+    val getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase: GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase,
 )

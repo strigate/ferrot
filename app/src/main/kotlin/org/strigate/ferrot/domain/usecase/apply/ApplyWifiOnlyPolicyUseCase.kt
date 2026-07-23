@@ -19,11 +19,11 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
     private val deleteDownloadFilesUseCase: DeleteDownloadFilesUseCase,
     private val downloadWorkScheduler: DownloadWorkScheduler,
 ) {
-    suspend operator fun invoke(isWifiOnly: Boolean) {
+    suspend operator fun invoke(wifiOnlyDownloadsEnabled: Boolean) {
         val (_, isOnWifi) = NetworkOps.quickNetworkProbe(appContext)
         val downloads = getAllDownloadsUseCase()
 
-        if (isWifiOnly) {
+        if (wifiOnlyDownloadsEnabled) {
             if (!isOnWifi) {
                 val downloadStatuses = setOf(
                     DownloadStatus.QUEUED,

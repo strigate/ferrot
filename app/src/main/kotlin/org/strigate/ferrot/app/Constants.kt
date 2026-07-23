@@ -21,20 +21,21 @@ object Constants {
     }
 
     object Settings {
-        const val KEY_DOWNLOAD_WIFI_ONLY = "download_wifi_only"
-        const val DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY = true
-        const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = "auto_duplicate_download_deletion"
-        const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION = true
-        const val KEY_USE_COOKIES = "use_cookies"
-        const val DEFAULT_VALUE_USE_COOKIES = false
+        const val KEY_WIFI_ONLY_DOWNLOADS_ENABLED = "download_wifi_only"
+        const val DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED = true
+        const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED =
+            "auto_duplicate_download_deletion"
+        const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED = true
+        const val KEY_COOKIES_ENABLED = "use_cookies"
+        const val DEFAULT_VALUE_COOKIES_ENABLED = false
         const val KEY_LEFT_SWIPE_ACTION = "left_swipe_action"
         val DEFAULT_VALUE_LEFT_SWIPE_ACTION = DownloadSwipeAction.DELETE
         const val KEY_RIGHT_SWIPE_ACTION = "right_swipe_action"
         val DEFAULT_VALUE_RIGHT_SWIPE_ACTION = DownloadSwipeAction.ARCHIVE
-        const val KEY_AUTOMATIC_UPDATES = "auto_updates"
-        const val DEFAULT_VALUE_AUTOMATIC_UPDATES = true
-        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES = "auto_dependency_updates"
-        const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES = true
+        const val KEY_AUTOMATIC_APP_UPDATES_ENABLED = "auto_updates"
+        const val DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED = true
+        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED = "auto_dependency_updates"
+        const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED = true
     }
 
     object Notifications {
@@ -107,7 +108,7 @@ object Constants {
                 "$PERIODIC.DELETE_ORPHAN_DOWNLOAD_FILES"
 
             const val KEY_ID = "$KEY.ID"
-            const val KEY_WIFI_ONLY = "$KEY.wifi_only"
+            const val KEY_WIFI_ONLY_DOWNLOADS_ENABLED = "$KEY.wifi_only"
         }
 
         object Tag {

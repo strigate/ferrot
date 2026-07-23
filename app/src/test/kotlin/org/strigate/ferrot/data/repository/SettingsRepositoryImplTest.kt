@@ -13,13 +13,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.strigate.ferrot.test.MainDispatcherRule
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_COOKIES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_RIGHT_SWIPE_ACTION
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_USE_COOKIES
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.KEY_RIGHT_SWIPE_ACTION
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
@@ -37,16 +37,16 @@ class SettingsRepositoryImplTest {
         val repository = createRepository(backgroundScope)
 
         assertEquals(
-            DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY,
-            repository.getDownloadWifiOnlyAsFlow().first(),
+            DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED,
+            repository.getWifiOnlyDownloadsEnabledAsFlow().first(),
         )
         assertEquals(
-            DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION,
-            repository.getAutomaticDuplicateDownloadDeletionAsFlow().first(),
+            DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED,
+            repository.getAutomaticDuplicateDownloadDeletionEnabledAsFlow().first(),
         )
         assertEquals(
-            DEFAULT_VALUE_USE_COOKIES,
-            repository.getUseCookiesAsFlow().first(),
+            DEFAULT_VALUE_COOKIES_ENABLED,
+            repository.getCookiesEnabledAsFlow().first(),
         )
         assertEquals(
             DEFAULT_VALUE_LEFT_SWIPE_ACTION,
@@ -57,12 +57,12 @@ class SettingsRepositoryImplTest {
             repository.getRightSwipeActionAsFlow().first(),
         )
         assertEquals(
-            DEFAULT_VALUE_AUTOMATIC_UPDATES,
-            repository.getAutomaticUpdatesAsFlow().first(),
+            DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED,
+            repository.getAutomaticAppUpdatesEnabledAsFlow().first(),
         )
         assertEquals(
-            DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES,
-            repository.getAutomaticDependencyUpdatesAsFlow().first(),
+            DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED,
+            repository.getAutomaticDependencyUpdatesEnabledAsFlow().first(),
         )
     }
 
@@ -70,24 +70,24 @@ class SettingsRepositoryImplTest {
     fun saveMethods_persistUpdatedValues() = runTest(testDispatcher) {
         val repository = createRepository(backgroundScope)
 
-        repository.saveDownloadWifiOnly(false)
-        repository.saveAutomaticDuplicateDownloadDeletion(false)
-        repository.saveUseCookies(true)
+        repository.saveWifiOnlyDownloadsEnabled(false)
+        repository.saveAutomaticDuplicateDownloadDeletionEnabled(false)
+        repository.saveCookiesEnabled(true)
         repository.saveLeftSwipeAction(DownloadSwipeAction.NONE)
         repository.saveRightSwipeAction(DownloadSwipeAction.ARCHIVE)
-        repository.saveAutomaticUpdates(false)
-        repository.saveAutomaticDependencyUpdates(false)
+        repository.saveAutomaticAppUpdatesEnabled(false)
+        repository.saveAutomaticDependencyUpdatesEnabled(false)
 
-        assertEquals(false, repository.getDownloadWifiOnlyAsFlow().first())
-        assertEquals(false, repository.getAutomaticDuplicateDownloadDeletionAsFlow().first())
-        assertEquals(true, repository.getUseCookiesAsFlow().first())
+        assertEquals(false, repository.getWifiOnlyDownloadsEnabledAsFlow().first())
+        assertEquals(false, repository.getAutomaticDuplicateDownloadDeletionEnabledAsFlow().first())
+        assertEquals(true, repository.getCookiesEnabledAsFlow().first())
         assertEquals(DownloadSwipeAction.NONE, repository.getLeftSwipeActionAsFlow().first())
         assertEquals(
             DownloadSwipeAction.ARCHIVE,
             repository.getRightSwipeActionAsFlow().first()
         )
-        assertEquals(false, repository.getAutomaticUpdatesAsFlow().first())
-        assertEquals(false, repository.getAutomaticDependencyUpdatesAsFlow().first())
+        assertEquals(false, repository.getAutomaticAppUpdatesEnabledAsFlow().first())
+        assertEquals(false, repository.getAutomaticDependencyUpdatesEnabledAsFlow().first())
     }
 
     @Test
