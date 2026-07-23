@@ -102,7 +102,7 @@ class ApplyWifiOnlyPolicyUseCaseTest {
     }
 
     @Test
-    fun invoke_doesNothing_whenWifiOnlyEnabledOnWifi() = runTest(testDispatcher) {
+    fun invoke_doesNothing_whenWifiOnlyDownloadsEnabledOnWifi() = runTest(testDispatcher) {
         `when`(getAllDownloadsUseCase.invoke())
             .thenReturn(listOf(sampleDownload(44L, DownloadStatus.QUEUED)))
 
@@ -116,25 +116,26 @@ class ApplyWifiOnlyPolicyUseCaseTest {
     }
 
     @Test
-    fun invoke_movesWaitingForWifiToNetwork_whenWifiOnlyOff() = runTest(testDispatcher) {
-        val waiting = sampleDownload(45L, DownloadStatus.WAITING_FOR_WIFI)
-        val queued = sampleDownload(46L, DownloadStatus.QUEUED)
+    fun invoke_movesWaitingForWifiToNetwork_whenWifiOnlyDownloadsDisabled() =
+        runTest(testDispatcher) {
+            val waiting = sampleDownload(45L, DownloadStatus.WAITING_FOR_WIFI)
+            val queued = sampleDownload(46L, DownloadStatus.QUEUED)
 
-        `when`(getAllDownloadsUseCase.invoke())
-            .thenReturn(listOf(waiting, queued))
+            `when`(getAllDownloadsUseCase.invoke())
+                .thenReturn(listOf(waiting, queued))
 
-        stubQuickNetworkProbe(isOnline = true, onWifi = false)
-        createUseCase().invoke(false)
+            stubQuickNetworkProbe(isOnline = true, onWifi = false)
+            createUseCase().invoke(false)
 
-        verify(updateDownloadErrorMessageUseCase)
-            .invoke(45L, null)
-        verify(updateDownloadStatusUseCase)
-            .invoke(45L, DownloadStatus.WAITING_FOR_NETWORK)
-        verify(updateDownloadStatusUseCase, never())
-            .invoke(46L, DownloadStatus.WAITING_FOR_NETWORK)
-        verify(downloadWorkScheduler)
-            .enqueueOneTimeReplace(45L, false)
-    }
+            verify(updateDownloadErrorMessageUseCase)
+                .invoke(45L, null)
+            verify(updateDownloadStatusUseCase)
+                .invoke(45L, DownloadStatus.WAITING_FOR_NETWORK)
+            verify(updateDownloadStatusUseCase, never())
+                .invoke(46L, DownloadStatus.WAITING_FOR_NETWORK)
+            verify(downloadWorkScheduler)
+                .enqueueOneTimeReplace(45L, false)
+        }
 
     @After
     fun tearDown() {

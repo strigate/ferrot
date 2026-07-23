@@ -21,15 +21,15 @@ class StartDownloadUseCase @Inject constructor(
     private val downloadWorkScheduler: DownloadWorkScheduler,
 ) {
     suspend operator fun invoke(downloadId: Long) {
-        val wifiOnly = settingsUseCase
-            .getDownloadWifiOnlySettingAsFlowUseCase()
+        val wifiOnlyDownloadsEnabled = settingsUseCase
+            .getWifiOnlyDownloadsEnabledSettingAsFlowUseCase()
             .first()
 
         val hasInternet = NetworkOps.hasInternetConnection(appContext)
         val isOnWifi = NetworkOps.isOnWifiConnection(appContext)
         val downloadStatus = when {
             !hasInternet -> DownloadStatus.WAITING_FOR_NETWORK
-            wifiOnly && !isOnWifi -> DownloadStatus.WAITING_FOR_WIFI
+            wifiOnlyDownloadsEnabled && !isOnWifi -> DownloadStatus.WAITING_FOR_WIFI
             else -> DownloadStatus.QUEUED
         }
         clearNotificationsByDownloadIdUseCase(downloadId)
@@ -38,6 +38,6 @@ class StartDownloadUseCase @Inject constructor(
             downloadId = downloadId,
         )
         Log.d(LOG_TAG, "Enqueuing download: $downloadId ($downloadStatus)")
-        downloadWorkScheduler.enqueueOneTimeReplace(downloadId, wifiOnly)
+        downloadWorkScheduler.enqueueOneTimeReplace(downloadId, wifiOnlyDownloadsEnabled)
     }
 }

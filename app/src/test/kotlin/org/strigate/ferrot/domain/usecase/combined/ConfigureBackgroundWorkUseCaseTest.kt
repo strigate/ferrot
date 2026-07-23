@@ -15,14 +15,14 @@ import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdateWorkUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdateWorkUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDuplicateDownloadDeletionWorkUseCase
 import org.strigate.ferrot.domain.usecase.cookieset.DeleteCookieSetsWithMissingFilesUseCase
 import org.strigate.ferrot.domain.usecase.orphancleanup.EnqueueOrphanDownloadFilesCleanupUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,13 +37,13 @@ class ConfigureBackgroundWorkUseCaseTest {
     private lateinit var settingsUseCase: SettingsUseCase
 
     @Mock
-    private lateinit var configureAutomaticAppUpdatesSettingUseCase: ConfigureAutomaticAppUpdatesSettingUseCase
+    private lateinit var configureAutomaticAppUpdateWorkUseCase: ConfigureAutomaticAppUpdateWorkUseCase
 
     @Mock
-    private lateinit var configureAutomaticDependencyUpdatesSettingUseCase: ConfigureAutomaticDependencyUpdatesSettingUseCase
+    private lateinit var configureAutomaticDependencyUpdateWorkUseCase: ConfigureAutomaticDependencyUpdateWorkUseCase
 
     @Mock
-    private lateinit var configureAutomaticDuplicateDownloadDeletionSettingUseCase: ConfigureAutomaticDuplicateDownloadDeletionSettingUseCase
+    private lateinit var configureAutomaticDuplicateDownloadDeletionWorkUseCase: ConfigureAutomaticDuplicateDownloadDeletionWorkUseCase
 
     @Mock
     private lateinit var cookieFileStore: CookieFileStore
@@ -55,13 +55,13 @@ class ConfigureBackgroundWorkUseCaseTest {
     private lateinit var enqueueOrphanDownloadFilesCleanupUseCase: EnqueueOrphanDownloadFilesCleanupUseCase
 
     @Mock
-    private lateinit var getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase
+    private lateinit var getAutomaticAppUpdatesEnabledSettingAsFlowUseCase: GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase
 
     @Mock
-    private lateinit var getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase
+    private lateinit var getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase: GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
 
     @Mock
-    private lateinit var getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase
+    private lateinit var getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
 
     @Before
     fun setUp() {
@@ -70,20 +70,20 @@ class ConfigureBackgroundWorkUseCaseTest {
 
     @Test
     fun invoke_appliesAllStartupWorkSettings() = runTest(testDispatcher) {
-        val automaticUpdatesFlow = MutableStateFlow(true)
-        val automaticDependencyUpdatesFlow = MutableStateFlow(false)
-        val automaticDuplicateDownloadDeletionFlow = MutableStateFlow(true)
+        val automaticAppUpdatesEnabledFlow = MutableStateFlow(true)
+        val automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false)
+        val automaticDuplicateDownloadDeletionEnabledFlow = MutableStateFlow(true)
         createUseCase(
-            automaticUpdatesFlow = automaticUpdatesFlow,
-            automaticDependencyUpdatesFlow = automaticDependencyUpdatesFlow,
-            automaticDuplicateDownloadDeletionFlow = automaticDuplicateDownloadDeletionFlow,
+            automaticAppUpdatesEnabledFlow = automaticAppUpdatesEnabledFlow,
+            automaticDependencyUpdatesEnabledFlow = automaticDependencyUpdatesEnabledFlow,
+            automaticDuplicateDownloadDeletionEnabledFlow = automaticDuplicateDownloadDeletionEnabledFlow,
         ).invoke()
 
-        verify(configureAutomaticAppUpdatesSettingUseCase)
+        verify(configureAutomaticAppUpdateWorkUseCase)
             .invoke(true)
-        verify(configureAutomaticDependencyUpdatesSettingUseCase)
+        verify(configureAutomaticDependencyUpdateWorkUseCase)
             .invoke(false)
-        verify(configureAutomaticDuplicateDownloadDeletionSettingUseCase)
+        verify(configureAutomaticDuplicateDownloadDeletionWorkUseCase)
             .invoke(true)
         verify(cookieFileStore)
             .deleteStaleTempCookies()
@@ -99,28 +99,28 @@ class ConfigureBackgroundWorkUseCaseTest {
     }
 
     private fun createUseCase(
-        automaticUpdatesFlow: MutableStateFlow<Boolean>,
-        automaticDependencyUpdatesFlow: MutableStateFlow<Boolean>,
-        automaticDuplicateDownloadDeletionFlow: MutableStateFlow<Boolean>,
+        automaticAppUpdatesEnabledFlow: MutableStateFlow<Boolean>,
+        automaticDependencyUpdatesEnabledFlow: MutableStateFlow<Boolean>,
+        automaticDuplicateDownloadDeletionEnabledFlow: MutableStateFlow<Boolean>,
     ): ConfigureBackgroundWorkUseCase {
-        `when`(getAutomaticUpdatesSettingAsFlowUseCase.invoke())
-            .thenReturn(automaticUpdatesFlow)
-        `when`(getAutomaticDependencyUpdatesSettingAsFlowUseCase.invoke())
-            .thenReturn(automaticDependencyUpdatesFlow)
-        `when`(getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase.invoke())
-            .thenReturn(automaticDuplicateDownloadDeletionFlow)
-        `when`(settingsUseCase.getAutomaticUpdatesSettingAsFlowUseCase)
-            .thenReturn(getAutomaticUpdatesSettingAsFlowUseCase)
-        `when`(settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase)
-            .thenReturn(getAutomaticDependencyUpdatesSettingAsFlowUseCase)
-        `when`(settingsUseCase.getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase)
-            .thenReturn(getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase)
+        `when`(getAutomaticAppUpdatesEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(automaticAppUpdatesEnabledFlow)
+        `when`(getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(automaticDependencyUpdatesEnabledFlow)
+        `when`(getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(automaticDuplicateDownloadDeletionEnabledFlow)
+        `when`(settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticAppUpdatesEnabledSettingAsFlowUseCase)
+        `when`(settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase)
+        `when`(settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase)
 
         return ConfigureBackgroundWorkUseCase(
             settingsUseCase = settingsUseCase,
-            configureAutomaticAppUpdatesSettingUseCase = configureAutomaticAppUpdatesSettingUseCase,
-            configureAutomaticDependencyUpdatesSettingUseCase = configureAutomaticDependencyUpdatesSettingUseCase,
-            configureAutomaticDuplicateDownloadDeletionSettingUseCase = configureAutomaticDuplicateDownloadDeletionSettingUseCase,
+            configureAutomaticAppUpdateWorkUseCase = configureAutomaticAppUpdateWorkUseCase,
+            configureAutomaticDependencyUpdateWorkUseCase = configureAutomaticDependencyUpdateWorkUseCase,
+            configureAutomaticDuplicateDownloadDeletionWorkUseCase = configureAutomaticDuplicateDownloadDeletionWorkUseCase,
             cookieFileStore = cookieFileStore,
             deleteCookieSetsWithMissingFilesUseCase = deleteCookieSetsWithMissingFilesUseCase,
             enqueueOrphanDownloadFilesCleanupUseCase = enqueueOrphanDownloadFilesCleanupUseCase,

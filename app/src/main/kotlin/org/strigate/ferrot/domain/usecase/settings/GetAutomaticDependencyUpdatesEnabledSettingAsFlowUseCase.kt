@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import javax.inject.Inject
 
-class GetAutomaticUpdatesSettingAsFlowUseCase @Inject constructor(
+class GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) {
     operator fun invoke(): Flow<Boolean> {
-        return settingsRepository.getAutomaticUpdatesAsFlow()
+        return settingsRepository.getAutomaticDependencyUpdatesEnabledAsFlow()
     }
 }

@@ -127,18 +127,20 @@ fun SettingsScreen(
                                     SwitchSetting(
                                         text = stringResource(id = R.string.settings_title_download_wifi_only),
                                         description = stringResource(id = R.string.settings_description_download_wifi_only),
-                                        checked = downloadWifiOnly,
+                                        checked = wifiOnlyDownloadsEnabled,
                                         onCheckedChange = { checked ->
-                                            viewModel.setDownloadWifiOnly(checked)
+                                            viewModel.setWifiOnlyDownloadsEnabled(checked)
                                         },
                                     )
                                     Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                     SwitchSetting(
                                         text = stringResource(id = R.string.settings_title_automatic_duplicate_deletion),
                                         description = stringResource(id = R.string.settings_description_automatic_duplicate_deletion),
-                                        checked = automaticDuplicateDownloadDeletion,
+                                        checked = automaticDuplicateDownloadDeletionEnabled,
                                         onCheckedChange = { checked ->
-                                            viewModel.setAutomaticDuplicateDownloadDeletion(checked)
+                                            viewModel.setAutomaticDuplicateDownloadDeletionEnabled(
+                                                checked,
+                                            )
                                         },
                                     )
                                 }
@@ -151,9 +153,9 @@ fun SettingsScreen(
                                     SwitchSetting(
                                         text = stringResource(id = R.string.settings_title_use_cookies),
                                         description = stringResource(id = R.string.settings_description_use_cookies),
-                                        checked = useCookies,
+                                        checked = cookiesEnabled,
                                         onCheckedChange = { checked ->
-                                            viewModel.setUseCookies(checked)
+                                            viewModel.setCookiesEnabled(checked)
                                         },
                                     )
                                     TextNavigateSetting(

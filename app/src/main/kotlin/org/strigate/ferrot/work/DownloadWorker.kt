@@ -24,7 +24,7 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
-import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY
+import org.strigate.ferrot.app.Constants.Work.Name.KEY_WIFI_ONLY_DOWNLOADS_ENABLED
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DOWNLOAD
 import org.strigate.ferrot.app.ForegroundCoroutineWorker
 import org.strigate.ferrot.app.NotificationService
@@ -390,10 +390,11 @@ class DownloadWorker(
                 )
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_COMPLETED)
 
-                val automaticDuplicateDownloadDeletionSetting = settingsUseCase
-                    .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
+                val automaticDuplicateDownloadDeletionEnabled = settingsUseCase
+                    .getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase()
                     .first()
-                if (automaticDuplicateDownloadDeletionSetting) {
+
+                if (automaticDuplicateDownloadDeletionEnabled) {
                     DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(appContext)
                 }
                 DeleteAllOrphanDownloadFilesWorker.enqueueDebouncedReplace(appContext)
@@ -869,10 +870,14 @@ class DownloadWorker(
     private data class Weights(val video: Double, val audio: Double)
 
     companion object {
-        fun enqueueOneTimeReplace(context: Context, id: Long, wifiOnly: Boolean) {
+        fun enqueueOneTimeReplace(
+            context: Context,
+            id: Long,
+            wifiOnlyDownloadsEnabled: Boolean,
+        ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(
-                    if (wifiOnly) {
+                    if (wifiOnlyDownloadsEnabled) {
                         NetworkType.UNMETERED
                     } else {
                         NetworkType.CONNECTED
@@ -882,7 +887,7 @@ class DownloadWorker(
 
             val inputData = Data.Builder()
                 .putLong(KEY_ID, id)
-                .putBoolean(KEY_WIFI_ONLY, wifiOnly)
+                .putBoolean(KEY_WIFI_ONLY_DOWNLOADS_ENABLED, wifiOnlyDownloadsEnabled)
                 .build()
 
             val oneTimeWorkRequestBuilder = OneTimeWorkRequestBuilder<DownloadWorker>()
