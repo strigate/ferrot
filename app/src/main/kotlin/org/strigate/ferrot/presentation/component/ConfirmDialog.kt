@@ -4,6 +4,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import org.strigate.ferrot.presentation.theme.TextStyles
 
 @Composable
 fun ConfirmDialog(
@@ -18,7 +19,10 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
-            Text(text = title)
+            Text(
+                text = title,
+                style = TextStyles.dialogTitle(),
+            )
         },
         text = {
             Text(text = message)
