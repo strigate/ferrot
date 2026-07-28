@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -35,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
+import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
@@ -73,9 +75,15 @@ fun AboutScreen(
                 }
 
                 is AboutEvent.OpenUrl -> {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, event.url.toUri())
-                    )
+                    try {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, event.url.toUri()),
+                        )
+                    } catch (_: ActivityNotFoundException) {
+                        context.toast(R.string.toast_unable_to_open_link)
+                    } catch (_: SecurityException) {
+                        context.toast(R.string.toast_unable_to_open_link)
+                    }
                 }
             }
         }
