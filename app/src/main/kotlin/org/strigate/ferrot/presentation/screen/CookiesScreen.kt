@@ -103,6 +103,7 @@ fun CookiesScreen(
             ),
             positiveButtonText = stringResource(R.string.notification_action_delete),
             negativeButtonText = stringResource(R.string.cancel),
+            isDestructive = true,
             onPositiveClick = {
                 if (cookieSet.source == CookieSetSourceUiData.WEBVIEW) {
                     clearWebViewData()
