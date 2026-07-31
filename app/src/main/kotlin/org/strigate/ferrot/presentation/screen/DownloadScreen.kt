@@ -163,6 +163,7 @@ fun DownloadScreen(
             title = stringResource(R.string.confirm_dialog_delete_download_title),
             message = stringResource(R.string.confirm_dialog_delete_download_description),
             positiveButtonText = stringResource(R.string.yes),
+            isDestructive = true,
             onPositiveClick = {
                 viewModel.deleteDownload()
                 showConfirmDeleteDialog.value = false

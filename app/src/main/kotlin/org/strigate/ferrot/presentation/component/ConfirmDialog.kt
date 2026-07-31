@@ -1,9 +1,11 @@
 package org.strigate.ferrot.presentation.component
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import org.strigate.ferrot.presentation.theme.TextStyles
 
 @Composable
@@ -15,6 +17,7 @@ fun ConfirmDialog(
     message: String,
     positiveButtonText: String,
     negativeButtonText: String,
+    isDestructive: Boolean = false,
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -34,7 +37,14 @@ fun ConfirmDialog(
         },
         confirmButton = {
             TextButton(onClick = onPositiveClick) {
-                Text(text = positiveButtonText)
+                Text(
+                    text = positiveButtonText,
+                    color = if (isDestructive) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        Color.Unspecified
+                    },
+                )
             }
         },
     )
