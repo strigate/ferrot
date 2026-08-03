@@ -38,6 +38,8 @@ private val LightColorScheme = lightColorScheme(
     inverseSurface = Color(0xFF2F2B2A),
     inverseOnSurface = Color(0xFFF8EEEA),
     inversePrimary = RefineryPrimary,
+    outline = Color(0xFF74747D),
+    outlineVariant = Color(0xFFC7C6CC),
 
     error = Color(0xFFB3261E),
     onError = Color.White,
@@ -73,6 +75,8 @@ private val DarkColorScheme = darkColorScheme(
     inverseSurface = Color(0xFFF8EEEA),
     inverseOnSurface = Color(0xFF2A1F1B),
     inversePrimary = Color(0xFFFF6F3C),
+    outline = Color(0xFF8E8E98),
+    outlineVariant = Color(0xFF44444B),
 
     error = Color(0xFFF2B8B5),
     onError = Color(0xFF601410),
