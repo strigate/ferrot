@@ -46,17 +46,50 @@ import org.strigate.refinery.component.settings.TextNavigateSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val refineryDimens = LocalRefineryDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.logShown()
+    }
+
+    SettingsScreenContent(
+        uiState = uiState,
+        onBackClick = { backDispatcher?.onBackPressed() },
+        onSetWifiOnlyDownloadsEnabled = viewModel::setWifiOnlyDownloadsEnabled,
+        onSetAutomaticDuplicateDownloadDeletionEnabled = viewModel::setAutomaticDuplicateDownloadDeletionEnabled,
+        onSetCookiesEnabled = viewModel::setCookiesEnabled,
+        onSetLeftSwipeAction = viewModel::setLeftSwipeAction,
+        onSetRightSwipeAction = viewModel::setRightSwipeAction,
+        onNavigateToCookies = { navController.navigate(Screen.Cookies.route) },
+        onNavigateToUpdates = { navController.navigate(Screen.Updates.route) },
+        onNavigateToAbout = { navController.navigate(Screen.About.route) },
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SettingsScreenContent(
+    uiState: SettingsUiState,
+    onBackClick: () -> Unit,
+    onSetWifiOnlyDownloadsEnabled: (Boolean) -> Unit,
+    onSetAutomaticDuplicateDownloadDeletionEnabled: (Boolean) -> Unit,
+    onSetCookiesEnabled: (Boolean) -> Unit,
+    onSetLeftSwipeAction: (DownloadSwipeActionUiData) -> Unit,
+    onSetRightSwipeAction: (DownloadSwipeActionUiData) -> Unit,
+    onNavigateToCookies: () -> Unit,
+    onNavigateToUpdates: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
     val noneSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_none)
     val archiveSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_archive)
     val seenSwipeActionLabel = stringResource(R.string.settings_value_swipe_action_seen)
@@ -70,19 +103,13 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.logShown()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            backDispatcher?.onBackPressed()
-                        },
+                        onClick = onBackClick,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -128,20 +155,14 @@ fun SettingsScreen(
                                         text = stringResource(id = R.string.settings_title_download_wifi_only),
                                         description = stringResource(id = R.string.settings_description_download_wifi_only),
                                         checked = wifiOnlyDownloadsEnabled,
-                                        onCheckedChange = { checked ->
-                                            viewModel.setWifiOnlyDownloadsEnabled(checked)
-                                        },
+                                        onCheckedChange = onSetWifiOnlyDownloadsEnabled,
                                     )
                                     Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                     SwitchSetting(
                                         text = stringResource(id = R.string.settings_title_automatic_duplicate_deletion),
                                         description = stringResource(id = R.string.settings_description_automatic_duplicate_deletion),
                                         checked = automaticDuplicateDownloadDeletionEnabled,
-                                        onCheckedChange = { checked ->
-                                            viewModel.setAutomaticDuplicateDownloadDeletionEnabled(
-                                                checked,
-                                            )
-                                        },
+                                        onCheckedChange = onSetAutomaticDuplicateDownloadDeletionEnabled,
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
@@ -154,15 +175,13 @@ fun SettingsScreen(
                                         text = stringResource(id = R.string.settings_title_use_cookies),
                                         description = stringResource(id = R.string.settings_description_use_cookies),
                                         checked = cookiesEnabled,
-                                        onCheckedChange = { checked ->
-                                            viewModel.setCookiesEnabled(checked)
-                                        },
+                                        onCheckedChange = onSetCookiesEnabled,
                                     )
                                     TextNavigateSetting(
                                         text = stringResource(R.string.settings_navigate_title_manage_cookies),
                                         description = stringResource(R.string.settings_description_manage_cookies),
                                     ) {
-                                        navController.navigate(Screen.Cookies.route)
+                                        onNavigateToCookies()
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
@@ -177,7 +196,7 @@ fun SettingsScreen(
                                         selectedOption = leftSwipeAction,
                                         options = DownloadSwipeActionUiData.entries,
                                         optionText = { option -> swipeActionLabel(option) },
-                                        onOptionSelected = viewModel::setLeftSwipeAction,
+                                        onOptionSelected = onSetLeftSwipeAction,
                                     )
                                     DropdownSetting(
                                         text = stringResource(R.string.settings_title_swipe_right),
@@ -185,7 +204,7 @@ fun SettingsScreen(
                                         selectedOption = rightSwipeAction,
                                         options = DownloadSwipeActionUiData.entries,
                                         optionText = { option -> swipeActionLabel(option) },
-                                        onOptionSelected = viewModel::setRightSwipeAction,
+                                        onOptionSelected = onSetRightSwipeAction,
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
@@ -193,14 +212,14 @@ fun SettingsScreen(
                                     icon = Icons.Outlined.SystemUpdate,
                                     text = stringResource(R.string.settings_navigate_title_updates),
                                 ) {
-                                    navController.navigate(Screen.Updates.route)
+                                    onNavigateToUpdates()
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
                                 TextNavigateSetting(
                                     icon = Icons.Outlined.Info,
                                     text = stringResource(R.string.settings_navigate_title_about),
                                 ) {
-                                    navController.navigate(Screen.About.route)
+                                    onNavigateToAbout()
                                 }
                                 Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
                             }

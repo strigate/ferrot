@@ -68,7 +68,6 @@ import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import java.net.URI
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GetCookiesScreen(
     navController: NavController,
@@ -78,7 +77,6 @@ fun GetCookiesScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val refineryDimens = LocalRefineryDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     val focusRequester = remember { FocusRequester() }
@@ -152,7 +150,62 @@ fun GetCookiesScreen(
         }
     }
 
-    overwritePrompt?.let { prompt ->
+    GetCookiesScreenContent(
+        state = GetCookiesScreenState(
+            addressText = addressText,
+            requestedUrl = requestedUrl,
+            titleText = titleText,
+            saveUrl = saveUrl,
+            overwritePrompt = overwritePrompt,
+        ),
+        focusRequester = focusRequester,
+        onAddressTextChange = { addressText = it },
+        onLoadAddress = ::loadAddress,
+        onSaveCookies = { saveCookies(saveUrl) },
+        onConfirmOverwrite = { prompt ->
+            overwritePrompt = null
+            saveCookies(
+                url = prompt.url,
+                confirmOverwrite = false,
+            )
+        },
+        onDismissOverwrite = { overwritePrompt = null },
+        onClose = {
+            backDispatcher?.onBackPressed() ?: navController.popBackStack()
+        },
+        webViewContent = { webViewModifier ->
+            GetCookiesWebView(
+                modifier = webViewModifier,
+                requestedUrl = requestedUrl,
+                onWebViewCreated = { webView = it },
+                onCurrentUrlChanged = { url ->
+                    currentUrl = url
+                    addressText = url.toTextFieldValue()
+                },
+                onTitleChanged = { title -> pageTitle = title },
+            )
+        },
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun GetCookiesScreenContent(
+    state: GetCookiesScreenState,
+    focusRequester: FocusRequester,
+    onAddressTextChange: (TextFieldValue) -> Unit,
+    onLoadAddress: () -> Unit,
+    onSaveCookies: () -> Unit,
+    onConfirmOverwrite: (CookieOverwritePrompt) -> Unit,
+    onDismissOverwrite: () -> Unit,
+    onClose: () -> Unit,
+    webViewContent: @Composable (Modifier) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+
+    state.overwritePrompt?.let { prompt ->
         ConfirmDialog(
             title = stringResource(R.string.confirm_dialog_replace_cookie_set_title),
             message = stringResource(
@@ -161,19 +214,9 @@ fun GetCookiesScreen(
             ),
             positiveButtonText = stringResource(R.string.cookies_action_replace),
             negativeButtonText = stringResource(R.string.cancel),
-            onPositiveClick = {
-                overwritePrompt = null
-                saveCookies(
-                    url = prompt.url,
-                    confirmOverwrite = false,
-                )
-            },
-            onNegativeClick = {
-                overwritePrompt = null
-            },
-            onDismissRequest = {
-                overwritePrompt = null
-            },
+            onPositiveClick = { onConfirmOverwrite(prompt) },
+            onNegativeClick = onDismissOverwrite,
+            onDismissRequest = onDismissOverwrite,
         )
     }
 
@@ -183,9 +226,7 @@ fun GetCookiesScreen(
                 colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            backDispatcher?.onBackPressed() ?: navController.popBackStack()
-                        },
+                        onClick = onClose,
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
@@ -194,12 +235,12 @@ fun GetCookiesScreen(
                     }
                 },
                 title = {
-                    Text(text = titleText)
+                    Text(text = state.titleText)
                 },
                 actions = {
                     IconButton(
-                        enabled = !saveUrl.isNullOrBlank(),
-                        onClick = { saveCookies(saveUrl) },
+                        enabled = !state.saveUrl.isNullOrBlank(),
+                        onClick = onSaveCookies,
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Save,
@@ -220,7 +261,7 @@ fun GetCookiesScreen(
                     modifier = Modifier
                         .fillMaxSize(),
                 ) {
-                    if (requestedUrl == null) {
+                    if (state.requestedUrl == null) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -233,20 +274,12 @@ fun GetCookiesScreen(
                             )
                         }
                     } else {
-                        GetCookiesWebView(
-                            modifier = Modifier
-                                .requiredSize(maxWidth, maxHeight),
-                            requestedUrl = requestedUrl,
-                            onWebViewCreated = { webView = it },
-                            onCurrentUrlChanged = { url ->
-                                currentUrl = url
-                                addressText = url.toTextFieldValue()
-                            },
-                            onTitleChanged = { title -> pageTitle = title },
+                        webViewContent(
+                            Modifier.requiredSize(maxWidth, maxHeight),
                         )
                     }
                     AnimatedVisibility(
-                        visible = requestedUrl == null,
+                        visible = state.requestedUrl == null,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .fillMaxWidth(),
@@ -267,14 +300,14 @@ fun GetCookiesScreen(
                                     .fillMaxWidth()
                                     .padding(top = refineryDimens.spacingSmall)
                                     .focusRequester(focusRequester),
-                                value = addressText,
-                                onValueChange = { addressText = it },
+                                value = state.addressText,
+                                onValueChange = onAddressTextChange,
                                 label = {
                                     Text(text = stringResource(R.string.cookies_label_login_url))
                                 },
                                 singleLine = true,
                                 trailingIcon = {
-                                    IconButton(onClick = ::loadAddress) {
+                                    IconButton(onClick = onLoadAddress) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                             contentDescription = stringResource(R.string.cookies_action_go),
@@ -286,7 +319,7 @@ fun GetCookiesScreen(
                                     capitalization = KeyboardCapitalization.None,
                                     imeAction = ImeAction.Go,
                                 ),
-                                keyboardActions = KeyboardActions(onGo = { loadAddress() }),
+                                keyboardActions = KeyboardActions(onGo = { onLoadAddress() }),
                             )
                         }
                     }
@@ -315,11 +348,6 @@ private fun CookieLoginWarning(
         )
     }
 }
-
-private data class CookieOverwritePrompt(
-    val url: String,
-    val domain: String,
-)
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -439,3 +467,16 @@ private fun String.toTextFieldValue(): TextFieldValue {
 }
 
 private const val DEFAULT_URL_PREFIX = "https://"
+
+internal data class GetCookiesScreenState(
+    val addressText: TextFieldValue,
+    val requestedUrl: String?,
+    val titleText: String,
+    val saveUrl: String?,
+    val overwritePrompt: CookieOverwritePrompt?,
+)
+
+internal data class CookieOverwritePrompt(
+    val url: String,
+    val domain: String,
+)

@@ -43,13 +43,11 @@ import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdatesScreen(
     modifier: Modifier = Modifier,
     viewModel: UpdatesViewModel = hiltViewModel(),
 ) {
-    val refineryDimens = LocalRefineryDimens.current
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val uiState by viewModel.uiState.collectAsState()
@@ -67,13 +65,38 @@ fun UpdatesScreen(
         }
     }
 
+    UpdatesScreenContent(
+        uiState = uiState,
+        onBackClick = { backDispatcher?.onBackPressed() },
+        onSetAutomaticAppUpdatesEnabled = viewModel::setAutomaticAppUpdatesEnabled,
+        onCheckForAvailableUpdate = viewModel::checkForAvailableUpdate,
+        onSetAutomaticDependencyUpdatesEnabled = viewModel::setAutomaticDependencyUpdatesEnabled,
+        onCheckForDependencyUpdates = viewModel::checkForDependencyUpdates,
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun UpdatesScreenContent(
+    uiState: UpdatesUiState,
+    onBackClick: () -> Unit,
+    onSetAutomaticAppUpdatesEnabled: (Boolean) -> Unit,
+    onCheckForAvailableUpdate: () -> Unit,
+    onSetAutomaticDependencyUpdatesEnabled: (Boolean) -> Unit,
+    onCheckForDependencyUpdates: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
-                        onClick = { backDispatcher?.onBackPressed() },
+                        onClick = onBackClick,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -118,15 +141,13 @@ fun UpdatesScreen(
                                         text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_updates),
                                         checked = settings.automaticAppUpdatesEnabled,
-                                        onCheckedChange = { checked ->
-                                            viewModel.setAutomaticAppUpdatesEnabled(checked)
-                                        },
+                                        onCheckedChange = onSetAutomaticAppUpdatesEnabled,
                                     )
                                     TextSetting(
                                         text = stringResource(R.string.settings_title_check_now),
                                         description = stringResource(R.string.settings_description_check_for_app_updates),
                                     ) {
-                                        viewModel.checkForAvailableUpdate()
+                                        onCheckForAvailableUpdate()
                                     }
                                     TextSetting(
                                         text = stringResource(R.string.settings_title_last_checked),
@@ -145,15 +166,13 @@ fun UpdatesScreen(
                                         text = stringResource(R.string.settings_title_automatic_updates),
                                         description = stringResource(R.string.settings_description_automatic_dependency_updates),
                                         checked = settings.automaticDependencyUpdatesEnabled,
-                                        onCheckedChange = { checked ->
-                                            viewModel.setAutomaticDependencyUpdatesEnabled(checked)
-                                        },
+                                        onCheckedChange = onSetAutomaticDependencyUpdatesEnabled,
                                     )
                                     TextSetting(
                                         text = stringResource(R.string.settings_title_check_now),
                                         description = stringResource(R.string.settings_description_check_dependencies_now),
                                     ) {
-                                        viewModel.checkForDependencyUpdates()
+                                        onCheckForDependencyUpdates()
                                     }
                                     TextSetting(
                                         text = stringResource(R.string.settings_title_last_checked),

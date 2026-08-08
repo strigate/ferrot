@@ -60,20 +60,15 @@ import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CookiesScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: CookiesViewModel = hiltViewModel(),
 ) {
-    val refineryDimens = LocalRefineryDimens.current
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-
     val uiState by viewModel.uiState.collectAsState()
-
-    var cookieSetPendingDelete by remember { mutableStateOf<CookieSetUiData?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -94,6 +89,35 @@ fun CookiesScreen(
         }
     }
 
+    CookiesScreenContent(
+        uiState = uiState,
+        onBackClick = { backDispatcher?.onBackPressed() ?: navController.popBackStack() },
+        onNavigateToGetCookies = { navController.navigate(Screen.GetCookies.route) },
+        onImportFile = { importLauncher.launch(COOKIE_FILE_MIME_TYPES) },
+        onDeleteCookieSet = { cookieSet ->
+            if (cookieSet.source == CookieSetSourceUiData.WEBVIEW) {
+                clearWebViewData()
+            }
+            viewModel.deleteCookieSet(cookieSet.id)
+        },
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CookiesScreenContent(
+    uiState: CookiesUiState,
+    onBackClick: () -> Unit,
+    onNavigateToGetCookies: () -> Unit,
+    onImportFile: () -> Unit,
+    onDeleteCookieSet: (CookieSetUiData) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+
+    var cookieSetPendingDelete by remember { mutableStateOf<CookieSetUiData?>(null) }
+
     cookieSetPendingDelete?.let { cookieSet ->
         ConfirmDialog(
             title = stringResource(R.string.confirm_dialog_delete_cookie_set_title),
@@ -105,10 +129,7 @@ fun CookiesScreen(
             negativeButtonText = stringResource(R.string.cancel),
             isDestructive = true,
             onPositiveClick = {
-                if (cookieSet.source == CookieSetSourceUiData.WEBVIEW) {
-                    clearWebViewData()
-                }
-                viewModel.deleteCookieSet(cookieSet.id)
+                onDeleteCookieSet(cookieSet)
                 cookieSetPendingDelete = null
             },
             onNegativeClick = {
@@ -125,9 +146,7 @@ fun CookiesScreen(
                 colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            backDispatcher?.onBackPressed() ?: navController.popBackStack()
-                        },
+                        onClick = onBackClick,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -169,12 +188,12 @@ fun CookiesScreen(
                                 TextSetting(
                                     text = stringResource(R.string.cookies_title_get_cookies),
                                     description = stringResource(R.string.cookies_description_get_cookies),
-                                    onClick = { navController.navigate(Screen.GetCookies.route) },
+                                    onClick = onNavigateToGetCookies,
                                 )
                                 TextSetting(
                                     text = stringResource(R.string.cookies_title_import_file),
                                     description = stringResource(R.string.cookies_description_import_file),
-                                    onClick = { importLauncher.launch(COOKIE_FILE_MIME_TYPES) },
+                                    onClick = onImportFile,
                                 )
                             }
                             Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
