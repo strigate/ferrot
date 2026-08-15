@@ -126,7 +126,6 @@ private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 private const val SNAP_BACK_SWIPE_THRESHOLD_RATIO = 0.3f
 private const val DISMISS_SWIPE_THRESHOLD_RATIO = 0.5f
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
     navController: NavController,
@@ -134,15 +133,88 @@ fun DownloadsScreen(
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
-    val view = LocalView.current
     val context = LocalContext.current
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    val lazyListState = rememberLazyListState()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isArchived by viewModel.isArchived.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.logShown()
+    }
+    LaunchedEffect(archived) {
+        viewModel.setArchived(archived)
+    }
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is DownloadsEvent.InstallUpdate -> {
+                    InstallHelper.requestInstallApkIfExists(context, event.path)
+                }
+            }
+        }
+    }
+    LifecycleEffect {
+        on(Lifecycle.Event.ON_START) {
+            viewModel.requestDeletePendingDownloadsImmediate()
+        }
+    }
+
+    DownloadsScreenContent(
+        uiState = uiState,
+        searchQuery = searchQuery,
+        isArchived = isArchived,
+        onUpdateSearchQuery = viewModel::updateSearchQuery,
+        onNavigateBack = navController::navigateUp,
+        onNavigateToDownload = { item ->
+            navController.navigate(
+                Screen.Download.route(
+                    id = item.id,
+                    archived = isArchived,
+                )
+            )
+        },
+        onNavigateToArchived = { navController.navigate(Screen.Archived.route) },
+        onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+        onInstallAvailableUpdate = viewModel::installAvailableUpdate,
+        onStopDownload = viewModel::stopDownload,
+        onRetryDownload = viewModel::retryDownload,
+        onMarkDownloadsPendingDelete = viewModel::markDownloadsPendingDelete,
+        onRequestDeletePendingDownloadsImmediate = viewModel::requestDeletePendingDownloadsImmediate,
+        onUpdateDownloadsArchived = viewModel::updateDownloadsArchived,
+        onToggleDownloadsSeen = viewModel::toggleDownloadsSeen,
+        onRetryFailedDownloads = viewModel::retryFailedDownloads,
+        onStopAllDownloads = viewModel::stopAllDownloads,
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DownloadsScreenContent(
+    uiState: DownloadsUiState,
+    searchQuery: TextFieldValue,
+    isArchived: Boolean,
+    onUpdateSearchQuery: (TextFieldValue) -> Unit,
+    onNavigateBack: () -> Unit,
+    onNavigateToDownload: (DownloadItemUiData) -> Unit,
+    onNavigateToArchived: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onInstallAvailableUpdate: () -> Unit,
+    onStopDownload: (Long) -> Unit,
+    onRetryDownload: (Long) -> Unit,
+    onMarkDownloadsPendingDelete: (Set<Long>, Boolean) -> Unit,
+    onRequestDeletePendingDownloadsImmediate: () -> Unit,
+    onUpdateDownloadsArchived: (Set<Long>, Boolean) -> Unit,
+    onToggleDownloadsSeen: (Set<Long>) -> Unit,
+    onRetryFailedDownloads: () -> Unit,
+    onStopAllDownloads: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val view = LocalView.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val lazyListState = rememberLazyListState()
 
     val searchFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -159,7 +231,7 @@ fun DownloadsScreen(
 
     BackHandler(enabled = searchActive) {
         searchActive = false
-        viewModel.updateSearchQuery(TextFieldValue(""))
+        onUpdateSearchQuery(TextFieldValue(""))
         keyboardController?.hide()
     }
     LaunchedEffect(searchActive) {
@@ -217,26 +289,6 @@ fun DownloadsScreen(
     BackHandler(enabled = selectionMode) {
         selectedIds = emptySet()
     }
-    LaunchedEffect(Unit) {
-        viewModel.logShown()
-    }
-    LaunchedEffect(archived) {
-        viewModel.setArchived(archived)
-    }
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            when (event) {
-                is DownloadsEvent.InstallUpdate -> {
-                    InstallHelper.requestInstallApkIfExists(context, event.path)
-                }
-            }
-        }
-    }
-    LifecycleEffect {
-        on(Lifecycle.Event.ON_START) {
-            viewModel.requestDeletePendingDownloadsImmediate()
-        }
-    }
     PendingDeleteSnackbarEffect(
         pendingDeleteIds = pendingDeleteIds,
         hasPendingDeletes = hasPendingDeletes,
@@ -247,9 +299,9 @@ fun DownloadsScreen(
         snackbarBulkDeleteMessage = snackbarBulkDeleteMessage,
         snackbarUndoActionLabel = snackbarUndoActionLabel,
         onUndoPendingDelete = { ids ->
-            viewModel.markDownloadsPendingDelete(ids, pendingDelete = false)
+            onMarkDownloadsPendingDelete(ids, false)
         },
-        onConfirmPendingDelete = viewModel::requestDeletePendingDownloadsImmediate,
+        onConfirmPendingDelete = onRequestDeletePendingDownloadsImmediate,
     )
 
     Scaffold(
@@ -258,8 +310,6 @@ fun DownloadsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             DownloadsTopBar(
-                navController = navController,
-                viewModel = viewModel,
                 selectionMode = selectionMode,
                 selectedIds = selectedIds,
                 dismissingIds = dismissingIds,
@@ -281,6 +331,15 @@ fun DownloadsScreen(
                 onDismissingIdsChange = { dismissingIds = it },
                 onArchivingIdsChange = { archivingIds = it },
                 onSearchActiveChange = { searchActive = it },
+                onSearchQueryChange = onUpdateSearchQuery,
+                onNavigateBack = onNavigateBack,
+                onNavigateToArchived = onNavigateToArchived,
+                onNavigateToSettings = onNavigateToSettings,
+                onToggleDownloadsSeen = onToggleDownloadsSeen,
+                onMarkDownloadsPendingDelete = onMarkDownloadsPendingDelete,
+                onUpdateDownloadsArchived = onUpdateDownloadsArchived,
+                onRetryFailedDownloads = onRetryFailedDownloads,
+                onStopAllDownloads = onStopAllDownloads,
             )
         },
         snackbarHost = {
@@ -322,9 +381,7 @@ fun DownloadsScreen(
                                         .fillMaxWidth(),
                                     tag = it.tag,
                                     localFilePath = it.localFilePath,
-                                    onClick = {
-                                        viewModel.installAvailableUpdate()
-                                    },
+                                    onClick = { onInstallAvailableUpdate() },
                                 )
                             }
                             DownloadsList(
@@ -341,15 +398,10 @@ fun DownloadsScreen(
                                 lazyListState = lazyListState,
                                 onItemClick = { item ->
                                     if (pendingDeleteIds.isNotEmpty()) {
-                                        viewModel.requestDeletePendingDownloadsImmediate()
+                                        onRequestDeletePendingDownloadsImmediate()
                                     }
                                     keyboardController?.hide()
-                                    navController.navigate(
-                                        Screen.Download.route(
-                                            id = item.id,
-                                            archived = isArchived,
-                                        )
-                                    )
+                                    onNavigateToDownload(item)
                                 },
                                 onPauseResume = { item ->
                                     when (item.status) {
@@ -359,12 +411,12 @@ fun DownloadsScreen(
                                         DownloadStatusUiData.DOWNLOADING,
                                         DownloadStatusUiData.METADATA -> {
                                             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                            viewModel.stopDownload(item.id)
+                                            onStopDownload(item.id)
                                         }
 
                                         else -> {
                                             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                            viewModel.retryDownload(item.id)
+                                            onRetryDownload(item.id)
                                         }
                                     }
                                 },
@@ -373,19 +425,18 @@ fun DownloadsScreen(
                                 },
                                 onBulkDismissAnimationFinished = { itemId ->
                                     dismissingIds = dismissingIds - itemId
-                                    viewModel.markDownloadsPendingDelete(setOf(itemId))
+                                    onMarkDownloadsPendingDelete(setOf(itemId), true)
                                 },
                                 onBulkArchiveAnimationFinished = { itemId ->
                                     archivingIds = archivingIds - itemId
-                                    viewModel.updateDownloadsArchived(
-                                        downloadIds = setOf(itemId),
-                                        archived = !isArchived,
-                                    )
+                                    onUpdateDownloadsArchived(setOf(itemId), !isArchived)
                                 },
                                 onToggleSeen = { itemId ->
-                                    viewModel.toggleDownloadsSeen(setOf(itemId))
+                                    onToggleDownloadsSeen(setOf(itemId))
                                 },
-                                onMarkPendingDelete = viewModel::markDownloadsPendingDelete,
+                                onMarkPendingDelete = { ids ->
+                                    onMarkDownloadsPendingDelete(ids, true)
+                                },
                             )
                         }
                     }
@@ -400,8 +451,6 @@ fun DownloadsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DownloadsTopBar(
-    navController: NavController,
-    viewModel: DownloadsViewModel,
     selectionMode: Boolean,
     selectedIds: Set<Long>,
     dismissingIds: Set<Long>,
@@ -423,6 +472,15 @@ private fun DownloadsTopBar(
     onDismissingIdsChange: (Set<Long>) -> Unit,
     onArchivingIdsChange: (Set<Long>) -> Unit,
     onSearchActiveChange: (Boolean) -> Unit,
+    onSearchQueryChange: (TextFieldValue) -> Unit,
+    onNavigateBack: () -> Unit,
+    onNavigateToArchived: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onToggleDownloadsSeen: (Set<Long>) -> Unit,
+    onMarkDownloadsPendingDelete: (Set<Long>, Boolean) -> Unit,
+    onUpdateDownloadsArchived: (Set<Long>, Boolean) -> Unit,
+    onRetryFailedDownloads: () -> Unit,
+    onStopAllDownloads: () -> Unit,
 ) {
     val view = LocalView.current
     val dimens = LocalDimens.current
@@ -480,7 +538,7 @@ private fun DownloadsTopBar(
                 }
                 IconButton(
                     onClick = {
-                        viewModel.toggleDownloadsSeen(selectedIds)
+                        onToggleDownloadsSeen(selectedIds)
                     },
                 ) {
                     Icon(
@@ -505,10 +563,7 @@ private fun DownloadsTopBar(
                         val hiddenSelectedIds = selectedIds - visibleSelectedIds
                         onArchivingIdsChange(archivingIds + visibleSelectedIds)
                         if (hiddenSelectedIds.isNotEmpty()) {
-                            viewModel.updateDownloadsArchived(
-                                downloadIds = hiddenSelectedIds,
-                                archived = !isArchived,
-                            )
+                            onUpdateDownloadsArchived(hiddenSelectedIds, !isArchived)
                         }
                         onSelectionChange(emptySet())
                     },
@@ -535,7 +590,7 @@ private fun DownloadsTopBar(
                         val hiddenSelectedIds = selectedIds - visibleSelectedIds
                         onDismissingIdsChange(dismissingIds + visibleSelectedIds)
                         if (hiddenSelectedIds.isNotEmpty()) {
-                            viewModel.markDownloadsPendingDelete(hiddenSelectedIds)
+                            onMarkDownloadsPendingDelete(hiddenSelectedIds, true)
                         }
                         onSelectionChange(emptySet())
                     },
@@ -553,9 +608,7 @@ private fun DownloadsTopBar(
             navigationIcon = {
                 if (isArchived) {
                     IconButton(
-                        onClick = {
-                            navController.navigateUp()
-                        },
+                        onClick = onNavigateBack,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -609,7 +662,7 @@ private fun DownloadsTopBar(
                     ) {
                         TextField(
                             value = searchQuery,
-                            onValueChange = viewModel::updateSearchQuery,
+                            onValueChange = onSearchQueryChange,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(end = dimens.spacingSmall)
@@ -642,7 +695,7 @@ private fun DownloadsTopBar(
                     onClick = {
                         onSearchActiveChange(!searchActive)
                         if (searchActive) {
-                            viewModel.updateSearchQuery(TextFieldValue(""))
+                            onSearchQueryChange(TextFieldValue(""))
                             keyboardController?.hide()
                         }
                     }
@@ -709,7 +762,7 @@ private fun DownloadsTopBar(
                             },
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                viewModel.retryFailedDownloads()
+                                onRetryFailedDownloads()
                                 coroutineScope.launch {
                                     delay(RETRY_FAILED_SCROLL_DELAY_MILLIS.milliseconds)
                                     lazyListState.animateScrollToItem(0)
@@ -732,7 +785,7 @@ private fun DownloadsTopBar(
                                 )
                             },
                             onClick = {
-                                viewModel.stopAllDownloads()
+                                onStopAllDownloads()
                                 menuExpanded = false
                             },
                         )
@@ -751,7 +804,7 @@ private fun DownloadsTopBar(
                                 )
                             },
                             onClick = {
-                                navController.navigate(Screen.Archived.route)
+                                onNavigateToArchived()
                                 menuExpanded = false
                             },
                         )
@@ -769,7 +822,7 @@ private fun DownloadsTopBar(
                             )
                         },
                         onClick = {
-                            navController.navigate(Screen.Settings.route)
+                            onNavigateToSettings()
                             menuExpanded = false
                         },
                     )

@@ -5,11 +5,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import org.strigate.ferrot.work.UpdateDependenciesWorker
 import javax.inject.Inject
 
-class ConfigureAutomaticDependencyUpdatesSettingUseCase @Inject constructor(
+class ConfigureAutomaticDependencyUpdateWorkUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
 ) {
-    operator fun invoke(automaticDependencyUpdates: Boolean) {
-        if (automaticDependencyUpdates) {
+    operator fun invoke(automaticDependencyUpdatesEnabled: Boolean) {
+        if (automaticDependencyUpdatesEnabled) {
             UpdateDependenciesWorker.enqueuePeriodicKeep(appContext)
         } else {
             UpdateDependenciesWorker.cancelPeriodic(appContext)

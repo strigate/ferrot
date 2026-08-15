@@ -1,9 +1,9 @@
 package org.strigate.ferrot.presentation.model
 
 data class SettingsUiData(
-    val downloadWifiOnly: Boolean,
-    val automaticDuplicateDownloadDeletion: Boolean,
-    val useCookies: Boolean,
+    val wifiOnlyDownloadsEnabled: Boolean,
+    val automaticDuplicateDownloadDeletionEnabled: Boolean,
+    val cookiesEnabled: Boolean,
     val leftSwipeAction: DownloadSwipeActionUiData,
     val rightSwipeAction: DownloadSwipeActionUiData,
 )

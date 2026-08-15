@@ -27,10 +27,10 @@ fun Download.toPageUiData(
             DownloadVideoUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                fileExtension = (
-                        video.fileExtension.takeIf { it.isNotBlank() }
-                            ?: filePath.extractFileExtension()
-                        ).orEmpty(),
+                fileExtension = resolveFileExtension(
+                    filePath = filePath,
+                    storedExtension = video.fileExtension,
+                ),
             )
         }
 
@@ -41,10 +41,10 @@ fun Download.toPageUiData(
             DownloadAudioUiData(
                 filePath = filePath,
                 fileName = filePath.extractFileName(),
-                fileExtension = (
-                        audio.fileExtension.takeIf { it.isNotBlank() }
-                            ?: filePath.extractFileExtension()
-                        ).orEmpty(),
+                fileExtension = resolveFileExtension(
+                    filePath = filePath,
+                    storedExtension = audio.fileExtension,
+                ),
             )
         }
 
@@ -99,4 +99,11 @@ fun Download.toPageUiData(
         errorMessage = errorMessage,
         completedAtMillis = completedAtMillis,
     )
+}
+
+private fun resolveFileExtension(
+    filePath: String,
+    storedExtension: String,
+): String {
+    return storedExtension.takeIf { it.isNotBlank() } ?: filePath.extractFileExtension().orEmpty()
 }

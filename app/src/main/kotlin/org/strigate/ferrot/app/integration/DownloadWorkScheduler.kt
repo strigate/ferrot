@@ -8,11 +8,11 @@ import javax.inject.Inject
 class DownloadWorkScheduler @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
 ) {
-    fun enqueueOneTimeReplace(downloadId: Long, wifiOnly: Boolean) {
+    fun enqueueOneTimeReplace(downloadId: Long, wifiOnlyDownloadsEnabled: Boolean) {
         DownloadWorker.enqueueOneTimeReplace(
             context = appContext,
             id = downloadId,
-            wifiOnly = wifiOnly,
+            wifiOnlyDownloadsEnabled = wifiOnlyDownloadsEnabled,
         )
     }
 }

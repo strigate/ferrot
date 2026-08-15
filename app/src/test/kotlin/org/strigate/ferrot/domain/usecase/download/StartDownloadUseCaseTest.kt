@@ -26,7 +26,7 @@ import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetDownloadWifiOnlySettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StartDownloadUseCaseTest {
@@ -62,7 +62,7 @@ class StartDownloadUseCaseTest {
     private lateinit var clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase
 
     @Mock
-    private lateinit var getDownloadWifiOnlySettingAsFlowUseCase: GetDownloadWifiOnlySettingAsFlowUseCase
+    private lateinit var getWifiOnlyDownloadsEnabledSettingAsFlowUseCase: GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase
 
     @Mock
     private lateinit var updateDownloadStatusUseCase: UpdateDownloadStatusUseCase
@@ -72,8 +72,8 @@ class StartDownloadUseCaseTest {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
 
-        `when`(settingsUseCase.getDownloadWifiOnlySettingAsFlowUseCase)
-            .thenReturn(getDownloadWifiOnlySettingAsFlowUseCase)
+        `when`(settingsUseCase.getWifiOnlyDownloadsEnabledSettingAsFlowUseCase)
+            .thenReturn(getWifiOnlyDownloadsEnabledSettingAsFlowUseCase)
         `when`(downloadUseCase.updateDownloadStatusUseCase)
             .thenReturn(updateDownloadStatusUseCase)
         `when`(appContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -82,7 +82,7 @@ class StartDownloadUseCaseTest {
 
     @Test
     fun invoke_setsWaitingForNetwork_whenOffline() = runTest(testDispatcher) {
-        stubWifiOnly(enabled = false)
+        stubWifiOnlyDownloadsEnabled(enabled = false)
         stubNetwork(hasInternet = false, onWifi = false)
 
         createUseCase().invoke(11L)
@@ -99,24 +99,25 @@ class StartDownloadUseCaseTest {
     }
 
     @Test
-    fun invoke_setsWaitingForWifi_whenWifiOnlyAndNotOnWifi() = runTest(testDispatcher) {
-        stubWifiOnly(enabled = true)
-        stubNetwork(hasInternet = true, onWifi = false)
+    fun invoke_setsWaitingForWifi_whenWifiOnlyDownloadsEnabledAndNotOnWifi() =
+        runTest(testDispatcher) {
+            stubWifiOnlyDownloadsEnabled(enabled = true)
+            stubNetwork(hasInternet = true, onWifi = false)
 
-        createUseCase().invoke(12L)
+            createUseCase().invoke(12L)
 
-        verify(updateDownloadStatusUseCase)
-            .invoke(
-                downloadId = 12L,
-                status = DownloadStatus.WAITING_FOR_WIFI,
-            )
-        verify(downloadWorkScheduler)
-            .enqueueOneTimeReplace(12L, true)
-    }
+            verify(updateDownloadStatusUseCase)
+                .invoke(
+                    downloadId = 12L,
+                    status = DownloadStatus.WAITING_FOR_WIFI,
+                )
+            verify(downloadWorkScheduler)
+                .enqueueOneTimeReplace(12L, true)
+        }
 
     @Test
     fun invoke_setsQueued_whenDownloadCanStart() = runTest(testDispatcher) {
-        stubWifiOnly(enabled = true)
+        stubWifiOnlyDownloadsEnabled(enabled = true)
         stubNetwork(hasInternet = true, onWifi = true)
 
         createUseCase().invoke(13L)
@@ -136,8 +137,8 @@ class StartDownloadUseCaseTest {
         autoCloseable.close()
     }
 
-    private fun stubWifiOnly(enabled: Boolean) {
-        `when`(getDownloadWifiOnlySettingAsFlowUseCase.invoke())
+    private fun stubWifiOnlyDownloadsEnabled(enabled: Boolean) {
+        `when`(getWifiOnlyDownloadsEnabledSettingAsFlowUseCase.invoke())
             .thenReturn(flowOf(enabled))
     }
 

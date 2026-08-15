@@ -13,7 +13,7 @@ import org.strigate.ferrot.domain.model.CookieSetWithDomains
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.repository.CookieSetRepository
 import org.strigate.ferrot.domain.repository.SettingsRepository
-import org.strigate.ferrot.domain.usecase.settings.GetUseCookiesSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetCookiesEnabledSettingAsFlowUseCase
 
 class ResolveCookieSetForUrlUseCaseTest {
     @Test
@@ -36,7 +36,7 @@ class ResolveCookieSetForUrlUseCaseTest {
             cookieSets = listOf(cookieSet(id = 1L, domain = "x.com", includeSubdomains = true))
         )
 
-        val result = createUseCase(repository, useCookies = false)("https://x.com/post/1")
+        val result = createUseCase(repository, cookiesEnabled = false)("https://x.com/post/1")
 
         assertNull(result)
     }
@@ -67,11 +67,11 @@ class ResolveCookieSetForUrlUseCaseTest {
 
     private fun createUseCase(
         repository: CookieSetRepository,
-        useCookies: Boolean = true,
+        cookiesEnabled: Boolean = true,
     ) = ResolveCookieSetForUrlUseCase(
         cookieSetRepository = repository,
-        getUseCookiesSettingAsFlowUseCase = GetUseCookiesSettingAsFlowUseCase(
-            settingsRepository = FakeSettingsRepository(useCookies),
+        getCookiesEnabledSettingAsFlowUseCase = GetCookiesEnabledSettingAsFlowUseCase(
+            settingsRepository = FakeSettingsRepository(cookiesEnabled),
         ),
     )
 
@@ -123,23 +123,27 @@ class ResolveCookieSetForUrlUseCaseTest {
     }
 
     private class FakeSettingsRepository(
-        private val useCookies: Boolean,
+        private val cookiesEnabled: Boolean,
     ) : SettingsRepository {
-        override suspend fun saveDownloadWifiOnly(enabled: Boolean) = error("unused")
-        override fun getDownloadWifiOnlyAsFlow(): Flow<Boolean> = error("unused")
-        override suspend fun saveAutomaticDuplicateDownloadDeletion(enabled: Boolean) =
+        override suspend fun saveWifiOnlyDownloadsEnabled(enabled: Boolean) = error("unused")
+        override fun getWifiOnlyDownloadsEnabledAsFlow(): Flow<Boolean> = error("unused")
+        override suspend fun saveAutomaticDuplicateDownloadDeletionEnabled(enabled: Boolean) =
             error("unused")
 
-        override fun getAutomaticDuplicateDownloadDeletionAsFlow(): Flow<Boolean> = error("unused")
+        override fun getAutomaticDuplicateDownloadDeletionEnabledAsFlow(): Flow<Boolean> =
+            error("unused")
+
         override suspend fun saveLeftSwipeAction(action: DownloadSwipeAction) = error("unused")
         override fun getLeftSwipeActionAsFlow(): Flow<DownloadSwipeAction> = error("unused")
         override suspend fun saveRightSwipeAction(action: DownloadSwipeAction) = error("unused")
         override fun getRightSwipeActionAsFlow(): Flow<DownloadSwipeAction> = error("unused")
-        override suspend fun saveAutomaticUpdates(enabled: Boolean) = error("unused")
-        override fun getAutomaticUpdatesAsFlow(): Flow<Boolean> = error("unused")
-        override suspend fun saveAutomaticDependencyUpdates(enabled: Boolean) = error("unused")
-        override fun getAutomaticDependencyUpdatesAsFlow(): Flow<Boolean> = error("unused")
-        override suspend fun saveUseCookies(enabled: Boolean) = error("unused")
-        override fun getUseCookiesAsFlow(): Flow<Boolean> = flowOf(useCookies)
+        override suspend fun saveAutomaticAppUpdatesEnabled(enabled: Boolean) = error("unused")
+        override fun getAutomaticAppUpdatesEnabledAsFlow(): Flow<Boolean> = error("unused")
+        override suspend fun saveAutomaticDependencyUpdatesEnabled(enabled: Boolean) =
+            error("unused")
+
+        override fun getAutomaticDependencyUpdatesEnabledAsFlow(): Flow<Boolean> = error("unused")
+        override suspend fun saveCookiesEnabled(enabled: Boolean) = error("unused")
+        override fun getCookiesEnabledAsFlow(): Flow<Boolean> = flowOf(cookiesEnabled)
     }
 }

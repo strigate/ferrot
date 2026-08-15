@@ -3,17 +3,17 @@ package org.strigate.ferrot.domain.usecase.cookieset
 import kotlinx.coroutines.flow.first
 import org.strigate.ferrot.domain.model.CookieSetWithDomains
 import org.strigate.ferrot.domain.repository.CookieSetRepository
-import org.strigate.ferrot.domain.usecase.settings.GetUseCookiesSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetCookiesEnabledSettingAsFlowUseCase
 import java.net.URI
 import java.util.Locale
 import javax.inject.Inject
 
 class ResolveCookieSetForUrlUseCase @Inject constructor(
     private val cookieSetRepository: CookieSetRepository,
-    private val getUseCookiesSettingAsFlowUseCase: GetUseCookiesSettingAsFlowUseCase,
+    private val getCookiesEnabledSettingAsFlowUseCase: GetCookiesEnabledSettingAsFlowUseCase,
 ) {
     suspend operator fun invoke(url: String): CookieSetWithDomains? {
-        if (!getUseCookiesSettingAsFlowUseCase().first()) {
+        if (!getCookiesEnabledSettingAsFlowUseCase().first()) {
             return null
         }
         val host = hostFromUrl(url) ?: return null

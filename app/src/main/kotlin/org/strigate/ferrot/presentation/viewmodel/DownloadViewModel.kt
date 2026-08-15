@@ -191,12 +191,7 @@ class DownloadViewModel @Inject constructor(
     fun selectDownload(downloadId: Long) {
         _selectedId.value = downloadId
         if (_selectedMediaById.value[downloadId] == null) {
-            _selectedMediaById.value = _selectedMediaById
-                .value
-                .toMutableMap()
-                .also {
-                    it[downloadId] = DownloadMediaType.VIDEO
-                }
+            _selectedMediaById.value += downloadId to DownloadMediaType.VIDEO
         }
     }
 
@@ -216,12 +211,7 @@ class DownloadViewModel @Inject constructor(
 
     fun setSelectedMedia(type: DownloadMediaType, forDownloadId: Long? = null) {
         val downloadId = resolveDownloadId(forDownloadId) ?: return
-        _selectedMediaById.value = _selectedMediaById
-            .value
-            .toMutableMap()
-            .also {
-                it[downloadId] = type
-            }
+        _selectedMediaById.value += downloadId to type
     }
 
     fun setDefaultsForIds(ids: List<Long>) {

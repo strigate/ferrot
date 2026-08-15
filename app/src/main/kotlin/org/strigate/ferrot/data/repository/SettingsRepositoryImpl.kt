@@ -7,20 +7,20 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_COOKIES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_RIGHT_SWIPE_ACTION
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_USE_COOKIES
-import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DEPENDENCY_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
-import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_UPDATES
-import org.strigate.ferrot.app.Constants.Settings.KEY_DOWNLOAD_WIFI_ONLY
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_APP_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.KEY_COOKIES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.KEY_RIGHT_SWIPE_ACTION
-import org.strigate.ferrot.app.Constants.Settings.KEY_USE_COOKIES
+import org.strigate.ferrot.app.Constants.Settings.KEY_WIFI_ONLY_DOWNLOADS_ENABLED
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import javax.inject.Inject
@@ -30,55 +30,55 @@ import javax.inject.Singleton
 class SettingsRepositoryImpl @Inject constructor(
     private val preferencesDataStore: DataStore<Preferences>,
 ) : SettingsRepository {
-    private val downloadWifiOnlyKey =
-        booleanPreferencesKey(KEY_DOWNLOAD_WIFI_ONLY)
-    private val automaticDuplicateDownloadDeletionKey =
-        booleanPreferencesKey(KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION)
-    private val useCookiesKey =
-        booleanPreferencesKey(KEY_USE_COOKIES)
+    private val wifiOnlyDownloadsEnabledKey =
+        booleanPreferencesKey(KEY_WIFI_ONLY_DOWNLOADS_ENABLED)
+    private val automaticDuplicateDownloadDeletionEnabledKey =
+        booleanPreferencesKey(KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED)
+    private val cookiesEnabledKey =
+        booleanPreferencesKey(KEY_COOKIES_ENABLED)
     private val leftSwipeActionKey =
         stringPreferencesKey(KEY_LEFT_SWIPE_ACTION)
     private val rightSwipeActionKey =
         stringPreferencesKey(KEY_RIGHT_SWIPE_ACTION)
-    private val automaticUpdatesKey =
-        booleanPreferencesKey(KEY_AUTOMATIC_UPDATES)
-    private val automaticDependencyUpdatesKey =
-        booleanPreferencesKey(KEY_AUTOMATIC_DEPENDENCY_UPDATES)
+    private val automaticAppUpdatesEnabledKey =
+        booleanPreferencesKey(KEY_AUTOMATIC_APP_UPDATES_ENABLED)
+    private val automaticDependencyUpdatesEnabledKey =
+        booleanPreferencesKey(KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED)
 
-    override suspend fun saveDownloadWifiOnly(enabled: Boolean) {
+    override suspend fun saveWifiOnlyDownloadsEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
-            it[downloadWifiOnlyKey] = enabled
+            it[wifiOnlyDownloadsEnabledKey] = enabled
         }
     }
 
-    override fun getDownloadWifiOnlyAsFlow(): Flow<Boolean> {
+    override fun getWifiOnlyDownloadsEnabledAsFlow(): Flow<Boolean> {
         return preferencesDataStore.data.map {
-            it[downloadWifiOnlyKey] ?: DEFAULT_VALUE_DOWNLOAD_WIFI_ONLY
+            it[wifiOnlyDownloadsEnabledKey] ?: DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED
         }
     }
 
-    override suspend fun saveAutomaticDuplicateDownloadDeletion(enabled: Boolean) {
+    override suspend fun saveAutomaticDuplicateDownloadDeletionEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
-            it[automaticDuplicateDownloadDeletionKey] = enabled
+            it[automaticDuplicateDownloadDeletionEnabledKey] = enabled
         }
     }
 
-    override fun getAutomaticDuplicateDownloadDeletionAsFlow(): Flow<Boolean> {
+    override fun getAutomaticDuplicateDownloadDeletionEnabledAsFlow(): Flow<Boolean> {
         return preferencesDataStore.data.map {
-            it[automaticDuplicateDownloadDeletionKey]
-                ?: DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION
+            it[automaticDuplicateDownloadDeletionEnabledKey]
+                ?: DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
         }
     }
 
-    override suspend fun saveUseCookies(enabled: Boolean) {
+    override suspend fun saveCookiesEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
-            it[useCookiesKey] = enabled
+            it[cookiesEnabledKey] = enabled
         }
     }
 
-    override fun getUseCookiesAsFlow(): Flow<Boolean> {
+    override fun getCookiesEnabledAsFlow(): Flow<Boolean> {
         return preferencesDataStore.data.map {
-            it[useCookiesKey] ?: DEFAULT_VALUE_USE_COOKIES
+            it[cookiesEnabledKey] ?: DEFAULT_VALUE_COOKIES_ENABLED
         }
     }
 
@@ -112,27 +112,28 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveAutomaticUpdates(enabled: Boolean) {
+    override suspend fun saveAutomaticAppUpdatesEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
-            it[automaticUpdatesKey] = enabled
+            it[automaticAppUpdatesEnabledKey] = enabled
         }
     }
 
-    override fun getAutomaticUpdatesAsFlow(): Flow<Boolean> {
+    override fun getAutomaticAppUpdatesEnabledAsFlow(): Flow<Boolean> {
         return preferencesDataStore.data.map {
-            it[automaticUpdatesKey] ?: DEFAULT_VALUE_AUTOMATIC_UPDATES
+            it[automaticAppUpdatesEnabledKey] ?: DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED
         }
     }
 
-    override suspend fun saveAutomaticDependencyUpdates(enabled: Boolean) {
+    override suspend fun saveAutomaticDependencyUpdatesEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
-            it[automaticDependencyUpdatesKey] = enabled
+            it[automaticDependencyUpdatesEnabledKey] = enabled
         }
     }
 
-    override fun getAutomaticDependencyUpdatesAsFlow(): Flow<Boolean> {
+    override fun getAutomaticDependencyUpdatesEnabledAsFlow(): Flow<Boolean> {
         return preferencesDataStore.data.map {
-            it[automaticDependencyUpdatesKey] ?: DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES
+            it[automaticDependencyUpdatesEnabledKey]
+                ?: DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
         }
     }
 }

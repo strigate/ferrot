@@ -1,5 +1,6 @@
 package org.strigate.ferrot.presentation.screen
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -35,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.copyToClipboard
+import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.presentation.component.Copyright
 import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
@@ -45,16 +47,13 @@ import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     modifier: Modifier = Modifier,
     viewModel: AboutViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val refineryDimens = LocalRefineryDimens.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-    val urlStrigate = stringResource(R.string.url_strigate)
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
@@ -73,13 +72,40 @@ fun AboutScreen(
                 }
 
                 is AboutEvent.OpenUrl -> {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, event.url.toUri())
-                    )
+                    try {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, event.url.toUri()),
+                        )
+                    } catch (_: ActivityNotFoundException) {
+                        context.toast(R.string.toast_unable_to_open_link)
+                    } catch (_: SecurityException) {
+                        context.toast(R.string.toast_unable_to_open_link)
+                    }
                 }
             }
         }
     }
+
+    AboutScreenContent(
+        onBackClick = { backDispatcher?.onBackPressed() },
+        onBuildClick = viewModel::onBuildClicked,
+        onUrlClick = viewModel::onUrlClicked,
+        onCopyText = context::copyToClipboard,
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun AboutScreenContent(
+    onBackClick: () -> Unit,
+    onBuildClick: () -> Unit,
+    onUrlClick: (String) -> Unit,
+    onCopyText: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+    val urlStrigate = stringResource(R.string.url_strigate)
 
     Scaffold(
         topBar = {
@@ -87,9 +113,7 @@ fun AboutScreen(
                 colors = RefineryTopAppBarDefaults.colors(),
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            backDispatcher?.onBackPressed()
-                        },
+                        onClick = onBackClick,
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -125,10 +149,10 @@ fun AboutScreen(
                             text = stringResource(R.string.settings_title_build),
                             description = BuildConfig.VERSION_NAME,
                             onLongClick = {
-                                context.copyToClipboard(BuildConfig.VERSION_NAME)
+                                onCopyText(BuildConfig.VERSION_NAME)
                             },
                         ) {
-                            viewModel.onBuildClicked()
+                            onBuildClick()
                         }
                     }
                     Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
@@ -144,37 +168,37 @@ fun AboutScreen(
                             text = stringResource(R.string.settings_title_website),
                             description = stringResource(R.string.settings_description_website),
                             onLongClick = {
-                                context.copyToClipboard(urlWebsite)
+                                onCopyText(urlWebsite)
                             },
                         ) {
-                            viewModel.onUrlClicked(urlWebsite)
+                            onUrlClick(urlWebsite)
                         }
                         TextSetting(
                             text = stringResource(R.string.settings_title_github),
                             description = stringResource(R.string.settings_description_github),
                             onLongClick = {
-                                context.copyToClipboard(urlGitHub)
+                                onCopyText(urlGitHub)
                             },
                         ) {
-                            viewModel.onUrlClicked(urlGitHub)
+                            onUrlClick(urlGitHub)
                         }
                         TextSetting(
                             text = stringResource(R.string.settings_title_privacy),
                             description = stringResource(R.string.settings_description_privacy),
                             onLongClick = {
-                                context.copyToClipboard(urlPrivacy)
+                                onCopyText(urlPrivacy)
                             },
                         ) {
-                            viewModel.onUrlClicked(urlPrivacy)
+                            onUrlClick(urlPrivacy)
                         }
                         TextSetting(
                             text = stringResource(R.string.settings_title_license),
                             description = stringResource(R.string.settings_description_license),
                             onLongClick = {
-                                context.copyToClipboard(urlLicense)
+                                onCopyText(urlLicense)
                             },
                         ) {
-                            viewModel.onUrlClicked(urlLicense)
+                            onUrlClick(urlLicense)
                         }
                     }
                     Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
@@ -187,14 +211,14 @@ fun AboutScreen(
                                     painter = painterResource(R.drawable.ic_github),
                                     contentDescription = stringResource(R.string.content_description_github),
                                     onClick = {
-                                        viewModel.onUrlClicked(urlGitHubStrigate)
+                                        onUrlClick(urlGitHubStrigate)
                                     },
                                 ),
                                 SettingsIconRowItem(
                                     painter = painterResource(R.drawable.ic_x),
                                     contentDescription = stringResource(R.string.content_description_x),
                                     onClick = {
-                                        viewModel.onUrlClicked(urlX)
+                                        onUrlClick(urlX)
                                     },
                                 ),
                             ),
@@ -204,7 +228,7 @@ fun AboutScreen(
                         modifier = Modifier
                             .fillMaxWidth(),
                         onLogoClick = {
-                            viewModel.onUrlClicked(urlStrigate)
+                            onUrlClick(urlStrigate)
                         },
                     )
                 }

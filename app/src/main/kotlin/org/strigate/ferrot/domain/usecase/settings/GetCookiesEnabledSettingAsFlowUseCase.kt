@@ -1,12 +1,13 @@
 package org.strigate.ferrot.domain.usecase.settings
 
+import kotlinx.coroutines.flow.Flow
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import javax.inject.Inject
 
-class SaveAutomaticDependencyUpdatesSettingUseCase @Inject constructor(
+class GetCookiesEnabledSettingAsFlowUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) {
-    suspend operator fun invoke(enabled: Boolean) {
-        settingsRepository.saveAutomaticDependencyUpdates(enabled)
+    operator fun invoke(): Flow<Boolean> {
+        return settingsRepository.getCookiesEnabledAsFlow()
     }
 }

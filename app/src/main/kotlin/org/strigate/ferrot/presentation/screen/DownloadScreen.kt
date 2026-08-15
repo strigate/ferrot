@@ -76,7 +76,6 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -104,7 +103,6 @@ import org.strigate.refinery.theme.LocalRefineryDimens
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadScreen(
     navController: NavController,
@@ -113,6 +111,7 @@ fun DownloadScreen(
 ) {
     val view = LocalView.current
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
@@ -158,22 +157,83 @@ fun DownloadScreen(
         }
     }
 
-    if (showConfirmDeleteDialog.value) {
+    DownloadScreenContent(
+        state = DownloadScreenContentState(
+            uiState = uiState,
+            selectedId = selectedId,
+            selectedMedia = selectedMedia,
+            selectedPageData = selectedPageData,
+            showConfirmDeleteDialog = showConfirmDeleteDialog.value,
+        ),
+        pageDataForId = { downloadId ->
+            val pageData by remember(downloadId) {
+                viewModel.getDownloadPageUiData(downloadId)
+            }.collectAsStateWithLifecycle(initialValue = null)
+            pageData
+        },
+        onBackClick = onNavigateBack,
+        onMarkUnseen = viewModel::markUnseenAndNavigateBack,
+        onUpdateArchived = viewModel::updateArchived,
+        onShowDeleteConfirmation = { showConfirmDeleteDialog.value = true },
+        onDeleteConfirmed = {
+            viewModel.deleteDownload()
+            showConfirmDeleteDialog.value = false
+        },
+        onDeleteDismissed = { showConfirmDeleteDialog.value = false },
+        onEnsureDefaults = viewModel::setDefaultsForIds,
+        onDownloadPageSelected = viewModel::selectDownload,
+        onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
+        onSelectedMedia = { downloadId, mediaType ->
+            viewModel.setSelectedMedia(mediaType, downloadId)
+        },
+        onPlayClick = viewModel::playDownload,
+        onSaveClick = viewModel::saveDownload,
+        onShareClick = viewModel::shareDownload,
+        onRetryClick = { downloadId ->
+            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+            viewModel.retryDownload(downloadId)
+        },
+        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
+        onUrlClick = uriHandler::openUri,
+        onCopyText = context::copyToClipboard,
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DownloadScreenContent(
+    state: DownloadScreenContentState,
+    pageDataForId: @Composable (Long) -> DownloadPageUiData?,
+    onBackClick: () -> Unit,
+    onMarkUnseen: () -> Unit,
+    onUpdateArchived: (Boolean) -> Unit,
+    onShowDeleteConfirmation: () -> Unit,
+    onDeleteConfirmed: () -> Unit,
+    onDeleteDismissed: () -> Unit,
+    onEnsureDefaults: (List<Long>) -> Unit,
+    onDownloadPageSelected: (Long) -> Unit,
+    onVisibleCompletedUnseenDownload: (Long) -> Unit,
+    onSelectedMedia: (Long, DownloadMediaType) -> Unit,
+    onPlayClick: (Long) -> Unit,
+    onSaveClick: (Long) -> Unit,
+    onShareClick: (Long) -> Unit,
+    onRetryClick: (Long) -> Unit,
+    onRefreshMetadataClick: (Long) -> Unit,
+    onUrlClick: (String) -> Unit,
+    onCopyText: (String, String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (state.showConfirmDeleteDialog) {
         ConfirmDialog(
             title = stringResource(R.string.confirm_dialog_delete_download_title),
             message = stringResource(R.string.confirm_dialog_delete_download_description),
             positiveButtonText = stringResource(R.string.yes),
-            onPositiveClick = {
-                viewModel.deleteDownload()
-                showConfirmDeleteDialog.value = false
-            },
+            isDestructive = true,
+            onPositiveClick = onDeleteConfirmed,
             negativeButtonText = stringResource(R.string.no),
-            onNegativeClick = {
-                showConfirmDeleteDialog.value = false
-            },
-            onDismissRequest = {
-                showConfirmDeleteDialog.value = false
-            },
+            onNegativeClick = onDeleteDismissed,
+            onDismissRequest = onDeleteDismissed,
         )
     }
 
@@ -185,7 +245,7 @@ fun DownloadScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            onNavigateBack()
+                            onBackClick()
                         },
                     ) {
                         Icon(
@@ -196,7 +256,7 @@ fun DownloadScreen(
                 },
                 title = {
                     Text(
-                        text = if (selectedPageData?.archived == true) {
+                        text = if (state.selectedPageData?.archived == true) {
                             stringResource(R.string.screen_title_archived_download)
                         } else {
                             stringResource(R.string.screen_title_download)
@@ -206,7 +266,7 @@ fun DownloadScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            viewModel.markUnseenAndNavigateBack()
+                            onMarkUnseen()
                         },
                     ) {
                         Icon(
@@ -216,17 +276,17 @@ fun DownloadScreen(
                     }
                     IconButton(
                         onClick = {
-                            val archived = selectedPageData?.archived ?: false
-                            viewModel.updateArchived(archived = !archived)
+                            val archived = state.selectedPageData?.archived ?: false
+                            onUpdateArchived(!archived)
                         },
                     ) {
                         Icon(
-                            imageVector = if (selectedPageData?.archived == true) {
+                            imageVector = if (state.selectedPageData?.archived == true) {
                                 Icons.Filled.Unarchive
                             } else {
                                 Icons.Filled.Archive
                             },
-                            contentDescription = if (selectedPageData?.archived == true) {
+                            contentDescription = if (state.selectedPageData?.archived == true) {
                                 stringResource(R.string.content_description_unarchive)
                             } else {
                                 stringResource(R.string.content_description_archive)
@@ -235,7 +295,7 @@ fun DownloadScreen(
                     }
                     IconButton(
                         onClick = {
-                            showConfirmDeleteDialog.value = true
+                            onShowDeleteConfirmation()
                         },
                     ) {
                         Icon(
@@ -248,7 +308,7 @@ fun DownloadScreen(
         },
         content = { contentPadding ->
             val dimens = LocalDimens.current
-            when (val state = uiState) {
+            when (val uiState = state.uiState) {
                 is DownloadUiState.Loading -> {
                     LoadingState(
                         modifier = modifier
@@ -265,24 +325,21 @@ fun DownloadScreen(
                         modifier = modifier
                             .padding(contentPadding)
                             .fillMaxSize(),
-                        data = state.data,
-                        pageDataForId = viewModel::getDownloadPageUiData,
-                        selectedId = selectedId,
-                        selectedMedia = selectedMedia,
-                        onEnsureDefaults = viewModel::setDefaultsForIds,
-                        onDownloadPageSelected = viewModel::selectDownload,
-                        onVisibleCompletedUnseenDownload = viewModel::markSeenIfCompleted,
-                        onSelectedMedia = { downloadId, type ->
-                            viewModel.setSelectedMedia(type, downloadId)
-                        },
-                        onPlayClick = viewModel::playDownload,
-                        onSaveClick = viewModel::saveDownload,
-                        onShareClick = viewModel::shareDownload,
-                        onRetryClick = { downloadId ->
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                            viewModel.retryDownload(downloadId)
-                        },
-                        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
+                        data = uiState.data,
+                        pageDataForId = pageDataForId,
+                        selectedId = state.selectedId,
+                        selectedMedia = state.selectedMedia,
+                        onEnsureDefaults = onEnsureDefaults,
+                        onDownloadPageSelected = onDownloadPageSelected,
+                        onVisibleCompletedUnseenDownload = onVisibleCompletedUnseenDownload,
+                        onSelectedMedia = onSelectedMedia,
+                        onPlayClick = onPlayClick,
+                        onSaveClick = onSaveClick,
+                        onShareClick = onShareClick,
+                        onRetryClick = onRetryClick,
+                        onRefreshMetadataClick = onRefreshMetadataClick,
+                        onUrlClick = onUrlClick,
+                        onCopyText = onCopyText,
                         pagePadding = PaddingValues(
                             horizontal = peekPadding,
                             vertical = dimens.zero,
@@ -329,7 +386,7 @@ private fun navigateBackToParent(
 private fun DownloadPager(
     modifier: Modifier = Modifier,
     data: DownloadUiData,
-    pageDataForId: (Long) -> Flow<DownloadPageUiData?>,
+    pageDataForId: @Composable (Long) -> DownloadPageUiData?,
     selectedId: Long?,
     selectedMedia: DownloadMediaType,
     onEnsureDefaults: (List<Long>) -> Unit,
@@ -341,6 +398,8 @@ private fun DownloadPager(
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
     onRefreshMetadataClick: (Long) -> Unit,
+    onUrlClick: (String) -> Unit,
+    onCopyText: (String, String) -> Unit,
     pagePadding: PaddingValues,
     pageSpacing: Dp,
 ) {
@@ -392,9 +451,7 @@ private fun DownloadPager(
         ) { page ->
             val downloadId = downloadIds[page]
             val isCurrentPage = pagerState.currentPage == page
-            val pageData by remember(downloadId) {
-                pageDataForId(downloadId)
-            }.collectAsStateWithLifecycle(initialValue = null)
+            val pageData = pageDataForId(downloadId)
 
             Surface(
                 modifier = Modifier
@@ -432,6 +489,8 @@ private fun DownloadPager(
                         onRefreshMetadataClick = {
                             onRefreshMetadataClick(download.id)
                         },
+                        onUrlClick = onUrlClick,
+                        onCopyText = onCopyText,
                     )
                 } ?: LoadingState(
                     modifier = Modifier
@@ -456,6 +515,8 @@ private fun DownloadPageContent(
     onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
     onRefreshMetadataClick: () -> Unit,
+    onUrlClick: (String) -> Unit,
+    onCopyText: (String, String) -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
     val dimens = LocalDimens.current
@@ -593,6 +654,8 @@ private fun DownloadPageContent(
                     isCopyable = true,
                     isUrl = true,
                     value = url,
+                    onUrlClick = onUrlClick,
+                    onCopyText = onCopyText,
                 )
                 val selectedName = when (selectedMedia) {
                     DownloadMediaType.VIDEO -> video?.fileName
@@ -852,10 +915,10 @@ private fun MetaItem(
     modifier: Modifier = Modifier,
     isCopyable: Boolean = false,
     isUrl: Boolean = false,
+    onUrlClick: (String) -> Unit = {},
+    onCopyText: (String, String) -> Unit = { _, _ -> },
 ) {
     val dimens = LocalDimens.current
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
     Row(
         modifier = modifier
             .fillMaxWidth(),
@@ -880,7 +943,7 @@ private fun MetaItem(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = LocalIndication.current,
                         ) {
-                            uriHandler.openUri(value)
+                            onUrlClick(value)
                         },
                     style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.Underline,
@@ -903,7 +966,7 @@ private fun MetaItem(
                 enabled = true,
                 imageVector = Icons.Filled.ContentCopy,
                 onClick = {
-                    context.copyToClipboard(value, label)
+                    onCopyText(value, label)
                 },
                 contentDescription = stringResource(R.string.content_description_copy_to_clipboard),
             )
@@ -922,3 +985,11 @@ private fun DownloadError(
         text = stringResource(R.string.error_failed_to_load_download),
     )
 }
+
+internal data class DownloadScreenContentState(
+    val uiState: DownloadUiState,
+    val selectedId: Long?,
+    val selectedMedia: DownloadMediaType,
+    val selectedPageData: DownloadPageUiData?,
+    val showConfirmDeleteDialog: Boolean,
+)

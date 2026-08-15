@@ -42,11 +42,11 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 Log.d(LOG_TAG, "Boot completed received")
 
                 RequeueResumableDownloadsWorker.enqueueOneTime(context)
-                val automaticDuplicateDownloadDeletionSetting = settingsUseCase
-                    .getAutomaticDuplicateDownloadDeletionSettingAsFlowUseCase()
+                val automaticDuplicateDownloadDeletionEnabled = settingsUseCase
+                    .getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase()
                     .first()
 
-                if (automaticDuplicateDownloadDeletionSetting) {
+                if (automaticDuplicateDownloadDeletionEnabled) {
                     DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(context)
                 }
             }

@@ -30,19 +30,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.DpOffset
 import org.strigate.refinery.theme.LocalRefineryDimens
 
-data class DropdownSettingOption(
-    val id: String,
-    val text: String,
-)
-
 @Composable
-fun DropdownSetting(
+fun <T> DropdownSetting(
     text: String,
-    selectedText: String,
-    options: List<DropdownSettingOption>,
+    selectedOption: T,
+    options: List<T>,
+    optionText: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     description: String? = null,
-    onOptionSelected: (DropdownSettingOption) -> Unit,
+    onOptionSelected: (T) -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
 
@@ -115,7 +111,7 @@ fun DropdownSetting(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = selectedText,
+                                text = optionText(selectedOption),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = chipTextColor,
                             )
@@ -136,8 +132,7 @@ fun DropdownSetting(
                             },
                             items = options.map { option ->
                                 SettingsDropdownMenuItem(
-                                    id = option.id,
-                                    text = option.text,
+                                    text = optionText(option),
                                     onClick = {
                                         onOptionSelected(option)
                                     },

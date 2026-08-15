@@ -16,8 +16,8 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdateWorkUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdateWorkUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.RequestAppUpdateCheckUseCase
 import org.strigate.ferrot.domain.usecase.dependencyupdate.RequestDependencyUpdateCheckUseCase
 import org.strigate.ferrot.presentation.event.UpdatesEvent
@@ -31,9 +31,9 @@ import javax.inject.Inject
 class UpdatesViewModel @Inject constructor(
     private val analyticsLogger: AnalyticsLogger,
     private val settingsUseCase: SettingsUseCase,
-    private val configureAutomaticAppUpdatesSettingUseCase: ConfigureAutomaticAppUpdatesSettingUseCase,
+    private val configureAutomaticAppUpdateWorkUseCase: ConfigureAutomaticAppUpdateWorkUseCase,
     private val requestAppUpdateCheckUseCase: RequestAppUpdateCheckUseCase,
-    private val configureAutomaticDependencyUpdatesSettingUseCase: ConfigureAutomaticDependencyUpdatesSettingUseCase,
+    private val configureAutomaticDependencyUpdateWorkUseCase: ConfigureAutomaticDependencyUpdateWorkUseCase,
     private val requestDependencyUpdateCheckUseCase: RequestDependencyUpdateCheckUseCase,
     private val stateUseCase: StateUseCase,
 ) : ViewModel() {
@@ -48,16 +48,19 @@ class UpdatesViewModel @Inject constructor(
 
     private fun getUiState(): Flow<UpdatesUiState> {
         return combine(
-            settingsUseCase.getAutomaticUpdatesSettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase(),
+            settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase(),
             stateUseCase.getLastAvailableUpdateCheckMillisUseCase(),
             stateUseCase.getLastDependencyUpdateCheckMillisUseCase(),
-        ) { automaticUpdates, automaticDependencyUpdates, lastAvailableUpdateCheckMillis, lastDependencyUpdateCheckMillis ->
+        ) { automaticAppUpdatesEnabled,
+            automaticDependencyUpdatesEnabled,
+            lastAvailableUpdateCheckMillis,
+            lastDependencyUpdateCheckMillis ->
             UpdatesUiState.Data(
                 UpdatesUiData(
                     settings = UpdatesSettingsUiData(
-                        automaticUpdates = automaticUpdates,
-                        automaticDependencyUpdates = automaticDependencyUpdates,
+                        automaticAppUpdatesEnabled = automaticAppUpdatesEnabled,
+                        automaticDependencyUpdatesEnabled = automaticDependencyUpdatesEnabled,
                     ),
                     info = UpdatesInfoUiData(
                         lastAvailableUpdateCheckMillis = lastAvailableUpdateCheckMillis,
@@ -70,10 +73,10 @@ class UpdatesViewModel @Inject constructor(
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.UPDATES)
 
-    fun setAutomaticUpdates(enabled: Boolean) {
+    fun setAutomaticAppUpdatesEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveAutomaticUpdatesSettingUseCase(enabled)
-            configureAutomaticAppUpdatesSettingUseCase(enabled)
+            settingsUseCase.saveAutomaticAppUpdatesEnabledSettingUseCase(enabled)
+            configureAutomaticAppUpdateWorkUseCase(enabled)
         }
     }
 
@@ -84,10 +87,10 @@ class UpdatesViewModel @Inject constructor(
         }
     }
 
-    fun setAutomaticDependencyUpdates(enabled: Boolean) {
+    fun setAutomaticDependencyUpdatesEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveAutomaticDependencyUpdatesSettingUseCase(enabled)
-            configureAutomaticDependencyUpdatesSettingUseCase(enabled)
+            settingsUseCase.saveAutomaticDependencyUpdatesEnabledSettingUseCase(enabled)
+            configureAutomaticDependencyUpdateWorkUseCase(enabled)
         }
     }
 

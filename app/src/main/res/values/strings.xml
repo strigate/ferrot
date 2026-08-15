@@ -121,6 +121,7 @@
     <string name="toast_cookie_set_failed">Could not save cookies</string>
     <string name="toast_cookie_set_preview_failed">Could not load cookies</string>
     <string name="toast_cookie_webview_invalid_url">Enter a valid site URL</string>
+    <string name="toast_unable_to_open_link">Unable to open link</string>
 
     <!-- Settings: sections -->
     <string name="settings_section_general">General</string>
@@ -142,12 +143,9 @@
     <string name="settings_title_use_cookies">Use cookies</string>
     <string name="settings_title_swipe_left">Swipe left</string>
     <string name="settings_title_swipe_right">Swipe right</string>
-    <string name="settings_title_automatic_app_updates">Automatic app updates</string>
-    <string name="settings_title_check_for_app_updates">Check for app updates</string>
-    <string name="settings_title_last_checked_for_app_updates">Last checked for app updates</string>
-    <string name="settings_title_automatic_dependency_updates">Automatic dependency updates</string>
-    <string name="settings_title_check_dependencies_now">Check now</string>
-    <string name="settings_title_last_checked_for_dependency_updates">Last checked for dependency updates</string>
+    <string name="settings_title_automatic_updates">Automatic updates</string>
+    <string name="settings_title_check_now">Check now</string>
+    <string name="settings_title_last_checked">Last checked</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_website">Website</string>
     <string name="settings_title_privacy">Privacy</string>

@@ -23,14 +23,14 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticAppUpdateWorkUseCase
+import org.strigate.ferrot.domain.usecase.apply.ConfigureAutomaticDependencyUpdateWorkUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.RequestAppUpdateCheckUseCase
 import org.strigate.ferrot.domain.usecase.dependencyupdate.RequestDependencyUpdateCheckUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetAutomaticUpdatesSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticUpdatesSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticAppUpdatesEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.state.GetLastAvailableUpdateCheckMillisUseCase
 import org.strigate.ferrot.domain.usecase.state.GetLastDependencyUpdateCheckMillisUseCase
 import org.strigate.ferrot.presentation.state.UpdatesUiState
@@ -55,16 +55,16 @@ class UpdatesViewModelTest {
     private lateinit var stateUseCase: StateUseCase
 
     @Mock
-    private lateinit var saveAutomaticUpdatesSettingUseCase: SaveAutomaticUpdatesSettingUseCase
+    private lateinit var saveAutomaticAppUpdatesEnabledSettingUseCase: SaveAutomaticAppUpdatesEnabledSettingUseCase
 
     @Mock
-    private lateinit var saveAutomaticDependencyUpdatesSettingUseCase: SaveAutomaticDependencyUpdatesSettingUseCase
+    private lateinit var saveAutomaticDependencyUpdatesEnabledSettingUseCase: SaveAutomaticDependencyUpdatesEnabledSettingUseCase
 
     @Mock
-    private lateinit var configureAutomaticAppUpdatesSettingUseCase: ConfigureAutomaticAppUpdatesSettingUseCase
+    private lateinit var configureAutomaticAppUpdateWorkUseCase: ConfigureAutomaticAppUpdateWorkUseCase
 
     @Mock
-    private lateinit var configureAutomaticDependencyUpdatesSettingUseCase: ConfigureAutomaticDependencyUpdatesSettingUseCase
+    private lateinit var configureAutomaticDependencyUpdateWorkUseCase: ConfigureAutomaticDependencyUpdateWorkUseCase
 
     @Mock
     private lateinit var requestAppUpdateCheckUseCase: RequestAppUpdateCheckUseCase
@@ -73,10 +73,10 @@ class UpdatesViewModelTest {
     private lateinit var requestDependencyUpdateCheckUseCase: RequestDependencyUpdateCheckUseCase
 
     @Mock
-    private lateinit var getAutomaticUpdatesSettingAsFlowUseCase: GetAutomaticUpdatesSettingAsFlowUseCase
+    private lateinit var getAutomaticAppUpdatesEnabledSettingAsFlowUseCase: GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase
 
     @Mock
-    private lateinit var getAutomaticDependencyUpdatesSettingAsFlowUseCase: GetAutomaticDependencyUpdatesSettingAsFlowUseCase
+    private lateinit var getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase: GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
 
     @Mock
     private lateinit var getLastAvailableUpdateCheckMillisUseCase: GetLastAvailableUpdateCheckMillisUseCase
@@ -91,13 +91,13 @@ class UpdatesViewModelTest {
 
     @Test
     fun uiState_exposesMappedSettingsAndInfo() = runTest(testDispatcher) {
-        val automaticUpdatesFlow = MutableStateFlow(true)
-        val automaticDependencyUpdatesFlow = MutableStateFlow(false)
+        val automaticAppUpdatesEnabledFlow = MutableStateFlow(true)
+        val automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false)
         val lastAvailableCheckFlow = MutableStateFlow(123L)
         val lastDependencyCheckFlow = MutableStateFlow(456L)
         val viewModel = createViewModel(
-            automaticUpdatesFlow = automaticUpdatesFlow,
-            automaticDependencyUpdatesFlow = automaticDependencyUpdatesFlow,
+            automaticAppUpdatesEnabledFlow = automaticAppUpdatesEnabledFlow,
+            automaticDependencyUpdatesEnabledFlow = automaticDependencyUpdatesEnabledFlow,
             lastAvailableCheckFlow = lastAvailableCheckFlow,
             lastDependencyCheckFlow = lastDependencyCheckFlow,
         )
@@ -108,8 +108,8 @@ class UpdatesViewModelTest {
         waitForUiState(viewModel) { it is UpdatesUiState.Data }
 
         val state = viewModel.uiState.value as UpdatesUiState.Data
-        assertEquals(true, state.data.settings.automaticUpdates)
-        assertEquals(false, state.data.settings.automaticDependencyUpdates)
+        assertEquals(true, state.data.settings.automaticAppUpdatesEnabled)
+        assertEquals(false, state.data.settings.automaticDependencyUpdatesEnabled)
         assertEquals(123L, state.data.info.lastAvailableUpdateCheckMillis)
         assertEquals(456L, state.data.info.lastDependencyUpdateCheckMillis)
 
@@ -119,8 +119,8 @@ class UpdatesViewModelTest {
     @Test
     fun logShown_logsUpdatesScreen() {
         val viewModel = createViewModel(
-            automaticUpdatesFlow = MutableStateFlow(false),
-            automaticDependencyUpdatesFlow = MutableStateFlow(false),
+            automaticAppUpdatesEnabledFlow = MutableStateFlow(false),
+            automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
             lastAvailableCheckFlow = MutableStateFlow(0L),
             lastDependencyCheckFlow = MutableStateFlow(0L),
         )
@@ -132,46 +132,47 @@ class UpdatesViewModelTest {
     }
 
     @Test
-    fun setAutomaticUpdates_savesSetting_andAppliesSchedule() = runTest(testDispatcher) {
+    fun setAutomaticAppUpdatesEnabled_savesSetting_andAppliesSchedule() = runTest(testDispatcher) {
         val viewModel = createViewModel(
-            automaticUpdatesFlow = MutableStateFlow(false),
-            automaticDependencyUpdatesFlow = MutableStateFlow(false),
+            automaticAppUpdatesEnabledFlow = MutableStateFlow(false),
+            automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
             lastAvailableCheckFlow = MutableStateFlow(0L),
             lastDependencyCheckFlow = MutableStateFlow(0L),
         )
 
-        viewModel.setAutomaticUpdates(true)
+        viewModel.setAutomaticAppUpdatesEnabled(true)
         advanceUntilIdle()
 
-        verify(saveAutomaticUpdatesSettingUseCase)
+        verify(saveAutomaticAppUpdatesEnabledSettingUseCase)
             .invoke(true)
-        verify(configureAutomaticAppUpdatesSettingUseCase)
+        verify(configureAutomaticAppUpdateWorkUseCase)
             .invoke(true)
     }
 
     @Test
-    fun setAutomaticDependencyUpdates_savesSetting_andAppliesSchedule() = runTest(testDispatcher) {
-        val viewModel = createViewModel(
-            automaticUpdatesFlow = MutableStateFlow(false),
-            automaticDependencyUpdatesFlow = MutableStateFlow(false),
-            lastAvailableCheckFlow = MutableStateFlow(0L),
-            lastDependencyCheckFlow = MutableStateFlow(0L),
-        )
+    fun setAutomaticDependencyUpdatesEnabled_savesSetting_andAppliesSchedule() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel(
+                automaticAppUpdatesEnabledFlow = MutableStateFlow(false),
+                automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
+                lastAvailableCheckFlow = MutableStateFlow(0L),
+                lastDependencyCheckFlow = MutableStateFlow(0L),
+            )
 
-        viewModel.setAutomaticDependencyUpdates(true)
-        advanceUntilIdle()
+            viewModel.setAutomaticDependencyUpdatesEnabled(true)
+            advanceUntilIdle()
 
-        verify(saveAutomaticDependencyUpdatesSettingUseCase)
-            .invoke(true)
-        verify(configureAutomaticDependencyUpdatesSettingUseCase)
-            .invoke(true)
-    }
+            verify(saveAutomaticDependencyUpdatesEnabledSettingUseCase)
+                .invoke(true)
+            verify(configureAutomaticDependencyUpdateWorkUseCase)
+                .invoke(true)
+        }
 
     @Test
     fun checkForAvailableUpdate_requestsCheck() = runTest(testDispatcher) {
         val viewModel = createViewModel(
-            automaticUpdatesFlow = MutableStateFlow(false),
-            automaticDependencyUpdatesFlow = MutableStateFlow(false),
+            automaticAppUpdatesEnabledFlow = MutableStateFlow(false),
+            automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
             lastAvailableCheckFlow = MutableStateFlow(0L),
             lastDependencyCheckFlow = MutableStateFlow(0L),
         )
@@ -191,8 +192,8 @@ class UpdatesViewModelTest {
     @Test
     fun checkForDependencyUpdates_requestsCheck() = runTest(testDispatcher) {
         val viewModel = createViewModel(
-            automaticUpdatesFlow = MutableStateFlow(false),
-            automaticDependencyUpdatesFlow = MutableStateFlow(false),
+            automaticAppUpdatesEnabledFlow = MutableStateFlow(false),
+            automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
             lastAvailableCheckFlow = MutableStateFlow(0L),
             lastDependencyCheckFlow = MutableStateFlow(0L),
         )
@@ -215,36 +216,37 @@ class UpdatesViewModelTest {
     }
 
     private fun createViewModel(
-        automaticUpdatesFlow: MutableStateFlow<Boolean>,
-        automaticDependencyUpdatesFlow: MutableStateFlow<Boolean>,
+        automaticAppUpdatesEnabledFlow: MutableStateFlow<Boolean>,
+        automaticDependencyUpdatesEnabledFlow: MutableStateFlow<Boolean>,
         lastAvailableCheckFlow: MutableStateFlow<Long>,
         lastDependencyCheckFlow: MutableStateFlow<Long>,
     ): UpdatesViewModel {
-        `when`(getAutomaticUpdatesSettingAsFlowUseCase.invoke())
-            .thenReturn(automaticUpdatesFlow)
-        `when`(getAutomaticDependencyUpdatesSettingAsFlowUseCase.invoke())
-            .thenReturn(automaticDependencyUpdatesFlow)
+        `when`(getAutomaticAppUpdatesEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(automaticAppUpdatesEnabledFlow)
+        `when`(getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(automaticDependencyUpdatesEnabledFlow)
         `when`(getLastAvailableUpdateCheckMillisUseCase.invoke())
             .thenReturn(lastAvailableCheckFlow)
         `when`(getLastDependencyUpdateCheckMillisUseCase.invoke())
             .thenReturn(lastDependencyCheckFlow)
-        `when`(settingsUseCase.saveAutomaticUpdatesSettingUseCase)
-            .thenReturn(saveAutomaticUpdatesSettingUseCase)
-        `when`(settingsUseCase.saveAutomaticDependencyUpdatesSettingUseCase)
-            .thenReturn(saveAutomaticDependencyUpdatesSettingUseCase)
-        `when`(settingsUseCase.getAutomaticUpdatesSettingAsFlowUseCase)
-            .thenReturn(getAutomaticUpdatesSettingAsFlowUseCase)
-        `when`(settingsUseCase.getAutomaticDependencyUpdatesSettingAsFlowUseCase)
-            .thenReturn(getAutomaticDependencyUpdatesSettingAsFlowUseCase)
+        `when`(settingsUseCase.saveAutomaticAppUpdatesEnabledSettingUseCase)
+            .thenReturn(saveAutomaticAppUpdatesEnabledSettingUseCase)
+        `when`(settingsUseCase.saveAutomaticDependencyUpdatesEnabledSettingUseCase)
+            .thenReturn(saveAutomaticDependencyUpdatesEnabledSettingUseCase)
+        `when`(settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticAppUpdatesEnabledSettingAsFlowUseCase)
+        `when`(settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase)
         `when`(stateUseCase.getLastAvailableUpdateCheckMillisUseCase)
             .thenReturn(getLastAvailableUpdateCheckMillisUseCase)
         `when`(stateUseCase.getLastDependencyUpdateCheckMillisUseCase)
             .thenReturn(getLastDependencyUpdateCheckMillisUseCase)
+
         return UpdatesViewModel(
             analyticsLogger = analyticsLogger,
             settingsUseCase = settingsUseCase,
-            configureAutomaticAppUpdatesSettingUseCase = configureAutomaticAppUpdatesSettingUseCase,
-            configureAutomaticDependencyUpdatesSettingUseCase = configureAutomaticDependencyUpdatesSettingUseCase,
+            configureAutomaticAppUpdateWorkUseCase = configureAutomaticAppUpdateWorkUseCase,
+            configureAutomaticDependencyUpdateWorkUseCase = configureAutomaticDependencyUpdateWorkUseCase,
             requestAppUpdateCheckUseCase = requestAppUpdateCheckUseCase,
             requestDependencyUpdateCheckUseCase = requestDependencyUpdateCheckUseCase,
             stateUseCase = stateUseCase,
