@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.0 - 2026-08-15
+### Added
+- Theme outline colors for more consistent component styling
+
+### Changed
+- Highlighted destructive actions in confirmation dialogs
+- Aligned confirmation dialog title styling with the app typography
+- Made settings dropdowns type-safe and standardized Boolean setting terminology
+- Decoupled screen content from navigation and ViewModel dependencies
+- Centralized media file extension resolution and simplified selected media updates
+- Encapsulated the extended icon dependency in Refinery
+- Updated Compose, JSON, Android build, and Gradle dependencies
+
+### Fixed
+- Handled external link launch failures without crashing
+
 ## 1.10.0 - 2026-07-15
 ### Added
 - Opt-in cookie-set management with file import and embedded browser capture
