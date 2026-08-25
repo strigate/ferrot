@@ -23,7 +23,7 @@ coroutinesTest = "1.11.0"
 mockito = "5.23.0"
 byteBuddy = "1.18.12"
 json = "20260814"
-agp = "9.3.1"
+agp = "9.3.2"
 kotlin = "2.4.10"
 ksp = "2.3.10"
 
