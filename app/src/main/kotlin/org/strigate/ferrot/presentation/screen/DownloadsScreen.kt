@@ -3,28 +3,39 @@ package org.strigate.ferrot.presentation.screen
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Close
@@ -35,6 +46,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Unarchive
+import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
@@ -80,7 +92,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -88,6 +103,10 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -119,12 +138,19 @@ import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
 import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
 private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 private const val SNAP_BACK_SWIPE_THRESHOLD_RATIO = 0.3f
 private const val DISMISS_SWIPE_THRESHOLD_RATIO = 0.5f
+private const val GRID_SWIPE_OFFSET_ANIMATION_MILLIS = 280
+private const val GRID_SWIPE_REMOVAL_DELAY_MILLIS = 357L
+private const val LIST_SWIPE_REMOVAL_DELAY_MILLIS = 120L
+
+private val DOWNLOAD_GRID_MIN_CELL_WIDTH = 160.dp
+private val GRID_SWIPE_VELOCITY_THRESHOLD = 125.dp
 
 @Composable
 fun DownloadsScreen(
@@ -185,6 +211,7 @@ fun DownloadsScreen(
         onToggleDownloadsSeen = viewModel::toggleDownloadsSeen,
         onRetryFailedDownloads = viewModel::retryFailedDownloads,
         onStopAllDownloads = viewModel::stopAllDownloads,
+        onToggleGridLayout = viewModel::toggleGridLayoutEnabled,
         modifier = modifier,
     )
 }
@@ -209,16 +236,15 @@ internal fun DownloadsScreenContent(
     onToggleDownloadsSeen: (Set<Long>) -> Unit,
     onRetryFailedDownloads: () -> Unit,
     onStopAllDownloads: () -> Unit,
+    onToggleGridLayout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val lazyListState = rememberLazyListState()
-
+    val lazyGridState = rememberLazyGridState()
     val searchFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
-
     var searchActive by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var dismissingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
@@ -325,7 +351,10 @@ internal fun DownloadsScreenContent(
                 searchActive = searchActive,
                 searchQuery = searchQuery,
                 isArchived = isArchived,
-                lazyListState = lazyListState,
+                gridLayoutEnabled = (uiState as? DownloadsUiState.Data)
+                    ?.data
+                    ?.gridLayoutEnabled ?: false,
+                lazyGridState = lazyGridState,
                 searchFocusRequester = searchFocusRequester,
                 onSelectionChange = { selectedIds = it },
                 onDismissingIdsChange = { dismissingIds = it },
@@ -340,6 +369,7 @@ internal fun DownloadsScreenContent(
                 onUpdateDownloadsArchived = onUpdateDownloadsArchived,
                 onRetryFailedDownloads = onRetryFailedDownloads,
                 onStopAllDownloads = onStopAllDownloads,
+                onToggleGridLayout = onToggleGridLayout,
             )
         },
         snackbarHost = {
@@ -384,7 +414,7 @@ internal fun DownloadsScreenContent(
                                     onClick = { onInstallAvailableUpdate() },
                                 )
                             }
-                            DownloadsList(
+                            DownloadsContent(
                                 items = downloads,
                                 selectedIds = selectedIds,
                                 dismissingIds = dismissingIds,
@@ -395,7 +425,8 @@ internal fun DownloadsScreenContent(
                                 rightSwipeAction = rightSwipeAction,
                                 hasAvailableUpdateBanner = availableUpdate != null,
                                 searchQuery = searchQuery.text,
-                                lazyListState = lazyListState,
+                                gridLayoutEnabled = gridLayoutEnabled,
+                                lazyGridState = lazyGridState,
                                 onItemClick = { item ->
                                     if (pendingDeleteIds.isNotEmpty()) {
                                         onRequestDeletePendingDownloadsImmediate()
@@ -466,7 +497,8 @@ private fun DownloadsTopBar(
     searchActive: Boolean,
     searchQuery: TextFieldValue,
     isArchived: Boolean,
-    lazyListState: LazyListState,
+    gridLayoutEnabled: Boolean,
+    lazyGridState: LazyGridState,
     searchFocusRequester: FocusRequester,
     onSelectionChange: (Set<Long>) -> Unit,
     onDismissingIdsChange: (Set<Long>) -> Unit,
@@ -481,6 +513,7 @@ private fun DownloadsTopBar(
     onUpdateDownloadsArchived: (Set<Long>, Boolean) -> Unit,
     onRetryFailedDownloads: () -> Unit,
     onStopAllDownloads: () -> Unit,
+    onToggleGridLayout: () -> Unit,
 ) {
     val view = LocalView.current
     val dimens = LocalDimens.current
@@ -558,7 +591,7 @@ private fun DownloadsTopBar(
                     onClick = {
                         val visibleSelectedIds = getBulkDeleteVisibleIds(
                             selectedIds = selectedIds,
-                            visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
                         )
                         val hiddenSelectedIds = selectedIds - visibleSelectedIds
                         onArchivingIdsChange(archivingIds + visibleSelectedIds)
@@ -585,7 +618,7 @@ private fun DownloadsTopBar(
                     onClick = {
                         val visibleSelectedIds = getBulkDeleteVisibleIds(
                             selectedIds = selectedIds,
-                            visibleItemKeys = lazyListState.layoutInfo.visibleItemsInfo.map { it.key },
+                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
                         )
                         val hiddenSelectedIds = selectedIds - visibleSelectedIds
                         onDismissingIdsChange(dismissingIds + visibleSelectedIds)
@@ -642,7 +675,7 @@ private fun DownloadsTopBar(
                             modifier = Modifier
                                 .combinedClickable {
                                     coroutineScope.launch {
-                                        lazyListState.animateScrollToItem(0)
+                                        lazyGridState.animateScrollToItem(0)
                                     }
                                 },
                             color = MaterialTheme.colorScheme.onSurface,
@@ -709,6 +742,26 @@ private fun DownloadsTopBar(
                         contentDescription = null,
                     )
                 }
+                if (!searchActive) {
+                    IconButton(
+                        onClick = {
+                            onToggleGridLayout()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (gridLayoutEnabled) {
+                                Icons.AutoMirrored.Filled.ViewList
+                            } else {
+                                Icons.Filled.ViewModule
+                            },
+                            contentDescription = if (gridLayoutEnabled) {
+                                stringResource(R.string.content_description_use_list_layout)
+                            } else {
+                                stringResource(R.string.content_description_use_grid_layout)
+                            },
+                        )
+                    }
+                }
                 var menuExpanded by remember { mutableStateOf(false) }
                 IconButton(
                     onClick = {
@@ -765,7 +818,7 @@ private fun DownloadsTopBar(
                                 onRetryFailedDownloads()
                                 coroutineScope.launch {
                                     delay(RETRY_FAILED_SCROLL_DELAY_MILLIS.milliseconds)
-                                    lazyListState.animateScrollToItem(0)
+                                    lazyGridState.animateScrollToItem(0)
                                 }
                                 menuExpanded = false
                             },
@@ -885,7 +938,7 @@ private fun PendingDeleteSnackbarEffect(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DownloadsList(
+private fun DownloadsContent(
     items: List<DownloadItemUiData>,
     selectedIds: Set<Long>,
     dismissingIds: Set<Long>,
@@ -896,7 +949,8 @@ private fun DownloadsList(
     rightSwipeAction: DownloadSwipeActionUiData,
     hasAvailableUpdateBanner: Boolean,
     searchQuery: String,
-    lazyListState: LazyListState,
+    gridLayoutEnabled: Boolean,
+    lazyGridState: LazyGridState,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
@@ -908,17 +962,17 @@ private fun DownloadsList(
     val dimens = LocalDimens.current
 
     val coroutineScope = rememberCoroutineScope()
-    val itemIds = remember(items) {
-        items.map(DownloadItemUiData::id)
-    }
+    val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
+    val latestItemIds by rememberUpdatedState(itemIds)
     val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
     val swipeActionIds = remember { mutableStateMapOf<Long, DownloadSwipeActionUiData>() }
+    val delayedSwipeActionIds = remember { mutableStateMapOf<Long, Boolean>() }
     val showScrollToBottom by remember {
         derivedStateOf {
-            val layoutInfo = lazyListState.layoutInfo
+            val layoutInfo = lazyGridState.layoutInfo
             val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index
             val atBottom = lastVisibleIndex == layoutInfo.totalItemsCount - 1
-            !atBottom && (lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0)
+            !atBottom && (lazyGridState.firstVisibleItemIndex > 0 || lazyGridState.firstVisibleItemScrollOffset > 0)
         }
     }
     var previousItemIds by remember { mutableStateOf<List<Long>>(emptyList()) }
@@ -929,9 +983,10 @@ private fun DownloadsList(
         currentPendingDeleteIds = pendingDeleteIds,
     )
     val visibleCount = items.size
+
     LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
         if (hasNewVisibleItem(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
-            lazyListState.scrollToItem(0)
+            lazyGridState.scrollToItem(0)
         }
         previousItemIds = itemIds
         previousPendingDeleteIds = pendingDeleteIds
@@ -940,10 +995,10 @@ private fun DownloadsList(
         if (shouldScrollToTopOnRestore(
                 restoredItemIds = restoringItemIds,
                 currentItemIds = itemIds,
-                firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
+                firstVisibleItemIndex = lazyGridState.firstVisibleItemIndex,
             )
         ) {
-            lazyListState.scrollToItem(0)
+            lazyGridState.scrollToItem(0)
         }
     }
     Box(
@@ -976,15 +1031,27 @@ private fun DownloadsList(
                 )
             }
         }
-        LazyColumn(
+        LazyVerticalGrid(
             modifier = Modifier
                 .fillMaxSize(),
-            state = lazyListState,
+            columns = if (gridLayoutEnabled) {
+                GridCells.Adaptive(DOWNLOAD_GRID_MIN_CELL_WIDTH)
+            } else {
+                GridCells.Fixed(1)
+            },
+            state = lazyGridState,
             contentPadding = PaddingValues(
+                start = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
                 top = if (hasAvailableUpdateBanner) dimens.spacingXSmall else dimens.zero,
+                end = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
                 bottom = dimens.spacingXSmall,
             ),
-            verticalArrangement = Arrangement.spacedBy(dimens.spacingXXSmall),
+            horizontalArrangement = Arrangement.spacedBy(
+                dimens.spacingSmall,
+            ),
+            verticalArrangement = Arrangement.spacedBy(
+                if (gridLayoutEnabled) dimens.spacingSmall else dimens.spacingXXSmall,
+            ),
         ) {
             items(
                 items = items,
@@ -994,6 +1061,13 @@ private fun DownloadsList(
                     item = item,
                     selectedIds = selectedIds,
                     isRestoring = item.id in restoringItemIds,
+                    gridLayoutEnabled = gridLayoutEnabled,
+                    modifier = Modifier
+                        .animateItem(
+                            fadeInSpec = null,
+                            placementSpec = spring(),
+                            fadeOutSpec = null,
+                        ),
                     onItemClick = onItemClick,
                     onPauseResume = { clickedItem ->
                         if (selectedIds.isNotEmpty()) {
@@ -1004,15 +1078,16 @@ private fun DownloadsList(
                         onPauseResume(clickedItem)
                         if (shouldScrollToTop) {
                             coroutineScope.launch {
-                                lazyListState.animateScrollToItem(0)
+                                lazyGridState.animateScrollToItem(0)
                             }
                         }
                     },
                     onSelectionChange = onSelectionChange,
                     isPendingDismiss = animatingOutIds[item.id] == true
                             || item.id in dismissingIds
-                            || item.id in archivingIds
-                            || item.id in swipeActionIds,
+                            || item.id in archivingIds,
+                    isInteractionBlocked = item.id in swipeActionIds,
+                    skipDismissAnimation = item.id in delayedSwipeActionIds,
                     archived = archived,
                     seen = item.seen,
                     leftSwipeAction = leftSwipeAction,
@@ -1021,14 +1096,45 @@ private fun DownloadsList(
                         if (action == DownloadSwipeActionUiData.SEEN) {
                             onToggleSeen(itemId)
                         } else {
-                            animatingOutIds[itemId] = true
                             swipeActionIds[itemId] = action
                             onSelectionChange(selectedIds - itemId)
+                            delayedSwipeActionIds[itemId] = true
+                            coroutineScope.launch {
+                                val placementDelayMillis = if (gridLayoutEnabled) {
+                                    GRID_SWIPE_REMOVAL_DELAY_MILLIS
+                                } else {
+                                    LIST_SWIPE_REMOVAL_DELAY_MILLIS
+                                }
+                                delay(placementDelayMillis.milliseconds)
+                                if (swipeActionIds[itemId] == action) {
+                                    if (itemId in latestItemIds) {
+                                        animatingOutIds[itemId] = true
+                                    } else {
+                                        delayedSwipeActionIds.remove(itemId)
+                                        swipeActionIds.remove(itemId)
+                                        when (action) {
+                                            DownloadSwipeActionUiData.DELETE -> {
+                                                onMarkPendingDelete(setOf(itemId))
+                                            }
+
+                                            DownloadSwipeActionUiData.ARCHIVE -> {
+                                                onBulkArchiveAnimationFinished(itemId)
+                                            }
+
+                                            else -> Unit
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     onDismissAnimationFinished = { itemId ->
+                        delayedSwipeActionIds.remove(itemId)
                         val swipeAction = swipeActionIds.remove(itemId)
-                        if (animatingOutIds.remove(itemId) == true && swipeAction == DownloadSwipeActionUiData.DELETE) {
+                        if (
+                            animatingOutIds.remove(itemId) == true &&
+                            swipeAction == DownloadSwipeActionUiData.DELETE
+                        ) {
                             onMarkPendingDelete(setOf(itemId))
                         }
                         if (swipeAction == DownloadSwipeActionUiData.ARCHIVE) {
@@ -1052,7 +1158,7 @@ private fun DownloadsList(
                     coroutineScope.launch {
                         val targetIndex = items.lastIndex
                         if (targetIndex >= 0) {
-                            lazyListState.animateScrollToItem(index = targetIndex)
+                            lazyGridState.animateScrollToItem(index = targetIndex)
                         }
                     }
                 },
@@ -1067,11 +1173,15 @@ private fun DownloadsListRow(
     item: DownloadItemUiData,
     selectedIds: Set<Long>,
     isPendingDismiss: Boolean,
+    isInteractionBlocked: Boolean,
+    skipDismissAnimation: Boolean,
     isRestoring: Boolean,
+    gridLayoutEnabled: Boolean,
     archived: Boolean,
     seen: Boolean,
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
+    modifier: Modifier = Modifier,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onSelectionChange: (Set<Long>) -> Unit,
@@ -1079,11 +1189,14 @@ private fun DownloadsListRow(
     onDismissAnimationFinished: (Long) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val swipeEnabled = selectedIds.isEmpty()
+    val interactionEnabled = !isPendingDismiss && !isInteractionBlocked
+    val swipeEnabled = !isPendingDismiss && selectedIds.isEmpty()
+            && (!isInteractionBlocked || gridLayoutEnabled)
             && (leftSwipeAction != DownloadSwipeActionUiData.NONE || rightSwipeAction != DownloadSwipeActionUiData.NONE)
 
-    val longClickEnabled = selectedIds.isEmpty()
+    val longClickEnabled = interactionEnabled && selectedIds.isEmpty()
     val isSelected = selectedIds.contains(item.id)
+
     var currentSwipeThresholdRatio by remember(
         item.id,
         leftSwipeAction,
@@ -1091,7 +1204,6 @@ private fun DownloadsListRow(
     ) {
         mutableFloatStateOf(DISMISS_SWIPE_THRESHOLD_RATIO)
     }
-
     var rowWidthPx by remember { mutableFloatStateOf(0f) }
     var hasHandledCurrentSwipe by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
         mutableStateOf(false)
@@ -1099,6 +1211,7 @@ private fun DownloadsListRow(
     var pendingSnapBackSwipeAction by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
         mutableStateOf<DownloadSwipeActionUiData?>(null)
     }
+    var gridSwipeActive by remember(item.id) { mutableStateOf(false) }
     val dismissState = key(item.id, seen, leftSwipeAction, rightSwipeAction) {
         rememberSwipeToDismissBoxState(
             positionalThreshold = { totalDistance ->
@@ -1115,7 +1228,7 @@ private fun DownloadsListRow(
         if (isRestoring) {
             visibilityState.targetState = true
         }
-        if (!isPendingDismiss) {
+        if (!isPendingDismiss && !isInteractionBlocked) {
             runCatching {
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
@@ -1149,9 +1262,15 @@ private fun DownloadsListRow(
     }
 
     AnimatedVisibility(
+        modifier = modifier
+            .zIndex(if (gridSwipeActive) 1f else 0f),
         visibleState = visibilityState,
         enter = Transitions.listItemEnter,
-        exit = Transitions.listItemExit,
+        exit = if (skipDismissAnimation) {
+            ExitTransition.None
+        } else {
+            Transitions.listItemExit
+        },
     ) {
         Box(
             modifier = Modifier
@@ -1160,69 +1279,110 @@ private fun DownloadsListRow(
                     rowWidthPx = coordinates.size.width.toFloat()
                 },
         ) {
-            SwipeToDismissBox(
-                state = dismissState,
-                enableDismissFromStartToEnd = swipeEnabled && rightSwipeAction != DownloadSwipeActionUiData.NONE,
-                enableDismissFromEndToStart = swipeEnabled && leftSwipeAction != DownloadSwipeActionUiData.NONE,
-                onDismiss = { dismissValue ->
-                    if (hasHandledCurrentSwipe) {
-                        return@SwipeToDismissBox
-                    }
-                    val swipeAction = getSwipeActionForDismissValue(
-                        dismissValue = dismissValue,
-                        leftSwipeAction = leftSwipeAction,
-                        rightSwipeAction = rightSwipeAction,
+            val onClick = {
+                if (selectedIds.isNotEmpty()) {
+                    onSelectionChange(toggleSelection(selectedIds, item.id))
+                } else {
+                    onItemClick(item)
+                }
+            }
+            val onOpen = {
+                if (selectedIds.isNotEmpty()) {
+                    onSelectionChange(toggleSelection(selectedIds, item.id))
+                } else {
+                    onItemClick(item)
+                }
+            }
+            val itemContent: @Composable () -> Unit = {
+                if (gridLayoutEnabled) {
+                    DownloadGridItem(
+                        item = item,
+                        isSelected = isSelected,
+                        interactionEnabled = interactionEnabled,
+                        longClickEnabled = longClickEnabled,
+                        onClick = onClick,
+                        onLongClick = {
+                            onSelectionChange(selectedIds + item.id)
+                        },
+                        onPauseResume = {
+                            onPauseResume(item)
+                        },
+                        onOpen = onOpen,
                     )
-                    if (swipeAction == DownloadSwipeActionUiData.NONE) {
-                        return@SwipeToDismissBox
-                    }
-                    if (isSnapBackSwipeAction(swipeAction)) {
-                        hasHandledCurrentSwipe = true
-                        pendingSnapBackSwipeAction = swipeAction
-                        coroutineScope.launch {
-                            runCatching {
-                                dismissState.reset()
+                } else {
+                    DownloadItem(
+                        item = item,
+                        isSelected = isSelected,
+                        interactionEnabled = interactionEnabled,
+                        longClickEnabled = longClickEnabled,
+                        onClick = onClick,
+                        onLongClick = {
+                            onSelectionChange(selectedIds + item.id)
+                        },
+                        onPauseResume = {
+                            onPauseResume(item)
+                        },
+                        onOpen = onOpen,
+                    )
+                }
+            }
+            if (gridLayoutEnabled) {
+                GridSwipeToDismiss(
+                    enabled = swipeEnabled,
+                    archived = archived,
+                    seen = seen,
+                    leftSwipeAction = leftSwipeAction,
+                    rightSwipeAction = rightSwipeAction,
+                    onSwipeActionPerformed = { action ->
+                        onSwipeActionPerformed(item.id, action)
+                    },
+                    onSwipeActiveChange = { gridSwipeActive = it },
+                    content = { itemContent() },
+                )
+            } else {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = swipeEnabled
+                            && rightSwipeAction != DownloadSwipeActionUiData.NONE,
+                    enableDismissFromEndToStart = swipeEnabled
+                            && leftSwipeAction != DownloadSwipeActionUiData.NONE,
+                    onDismiss = { dismissValue ->
+                        if (hasHandledCurrentSwipe) {
+                            return@SwipeToDismissBox
+                        }
+                        val swipeAction = getSwipeActionForDismissValue(
+                            dismissValue = dismissValue,
+                            leftSwipeAction = leftSwipeAction,
+                            rightSwipeAction = rightSwipeAction,
+                        )
+                        if (swipeAction == DownloadSwipeActionUiData.NONE) {
+                            return@SwipeToDismissBox
+                        }
+                        if (isSnapBackSwipeAction(swipeAction)) {
+                            hasHandledCurrentSwipe = true
+                            pendingSnapBackSwipeAction = swipeAction
+                            coroutineScope.launch {
+                                runCatching {
+                                    dismissState.reset()
+                                }
                             }
+                            return@SwipeToDismissBox
                         }
-                        return@SwipeToDismissBox
-                    }
-                    hasHandledCurrentSwipe = true
-                    onSwipeActionPerformed(item.id, swipeAction)
-                },
-                backgroundContent = {
-                    SwipeActionBackground(
-                        archived = archived,
-                        seen = seen,
-                        leftSwipeAction = leftSwipeAction,
-                        rightSwipeAction = rightSwipeAction,
-                        offsetPx = runCatching { dismissState.requireOffset() }.getOrDefault(0f),
-                    )
-                },
-            ) {
-                DownloadItem(
-                    item = item,
-                    isSelected = isSelected,
-                    longClickEnabled = longClickEnabled,
-                    onClick = {
-                        if (selectedIds.isNotEmpty()) {
-                            onSelectionChange(toggleSelection(selectedIds, item.id))
-                        } else {
-                            onItemClick(item)
-                        }
+                        hasHandledCurrentSwipe = true
+                        onSwipeActionPerformed(item.id, swipeAction)
                     },
-                    onLongClick = {
-                        onSelectionChange(selectedIds + item.id)
+                    backgroundContent = {
+                        SwipeActionBackground(
+                            archived = archived,
+                            seen = seen,
+                            leftSwipeAction = leftSwipeAction,
+                            rightSwipeAction = rightSwipeAction,
+                            offsetPx = runCatching {
+                                dismissState.requireOffset()
+                            }.getOrDefault(0f),
+                        )
                     },
-                    onPauseResume = {
-                        onPauseResume(item)
-                    },
-                    onOpen = {
-                        if (selectedIds.isNotEmpty()) {
-                            onSelectionChange(toggleSelection(selectedIds, item.id))
-                        } else {
-                            onItemClick(item)
-                        }
-                    },
+                    content = { itemContent() },
                 )
             }
         }
@@ -1276,6 +1436,176 @@ private fun DownloadsListRow(
     }
 }
 
+@Composable
+private fun GridSwipeToDismiss(
+    enabled: Boolean,
+    archived: Boolean,
+    seen: Boolean,
+    leftSwipeAction: DownloadSwipeActionUiData,
+    rightSwipeAction: DownloadSwipeActionUiData,
+    onSwipeActionPerformed: (DownloadSwipeActionUiData) -> Unit,
+    onSwipeActiveChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val view = LocalView.current
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+
+    val coroutineScope = rememberCoroutineScope()
+    var offsetPx by remember { mutableFloatStateOf(0f) }
+    var cardLeftPx by remember { mutableFloatStateOf(0f) }
+    var cardWidthPx by remember { mutableFloatStateOf(0f) }
+    var handlingSwipe by remember { mutableStateOf(false) }
+
+    suspend fun animateOffsetTo(targetOffsetPx: Float) {
+        animate(
+            initialValue = offsetPx,
+            targetValue = targetOffsetPx,
+            animationSpec = tween(GRID_SWIPE_OFFSET_ANIMATION_MILLIS),
+        ) { value, _ ->
+            offsetPx = value
+        }
+    }
+
+    fun swipeActionForPhysicalOffset(physicalOffsetPx: Float): DownloadSwipeActionUiData = when {
+        physicalOffsetPx == 0f -> DownloadSwipeActionUiData.NONE
+        (physicalOffsetPx > 0f) == (layoutDirection == LayoutDirection.Ltr) -> rightSwipeAction
+        else -> leftSwipeAction
+    }
+
+    fun logicalOffset(physicalOffsetPx: Float): Float = when (layoutDirection) {
+        LayoutDirection.Ltr -> physicalOffsetPx
+        LayoutDirection.Rtl -> -physicalOffsetPx
+    }
+
+    val positiveSwipeAction = swipeActionForPhysicalOffset(1f)
+    val negativeSwipeAction = swipeActionForPhysicalOffset(-1f)
+    val velocityThresholdPx = with(density) {
+        GRID_SWIPE_VELOCITY_THRESHOLD.toPx()
+    }
+
+    fun swipeActionForOffset(): DownloadSwipeActionUiData = when {
+        offsetPx > 0f -> positiveSwipeAction
+        offsetPx < 0f -> negativeSwipeAction
+        else -> DownloadSwipeActionUiData.NONE
+    }
+
+    val draggableState = rememberDraggableState { deltaPx ->
+        if (handlingSwipe || cardWidthPx <= 0f) {
+            return@rememberDraggableState
+        }
+        onSwipeActiveChange(true)
+        val viewportWidthPx = view.width.toFloat().coerceAtLeast(cardWidthPx)
+        val maximumStartToEndOffsetPx = (viewportWidthPx - cardLeftPx)
+            .coerceAtLeast(cardWidthPx)
+        val maximumEndToStartOffsetPx = (cardLeftPx + cardWidthPx)
+            .coerceAtLeast(cardWidthPx)
+        val minimumOffsetPx = if (negativeSwipeAction == DownloadSwipeActionUiData.NONE) {
+            0f
+        } else {
+            -maximumEndToStartOffsetPx
+        }
+        val maximumOffsetPx = if (positiveSwipeAction == DownloadSwipeActionUiData.NONE) {
+            0f
+        } else {
+            maximumStartToEndOffsetPx
+        }
+        offsetPx = (offsetPx + deltaPx).coerceIn(minimumOffsetPx, maximumOffsetPx)
+
+        val swipeAction = swipeActionForOffset()
+        if (isSnapBackSwipeAction(swipeAction)
+            && abs(offsetPx) >= cardWidthPx * SNAP_BACK_SWIPE_THRESHOLD_RATIO
+        ) {
+            handlingSwipe = true
+            onSwipeActionPerformed(swipeAction)
+            coroutineScope.launch {
+                animateOffsetTo(0f)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                cardLeftPx = coordinates.positionInWindow().x
+                cardWidthPx = coordinates.size.width.toFloat()
+            }
+            .draggable(
+                state = draggableState,
+                orientation = Orientation.Horizontal,
+                enabled = enabled,
+                onDragStopped = { velocityPxPerSecond ->
+                    if (handlingSwipe) {
+                        handlingSwipe = false
+                        onSwipeActiveChange(false)
+                        return@draggable
+                    }
+                    if (cardWidthPx <= 0f) {
+                        return@draggable
+                    }
+                    val fastSwipe = abs(velocityPxPerSecond) >= velocityThresholdPx
+                    val swipeAction = if (fastSwipe) {
+                        swipeActionForPhysicalOffset(velocityPxPerSecond)
+                    } else {
+                        swipeActionForOffset()
+                    }
+                    if (swipeAction == DownloadSwipeActionUiData.NONE) {
+                        animateOffsetTo(0f)
+                        onSwipeActiveChange(false)
+                        return@draggable
+                    }
+                    if (isSnapBackSwipeAction(swipeAction)) {
+                        if (fastSwipe) {
+                            handlingSwipe = true
+                            onSwipeActionPerformed(swipeAction)
+                        }
+                        animateOffsetTo(0f)
+                        handlingSwipe = false
+                        onSwipeActiveChange(false)
+                        return@draggable
+                    }
+                    if (!fastSwipe && abs(offsetPx) < cardWidthPx * DISMISS_SWIPE_THRESHOLD_RATIO) {
+                        animateOffsetTo(0f)
+                        onSwipeActiveChange(false)
+                        return@draggable
+                    }
+
+                    handlingSwipe = true
+                    onSwipeActionPerformed(swipeAction)
+                    val viewportWidthPx = view.width.toFloat().coerceAtLeast(cardWidthPx)
+                    val dismissesTowardEnd = if (fastSwipe) {
+                        velocityPxPerSecond > 0f
+                    } else {
+                        offsetPx > 0f
+                    }
+                    val targetOffsetPx = if (dismissesTowardEnd) {
+                        (viewportWidthPx - cardLeftPx).coerceAtLeast(cardWidthPx)
+                    } else {
+                        -(cardLeftPx + cardWidthPx).coerceAtLeast(cardWidthPx)
+                    }
+                    animateOffsetTo(targetOffsetPx)
+                },
+            ),
+    ) {
+        SwipeActionBackground(
+            modifier = Modifier
+                .matchParentSize(),
+            archived = archived,
+            seen = seen,
+            leftSwipeAction = leftSwipeAction,
+            rightSwipeAction = rightSwipeAction,
+            offsetPx = logicalOffset(offsetPx),
+        )
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetPx.roundToInt(), 0) },
+        ) {
+            content()
+        }
+    }
+}
+
 private fun isSnapBackSwipeAction(
     swipeAction: DownloadSwipeActionUiData,
 ): Boolean {
@@ -1306,8 +1636,10 @@ private fun SwipeActionBackground(
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
     offsetPx: Float,
+    modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
+
     val swipeAction = when {
         offsetPx > 0f -> rightSwipeAction
         offsetPx < 0f -> leftSwipeAction
@@ -1327,6 +1659,7 @@ private fun SwipeActionBackground(
         DownloadSwipeActionUiData.NONE -> Color.Transparent
     }
     Surface(
+        modifier = modifier,
         color = containerColor,
         shape = MaterialTheme.shapes.medium,
     ) {
@@ -1429,9 +1762,10 @@ private fun ScrollToBottomButton(
 }
 
 @Composable
-private fun DownloadItem(
+private fun DownloadGridItem(
     item: DownloadItemUiData,
     isSelected: Boolean,
+    interactionEnabled: Boolean,
     longClickEnabled: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -1439,6 +1773,72 @@ private fun DownloadItem(
     onOpen: () -> Unit,
 ) {
     val dimens = LocalDimens.current
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        tonalElevation = dimens.tonalElevationLow,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    enabled = interactionEnabled,
+                    onClick = onClick,
+                    onLongClick = if (longClickEnabled) {
+                        onLongClick
+                    } else {
+                        null
+                    },
+                ),
+        ) {
+            DownloadPrimaryActionButton(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 10f),
+                thumbnailFilePath = item.thumbnailFilePath,
+                status = item.status,
+                enabled = interactionEnabled,
+                onPauseResume = onPauseResume,
+                onOpen = onOpen,
+            )
+            Column(
+                modifier = Modifier
+                    .padding(dimens.spacingSmall),
+            ) {
+                DownloadItemTitle(item = item)
+                Spacer(modifier = Modifier.height(dimens.spacingSmall))
+                DownloadProgressSection(
+                    status = item.status,
+                    progressFraction = item.progressFraction,
+                    etaSeconds = item.etaSeconds,
+                    bytesDownloaded = item.bytesDownloaded,
+                    completedAtMillis = item.completedAtMillis,
+                    alwaysShowBar = false,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DownloadItem(
+    item: DownloadItemUiData,
+    isSelected: Boolean,
+    interactionEnabled: Boolean,
+    longClickEnabled: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onPauseResume: () -> Unit,
+    onOpen: () -> Unit,
+) {
+    val dimens = LocalDimens.current
+
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = if (isSelected) {
@@ -1451,7 +1851,7 @@ private fun DownloadItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    enabled = true,
+                    enabled = interactionEnabled,
                     onClick = onClick,
                     onLongClick = if (longClickEnabled) {
                         onLongClick
@@ -1466,8 +1866,11 @@ private fun DownloadItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DownloadPrimaryActionButton(
+                modifier = Modifier
+                    .size(dimens.downloadListThumbnailSize),
                 thumbnailFilePath = item.thumbnailFilePath,
                 status = item.status,
+                enabled = interactionEnabled,
                 onPauseResume = onPauseResume,
                 onOpen = onOpen,
             )
@@ -1483,36 +1886,7 @@ private fun DownloadItem(
 
                     else -> false
                 }
-                val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        modifier = Modifier
-                            .weight(1f),
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = if (showUnseen) {
-                                FontWeight.Bold
-                            } else {
-                                FontWeight.Normal
-                            },
-                        ),
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        text = item.title,
-                    )
-                    if (showUnseen) {
-                        Spacer(modifier = Modifier.width(dimens.spacingSmall))
-                        Box(
-                            modifier = Modifier
-                                .size(dimens.dotSize)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(50),
-                                ),
-                        )
-                    }
-                }
+                DownloadItemTitle(item = item)
                 Spacer(
                     modifier = Modifier.height(
                         if (showInlineProgressBar) {
@@ -1531,6 +1905,44 @@ private fun DownloadItem(
                     alwaysShowBar = false,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun DownloadItemTitle(
+    item: DownloadItemUiData,
+) {
+    val dimens = LocalDimens.current
+
+    val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            modifier = Modifier
+                .weight(1f),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = if (showUnseen) {
+                    FontWeight.Bold
+                } else {
+                    FontWeight.Normal
+                },
+            ),
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1,
+            text = item.title,
+        )
+        if (showUnseen) {
+            Spacer(modifier = Modifier.width(dimens.spacingSmall))
+            Box(
+                modifier = Modifier
+                    .size(dimens.dotSize)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(50),
+                    ),
+            )
         }
     }
 }
@@ -1599,7 +2011,7 @@ internal fun getBulkDeleteVisibleIds(
         return emptySet()
     }
     val visibleIds = visibleItemKeys
-        .mapNotNull { it as? Long }
+        .filterIsInstance<Long>()
         .toSet()
 
     return selectedIds.intersect(visibleIds)

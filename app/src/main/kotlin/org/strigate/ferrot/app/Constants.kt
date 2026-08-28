@@ -118,13 +118,21 @@ object Constants {
     }
 
     object State {
-        const val KEY_BOOT_TIME_MILLIS = "boot_time_millis"
+        const val KEY_BOOT_TIME_MILLIS =
+            "boot_time_millis"
+        const val KEY_DOWNLOADS_GRID_LAYOUT_ENABLED =
+            "downloads_grid_layout_enabled"
+        const val KEY_ARCHIVED_DOWNLOADS_GRID_LAYOUT_ENABLED =
+            "archived_downloads_grid_layout_enabled"
+        const val KEY_LAST_AVAILABLE_UPDATE_CHECK_MILLIS =
+            "last_available_update_check_millis"
+        const val KEY_LAST_DEPENDENCY_UPDATE_CHECK_MILLIS =
+            "last_dependency_update_check_millis"
+
         const val DEFAULT_VALUE_BOOT_TIME_MILLIS = 0L
-
-        const val KEY_LAST_AVAILABLE_UPDATE_CHECK_MILLIS = "last_available_update_check_millis"
+        const val DEFAULT_VALUE_DOWNLOADS_GRID_LAYOUT_ENABLED = false
+        const val DEFAULT_VALUE_ARCHIVED_DOWNLOADS_GRID_LAYOUT_ENABLED = false
         const val DEFAULT_VALUE_LAST_AVAILABLE_UPDATE_CHECK_MILLIS = 0L
-
-        const val KEY_LAST_DEPENDENCY_UPDATE_CHECK_MILLIS = "last_dependency_update_check_millis"
         const val DEFAULT_VALUE_LAST_DEPENDENCY_UPDATE_CHECK_MILLIS = 0L
     }
 

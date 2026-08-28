@@ -2,8 +2,9 @@ package org.strigate.ferrot.presentation.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.size.Scale
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.theme.LocalDimens
@@ -36,6 +38,7 @@ fun DownloadPrimaryActionButton(
     status: DownloadStatusUiData,
     thumbnailFilePath: String?,
     modifier: Modifier = Modifier,
+    enabled: Boolean,
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
 ) {
@@ -75,13 +78,16 @@ fun DownloadPrimaryActionButton(
 
     Surface(
         modifier = modifier
-            .wrapContentSize(),
+            .sizeIn(
+                minWidth = dimens.downloadListThumbnailSize,
+                minHeight = dimens.downloadListThumbnailSize,
+            ),
         shape = MaterialTheme.shapes.medium,
         tonalElevation = refineryDimens.tonalElevationHigh,
     ) {
         Box(
             modifier = Modifier
-                .size(dimens.downloadListThumbnailSize),
+                .fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             thumbnailFile?.let {
@@ -91,6 +97,7 @@ fun DownloadPrimaryActionButton(
                     model = ImageRequest.Builder(context)
                         .data(it)
                         .crossfade(true)
+                        .scale(Scale.FILL)
                         .build(),
                     contentScale = ContentScale.Crop,
                     contentDescription = null,
@@ -109,6 +116,7 @@ fun DownloadPrimaryActionButton(
                 contentAlignment = Alignment.Center,
             ) {
                 IconButton(
+                    enabled = enabled,
                     onClick = actionConfig.onClick,
                 ) {
                     Icon(

@@ -29,6 +29,7 @@ import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -54,6 +55,7 @@ class DownloadsViewModel @Inject constructor(
     private val downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val settingsUseCase: SettingsUseCase,
+    private val stateUseCase: StateUseCase,
 ) : ViewModel() {
     private val _archived = MutableStateFlow(savedStateHandle[Screen.ARG_ARCHIVED] ?: false)
     val isArchived: StateFlow<Boolean> = _archived
@@ -84,11 +86,22 @@ class DownloadsViewModel @Inject constructor(
         val availableUpdateFlow = availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()
         val leftSwipeActionFlow = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase()
         val rightSwipeActionFlow = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase()
-        val swipeActionsFlow = combine(
+        val layoutAndSwipeActionsFlow = combine(
+            archivedFlow.flatMapLatest { archived ->
+                if (archived) {
+                    stateUseCase.getArchivedDownloadsGridLayoutEnabledUseCase()
+                } else {
+                    stateUseCase.getDownloadsGridLayoutEnabledUseCase()
+                }
+            },
             leftSwipeActionFlow,
             rightSwipeActionFlow,
-        ) { leftSwipeAction, rightSwipeAction ->
-            leftSwipeAction.toUiData() to rightSwipeAction.toUiData()
+        ) { gridLayoutEnabled, leftSwipeAction, rightSwipeAction ->
+            Triple(
+                gridLayoutEnabled,
+                leftSwipeAction.toUiData(),
+                rightSwipeAction.toUiData(),
+            )
         }
 
         return combine(
@@ -96,9 +109,9 @@ class DownloadsViewModel @Inject constructor(
             downloadsWithMetadataFlow,
             availableUpdateFlow,
             searchTextFlow,
-            swipeActionsFlow,
-        ) { archived, downloadsWithMetadata, availableUpdate, query, swipeActions ->
-            val (leftSwipeAction, rightSwipeAction) = swipeActions
+            layoutAndSwipeActionsFlow,
+        ) { archived, downloadsWithMetadata, availableUpdate, query, layoutAndSwipeActions ->
+            val (gridLayoutEnabled, leftSwipeAction, rightSwipeAction) = layoutAndSwipeActions
             val pendingDeleteIds = downloadsWithMetadata
                 .asSequence()
                 .filter { it.pendingDelete }
@@ -137,6 +150,7 @@ class DownloadsViewModel @Inject constructor(
                     availableUpdate = availableUpdateUiData,
                     pendingDeleteIds = pendingDeleteIds,
                     retryFailedDownloadIds = retryFailedDownloadIds,
+                    gridLayoutEnabled = gridLayoutEnabled,
                     leftSwipeAction = leftSwipeAction,
                     rightSwipeAction = rightSwipeAction,
                 ),
@@ -164,6 +178,14 @@ class DownloadsViewModel @Inject constructor(
             return
         }
         _archived.value = archived
+    }
+
+    fun toggleGridLayoutEnabled() = viewModelScope.launch {
+        if (isArchived.value) {
+            stateUseCase.toggleArchivedDownloadsGridLayoutEnabledUseCase()
+        } else {
+            stateUseCase.toggleDownloadsGridLayoutEnabledUseCase()
+        }
     }
 
     fun stopDownload(downloadId: Long) = viewModelScope.launch {
