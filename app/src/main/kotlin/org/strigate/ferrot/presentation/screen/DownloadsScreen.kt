@@ -145,11 +145,11 @@ private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
 private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 private const val SNAP_BACK_SWIPE_THRESHOLD_RATIO = 0.3f
 private const val DISMISS_SWIPE_THRESHOLD_RATIO = 0.5f
-private const val GRID_SWIPE_ANIMATION_MILLIS = 280
-private const val GRID_SWIPE_PLACEMENT_DELAY_MILLIS = 360L
-private const val LIST_SWIPE_PLACEMENT_DELAY_MILLIS = 120L
+private const val GRID_SWIPE_OFFSET_ANIMATION_MILLIS = 280
+private const val GRID_SWIPE_REMOVAL_DELAY_MILLIS = 357L
+private const val LIST_SWIPE_REMOVAL_DELAY_MILLIS = 120L
 
-private val DOWNLOAD_GRID_MIN_CELL_SIZE = 160.dp
+private val DOWNLOAD_GRID_MIN_CELL_WIDTH = 160.dp
 private val GRID_SWIPE_VELOCITY_THRESHOLD = 125.dp
 
 @Composable
@@ -1035,7 +1035,7 @@ private fun DownloadsContent(
             modifier = Modifier
                 .fillMaxSize(),
             columns = if (gridLayoutEnabled) {
-                GridCells.Adaptive(DOWNLOAD_GRID_MIN_CELL_SIZE)
+                GridCells.Adaptive(DOWNLOAD_GRID_MIN_CELL_WIDTH)
             } else {
                 GridCells.Fixed(1)
             },
@@ -1101,9 +1101,9 @@ private fun DownloadsContent(
                             delayedSwipeActionIds[itemId] = true
                             coroutineScope.launch {
                                 val placementDelayMillis = if (gridLayoutEnabled) {
-                                    GRID_SWIPE_PLACEMENT_DELAY_MILLIS
+                                    GRID_SWIPE_REMOVAL_DELAY_MILLIS
                                 } else {
-                                    LIST_SWIPE_PLACEMENT_DELAY_MILLIS
+                                    LIST_SWIPE_REMOVAL_DELAY_MILLIS
                                 }
                                 delay(placementDelayMillis.milliseconds)
                                 if (swipeActionIds[itemId] == action) {
@@ -1461,7 +1461,7 @@ private fun GridSwipeToDismiss(
         animate(
             initialValue = offsetPx,
             targetValue = targetOffsetPx,
-            animationSpec = tween(GRID_SWIPE_ANIMATION_MILLIS),
+            animationSpec = tween(GRID_SWIPE_OFFSET_ANIMATION_MILLIS),
         ) { value, _ ->
             offsetPx = value
         }
