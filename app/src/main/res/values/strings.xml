@@ -213,6 +213,8 @@
     <string name="content_description_delete">Delete</string>
     <string name="content_description_archive">Archive</string>
     <string name="content_description_unarchive">Unarchive</string>
+    <string name="content_description_use_grid_layout">Use grid layout</string>
+    <string name="content_description_use_list_layout">Use list layout</string>
     <string name="content_description_delete_download">Delete download</string>
     <string name="content_description_share_download">Share download</string>
     <string name="content_description_copy_to_clipboard">Copy to clipboard</string>

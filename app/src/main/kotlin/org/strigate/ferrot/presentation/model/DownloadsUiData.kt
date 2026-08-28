@@ -5,6 +5,7 @@ data class DownloadsUiData(
     val availableUpdate: AvailableUpdateUiData?,
     val pendingDeleteIds: Set<Long>,
     val retryFailedDownloadIds: Set<Long>,
+    val gridLayoutEnabled: Boolean,
     val leftSwipeAction: DownloadSwipeActionUiData,
     val rightSwipeAction: DownloadSwipeActionUiData,
 )

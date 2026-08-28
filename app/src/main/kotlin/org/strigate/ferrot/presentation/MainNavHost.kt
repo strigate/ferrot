@@ -32,6 +32,12 @@ fun MainNavHost(
         exitTransition = {
             fadeOut(TweenSpec(easing = LinearEasing))
         },
+        predictivePopEnterTransition = {
+            fadeIn(TweenSpec(easing = LinearEasing))
+        },
+        predictivePopExitTransition = {
+            fadeOut(TweenSpec(easing = LinearEasing))
+        },
     ) {
         composable(Screen.Downloads.route) {
             DownloadsScreen(

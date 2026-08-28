@@ -57,6 +57,8 @@ fun DownloadProgressSection(
                 forcePrimary = forcePrimaryBar,
             )
             Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
+        } else {
+            Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
         }
         Box(
             modifier = Modifier

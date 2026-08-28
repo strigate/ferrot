@@ -39,6 +39,7 @@ import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
+import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.domain.usecase.availableupdate.GetAvailableUpdateAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsDelayedUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestDeletePendingDownloadsImmediateUseCase
@@ -49,6 +50,10 @@ import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteU
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.state.GetArchivedDownloadsGridLayoutEnabledUseCase
+import org.strigate.ferrot.domain.usecase.state.GetDownloadsGridLayoutEnabledUseCase
+import org.strigate.ferrot.domain.usecase.state.ToggleArchivedDownloadsGridLayoutEnabledUseCase
+import org.strigate.ferrot.domain.usecase.state.ToggleDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
@@ -122,6 +127,21 @@ class DownloadsViewModelTest {
     @Mock
     private lateinit var getRightSwipeActionSettingAsFlowUseCase: GetRightSwipeActionSettingAsFlowUseCase
 
+    @Mock
+    private lateinit var stateUseCase: StateUseCase
+
+    @Mock
+    private lateinit var getDownloadsGridLayoutEnabledUseCase: GetDownloadsGridLayoutEnabledUseCase
+
+    @Mock
+    private lateinit var toggleDownloadsGridLayoutEnabledUseCase: ToggleDownloadsGridLayoutEnabledUseCase
+
+    @Mock
+    private lateinit var getArchivedDownloadsGridLayoutEnabledUseCase: GetArchivedDownloadsGridLayoutEnabledUseCase
+
+    @Mock
+    private lateinit var toggleArchivedDownloadsGridLayoutEnabledUseCase: ToggleArchivedDownloadsGridLayoutEnabledUseCase
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
@@ -164,6 +184,70 @@ class DownloadsViewModelTest {
         assertEquals(DownloadSwipeActionUiData.ARCHIVE, state.data.leftSwipeAction)
         assertEquals(DownloadSwipeActionUiData.DELETE, state.data.rightSwipeAction)
 
+        collector.cancel()
+    }
+
+    @Test
+    fun toggleGridLayoutEnabled_togglesLayoutForCurrentPage() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        viewModel.toggleGridLayoutEnabled()
+        advanceUntilIdle()
+
+        verify(toggleDownloadsGridLayoutEnabledUseCase)
+            .invoke()
+
+        viewModel.setArchived(true)
+        viewModel.toggleGridLayoutEnabled()
+        advanceUntilIdle()
+
+        verify(toggleArchivedDownloadsGridLayoutEnabledUseCase)
+            .invoke()
+    }
+
+    @Test
+    fun uiState_updatesWhenGridLayoutPreferenceChanges() = runTest(testDispatcher) {
+        val gridLayoutEnabledFlow = MutableStateFlow(false)
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+            gridLayoutEnabledFlow = gridLayoutEnabledFlow,
+        )
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        gridLayoutEnabledFlow.value = true
+        waitForUiState(viewModel) {
+            (it as? DownloadsUiState.Data)?.data?.gridLayoutEnabled == true
+        }
+
+        assertTrue((viewModel.uiState.value as DownloadsUiState.Data).data.gridLayoutEnabled)
+        collector.cancel()
+    }
+
+    @Test
+    fun uiState_usesArchivedGridLayoutPreferenceForArchivedPage() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+            archivedGridLayoutEnabledFlow = MutableStateFlow(true),
+        )
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.setArchived(true)
+        waitForUiState(viewModel) {
+            (it as? DownloadsUiState.Data)?.data?.gridLayoutEnabled == true
+        }
+
+        assertTrue((viewModel.uiState.value as DownloadsUiState.Data).data.gridLayoutEnabled)
         collector.cancel()
     }
 
@@ -675,8 +759,12 @@ class DownloadsViewModelTest {
     private fun createViewModel(
         downloadsFlow: MutableStateFlow<List<DownloadWithMetadata>>,
         updateFlow: MutableStateFlow<AvailableUpdate?>,
+        gridLayoutEnabledFlow: MutableStateFlow<Boolean> = MutableStateFlow(false),
+        archivedGridLayoutEnabledFlow: MutableStateFlow<Boolean> = MutableStateFlow(false),
     ): DownloadsViewModel {
         `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(false))
+            .thenReturn(downloadsFlow)
+        `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(true))
             .thenReturn(downloadsFlow)
         `when`(getAvailableUpdateAsFlowUseCase.invoke())
             .thenReturn(updateFlow)
@@ -704,6 +792,18 @@ class DownloadsViewModelTest {
             .thenReturn(getLeftSwipeActionSettingAsFlowUseCase)
         `when`(settingsUseCase.getRightSwipeActionSettingAsFlowUseCase)
             .thenReturn(getRightSwipeActionSettingAsFlowUseCase)
+        `when`(getDownloadsGridLayoutEnabledUseCase.invoke())
+            .thenReturn(gridLayoutEnabledFlow)
+        `when`(stateUseCase.getDownloadsGridLayoutEnabledUseCase)
+            .thenReturn(getDownloadsGridLayoutEnabledUseCase)
+        `when`(stateUseCase.toggleDownloadsGridLayoutEnabledUseCase)
+            .thenReturn(toggleDownloadsGridLayoutEnabledUseCase)
+        `when`(getArchivedDownloadsGridLayoutEnabledUseCase.invoke())
+            .thenReturn(archivedGridLayoutEnabledFlow)
+        `when`(stateUseCase.getArchivedDownloadsGridLayoutEnabledUseCase)
+            .thenReturn(getArchivedDownloadsGridLayoutEnabledUseCase)
+        `when`(stateUseCase.toggleArchivedDownloadsGridLayoutEnabledUseCase)
+            .thenReturn(toggleArchivedDownloadsGridLayoutEnabledUseCase)
 
         return DownloadsViewModel(
             savedStateHandle = SavedStateHandle(),
@@ -716,6 +816,7 @@ class DownloadsViewModelTest {
             downloadWithMetadataUseCase = downloadWithMetadataUseCase,
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
             settingsUseCase = settingsUseCase,
+            stateUseCase = stateUseCase,
         )
     }
 
