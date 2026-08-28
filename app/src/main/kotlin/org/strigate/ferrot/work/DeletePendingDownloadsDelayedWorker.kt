@@ -60,6 +60,7 @@ class DeletePendingDownloadsDelayedWorker(
                     R.plurals.notification_text_deleting_downloads,
                     pendingDeleteIds.size,
                 ),
+            indeterminate = true,
         )
         Log.d(LOG_TAG, "$tag Starting delete for ${pendingDeleteIds.size} pending download(s)")
 
