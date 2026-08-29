@@ -1,7 +1,5 @@
 package org.strigate.ferrot.presentation.viewmodel
 
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -301,13 +299,12 @@ class DownloadsViewModelTest {
         waitForUiState(viewModel) { it is DownloadsUiState.Data }
 
         val longQuery = "A".repeat(150)
-        viewModel.updateSearchQuery(TextFieldValue(longQuery, TextRange(longQuery.length)))
+        viewModel.updateSearchQuery(longQuery)
 
-        assertEquals(100, viewModel.searchQuery.value.text.length)
-        assertEquals(100, viewModel.searchQuery.value.selection.start)
+        assertEquals(100, viewModel.searchQuery.value.length)
 
-        viewModel.updateSearchQuery(TextFieldValue("download 2", TextRange(4)))
-        assertEquals(4, viewModel.searchQuery.value.selection.start)
+        viewModel.updateSearchQuery("download 2")
+        assertEquals("download 2", viewModel.searchQuery.value)
 
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
@@ -385,7 +382,7 @@ class DownloadsViewModelTest {
     }
 
     @Test
-    fun stopAllDownloads_stopsOnlyActiveDownloads() = runTest(testDispatcher) {
+    fun stopAllDownloads_respectsSearchAndStopsOnlyActiveDownloads() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
                 listOf(
@@ -406,13 +403,17 @@ class DownloadsViewModelTest {
             viewModel.uiState.collect()
         }
         waitForUiState(viewModel) { it is DownloadsUiState.Data }
+        viewModel.updateSearchQuery("Queued")
+        waitForUiState(viewModel) { state ->
+            (state as? DownloadsUiState.Data)?.data?.downloads?.map { it.id } == listOf(1L)
+        }
 
         viewModel.stopAllDownloads()
         advanceUntilIdle()
 
         verify(updateDownloadStatusUseCase)
             .invoke(1L, DownloadStatus.STOPPED)
-        verify(updateDownloadStatusUseCase)
+        verify(updateDownloadStatusUseCase, never())
             .invoke(2L, DownloadStatus.STOPPED)
         verify(updateDownloadStatusUseCase, never())
             .invoke(3L, DownloadStatus.STOPPED)
@@ -420,7 +421,7 @@ class DownloadsViewModelTest {
             .invoke(4L, DownloadStatus.STOPPED)
         verify(stopDownloadUseCase)
             .invoke(1L)
-        verify(stopDownloadUseCase)
+        verify(stopDownloadUseCase, never())
             .invoke(2L)
         verify(stopDownloadUseCase, never())
             .invoke(3L)
@@ -557,7 +558,7 @@ class DownloadsViewModelTest {
         }
         waitForUiState(viewModel) { it is DownloadsUiState.Data }
 
-        viewModel.updateSearchQuery(TextFieldValue("Beta", TextRange(4)))
+        viewModel.updateSearchQuery("Beta")
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
             data.data.downloads.map { it.id } == listOf(2L, 3L) &&
@@ -607,6 +608,33 @@ class DownloadsViewModelTest {
             .invoke(2L)
         verify(clearNotificationsByDownloadIdUseCase)
             .invoke(3L)
+        collector.cancel()
+    }
+
+    @Test
+    fun toggleDownloadsSeen_ignoresIdsOutsideTheCurrentDownloads() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Seen", seen = true),
+                    createDownload(id = 2L, title = "Unseen", seen = false),
+                )
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+
+        val collector = backgroundScope.launch {
+            viewModel.uiState.collect()
+        }
+        waitForUiState(viewModel) { it is DownloadsUiState.Data }
+
+        viewModel.toggleDownloadsSeen(setOf(1L, 2L, 99L))
+        advanceUntilIdle()
+
+        verify(updateDownloadsSeenUseCase)
+            .invoke(setOf(1L, 2L), true)
+        verify(clearNotificationsByDownloadIdUseCase, never())
+            .invoke(99L)
         collector.cancel()
     }
 

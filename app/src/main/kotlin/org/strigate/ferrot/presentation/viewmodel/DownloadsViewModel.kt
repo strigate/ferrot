@@ -1,7 +1,5 @@
 package org.strigate.ferrot.presentation.viewmodel
 
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,10 +13,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -60,10 +56,8 @@ class DownloadsViewModel @Inject constructor(
     private val _archived = MutableStateFlow(savedStateHandle[Screen.ARG_ARCHIVED] ?: false)
     val isArchived: StateFlow<Boolean> = _archived
 
-    private val _searchQuery = MutableStateFlow(
-        TextFieldValue(text = "", selection = TextRange(0))
-    )
-    val searchQuery: StateFlow<TextFieldValue> = _searchQuery
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
     private val _events = MutableSharedFlow<DownloadsEvent>()
     val events = _events.asSharedFlow()
@@ -76,8 +70,6 @@ class DownloadsViewModel @Inject constructor(
 
     private fun getUiState(): Flow<DownloadsUiState> {
         val searchTextFlow = searchQuery
-            .map { it.text }
-            .distinctUntilChanged()
         val archivedFlow = isArchived
         val downloadsWithMetadataFlow = archivedFlow
             .flatMapLatest { archived ->
@@ -160,17 +152,12 @@ class DownloadsViewModel @Inject constructor(
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
 
-    fun updateSearchQuery(value: TextFieldValue) {
-        val trimmed = value.text.take(MAX_SEARCH_LENGTH)
-        val selectionEnd = value.selection.end.coerceAtMost(trimmed.length)
-        val normalizedValue = TextFieldValue(
-            text = trimmed,
-            selection = TextRange(selectionEnd),
-        )
-        if (_searchQuery.value == normalizedValue) {
+    fun updateSearchQuery(value: String) {
+        val query = value.take(MAX_SEARCH_LENGTH)
+        if (_searchQuery.value == query) {
             return
         }
-        _searchQuery.value = normalizedValue
+        _searchQuery.value = query
     }
 
     fun setArchived(archived: Boolean) {
@@ -235,11 +222,12 @@ class DownloadsViewModel @Inject constructor(
         if (selectedDownloads.isEmpty()) {
             return
         }
+        val selectedDownloadIds = selectedDownloads.mapTo(mutableSetOf()) { it.id }
         val shouldMarkSeen = selectedDownloads.any { !it.seen }
         viewModelScope.launch {
-            downloadUseCase.updateDownloadsSeenUseCase(downloadIds, shouldMarkSeen)
+            downloadUseCase.updateDownloadsSeenUseCase(selectedDownloadIds, shouldMarkSeen)
             if (shouldMarkSeen) {
-                downloadIds.forEach(clearNotificationsByDownloadIdUseCase::invoke)
+                selectedDownloadIds.forEach(clearNotificationsByDownloadIdUseCase::invoke)
             }
         }
     }
