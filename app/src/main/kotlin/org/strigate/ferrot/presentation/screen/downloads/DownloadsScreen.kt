@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.screen
+package org.strigate.ferrot.presentation.screen.downloads
 
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
@@ -9,7 +9,6 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -17,16 +16,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -34,23 +28,14 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Unarchive
-import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,10 +51,6 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
 import androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -88,7 +69,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -100,9 +80,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -119,8 +96,6 @@ import org.strigate.ferrot.R
 import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.AvailableUpdateBanner
-import org.strigate.ferrot.presentation.component.DownloadPrimaryActionButton
-import org.strigate.ferrot.presentation.component.DownloadProgressSection
 import org.strigate.ferrot.presentation.component.state.EmptyState
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
@@ -131,12 +106,10 @@ import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.presentation.theme.LocalDimens
-import org.strigate.ferrot.presentation.theme.TextStyles
 import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
-import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
@@ -220,9 +193,9 @@ fun DownloadsScreen(
 @Composable
 internal fun DownloadsScreenContent(
     uiState: DownloadsUiState,
-    searchQuery: TextFieldValue,
+    searchQuery: String,
     isArchived: Boolean,
-    onUpdateSearchQuery: (TextFieldValue) -> Unit,
+    onUpdateSearchQuery: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToDownload: (DownloadItemUiData) -> Unit,
     onNavigateToArchived: () -> Unit,
@@ -243,6 +216,7 @@ internal fun DownloadsScreenContent(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val lazyGridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
     val searchFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     var searchActive by rememberSaveable { mutableStateOf(false) }
@@ -250,6 +224,7 @@ internal fun DownloadsScreenContent(
     var dismissingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var archivingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
     var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
+    val downloadsData = (uiState as? DownloadsUiState.Data)?.data
 
     val bulkSelectedLabel = stringResource(R.string.bulk_selected)
     val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
@@ -257,7 +232,7 @@ internal fun DownloadsScreenContent(
 
     BackHandler(enabled = searchActive) {
         searchActive = false
-        onUpdateSearchQuery(TextFieldValue(""))
+        onUpdateSearchQuery("")
         keyboardController?.hide()
     }
     LaunchedEffect(searchActive) {
@@ -268,28 +243,22 @@ internal fun DownloadsScreenContent(
         }
     }
 
-    val allIds = when (val state = uiState) {
-        is DownloadsUiState.Data -> state.data.downloads.map { it.id }.toSet()
-        else -> emptySet()
-    }
+    val downloads = downloadsData?.downloads.orEmpty()
+    val allIds = downloads.map(DownloadItemUiData::id).toSet()
     val hasDownloads = allIds.isNotEmpty()
-    val allSelected = selectedIds.isNotEmpty() && selectedIds.size == allIds.size
+    val allSelected = areAllItemsSelected(
+        selectedIds = selectedIds,
+        availableIds = allIds,
+    )
     val selectionMode = selectedIds.isNotEmpty()
-    val pendingDeleteIds = (uiState as? DownloadsUiState.Data)
-        ?.data
-        ?.pendingDeleteIds ?: emptySet()
+    val pendingDeleteIds = downloadsData?.pendingDeleteIds.orEmpty()
     val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
-    val retryFailedDownloadIds = (uiState as? DownloadsUiState.Data)
-        ?.data
-        ?.retryFailedDownloadIds ?: emptySet()
-
+    val retryFailedDownloadIds = downloadsData?.retryFailedDownloadIds.orEmpty()
     val hasFailedDownloads = retryFailedDownloadIds.isNotEmpty()
-    val hasActiveDownloads = remember(uiState) {
-        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+    val hasActiveDownloads = remember(downloads) {
         downloads.any { it.status.isActive }
     }
-    val selectedBytes = remember(uiState, selectedIds) {
-        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+    val selectedBytes = remember(downloads, selectedIds) {
         downloads
             .asSequence()
             .filter { it.id in selectedIds }
@@ -305,15 +274,32 @@ internal fun DownloadsScreenContent(
     val selectionSizeTitle = remember(selectedBytes) {
         UiFormatter.formatBytes(selectedBytes)
     }
-    val shouldMarkSelectionSeen = remember(uiState, selectedIds) {
-        val downloads = (uiState as? DownloadsUiState.Data)?.data?.downloads.orEmpty()
+    val shouldMarkSelectionSeen = remember(downloads, selectedIds) {
         downloads.any { it.id in selectedIds && !it.seen }
     }
 
     val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
+    val onScrollToTop: () -> Unit = {
+        coroutineScope.launch {
+            lazyGridState.animateScrollToItem(0)
+        }
+    }
+    val onRetryFailedAndScrollToTop: () -> Unit = {
+        onRetryFailedDownloads()
+        coroutineScope.launch {
+            delay(RETRY_FAILED_SCROLL_DELAY_MILLIS.milliseconds)
+            lazyGridState.animateScrollToItem(0)
+        }
+    }
 
     BackHandler(enabled = selectionMode) {
         selectedIds = emptySet()
+    }
+    LaunchedEffect(downloadsData != null, allIds) {
+        selectedIds = pruneSelectedItemIds(
+            selectedIds = selectedIds,
+            availableIds = allIds.takeIf { downloadsData != null },
+        )
     }
     PendingDeleteSnackbarEffect(
         pendingDeleteIds = pendingDeleteIds,
@@ -335,42 +321,62 @@ internal fun DownloadsScreenContent(
             .fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            DownloadsTopBar(
-                selectionMode = selectionMode,
-                selectedIds = selectedIds,
-                dismissingIds = dismissingIds,
-                archivingIds = archivingIds,
-                allSelected = allSelected,
-                allIds = allIds,
-                hasDownloads = hasDownloads,
-                hasFailedDownloads = hasFailedDownloads,
-                hasActiveDownloads = hasActiveDownloads,
-                selectionCountTitle = selectionCountTitle,
-                selectionSizeTitle = selectionSizeTitle,
-                shouldMarkSelectionSeen = shouldMarkSelectionSeen,
-                searchActive = searchActive,
-                searchQuery = searchQuery,
-                isArchived = isArchived,
-                gridLayoutEnabled = (uiState as? DownloadsUiState.Data)
-                    ?.data
-                    ?.gridLayoutEnabled ?: false,
-                lazyGridState = lazyGridState,
-                searchFocusRequester = searchFocusRequester,
-                onSelectionChange = { selectedIds = it },
-                onDismissingIdsChange = { dismissingIds = it },
-                onArchivingIdsChange = { archivingIds = it },
-                onSearchActiveChange = { searchActive = it },
-                onSearchQueryChange = onUpdateSearchQuery,
-                onNavigateBack = onNavigateBack,
-                onNavigateToArchived = onNavigateToArchived,
-                onNavigateToSettings = onNavigateToSettings,
-                onToggleDownloadsSeen = onToggleDownloadsSeen,
-                onMarkDownloadsPendingDelete = onMarkDownloadsPendingDelete,
-                onUpdateDownloadsArchived = onUpdateDownloadsArchived,
-                onRetryFailedDownloads = onRetryFailedDownloads,
-                onStopAllDownloads = onStopAllDownloads,
-                onToggleGridLayout = onToggleGridLayout,
-            )
+            if (selectionMode) {
+                DownloadsSelectionTopBar(
+                    selectionCountTitle = selectionCountTitle,
+                    selectionSizeTitle = selectionSizeTitle,
+                    shouldMarkSelectionSeen = shouldMarkSelectionSeen,
+                    isArchived = isArchived,
+                    onClearSelection = { selectedIds = emptySet() },
+                    onToggleAll = {
+                        selectedIds = if (allSelected) emptySet() else allIds
+                    },
+                    onToggleSeen = { onToggleDownloadsSeen(selectedIds) },
+                    onArchive = {
+                        val selectedItemIds = splitSelectedItemIds(
+                            selectedIds = selectedIds,
+                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
+                        )
+                        archivingIds += selectedItemIds.visible
+                        if (selectedItemIds.offscreen.isNotEmpty()) {
+                            onUpdateDownloadsArchived(selectedItemIds.offscreen, !isArchived)
+                        }
+                        selectedIds = emptySet()
+                    },
+                    onDelete = {
+                        val selectedItemIds = splitSelectedItemIds(
+                            selectedIds = selectedIds,
+                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
+                        )
+                        dismissingIds += selectedItemIds.visible
+                        if (selectedItemIds.offscreen.isNotEmpty()) {
+                            onMarkDownloadsPendingDelete(selectedItemIds.offscreen, true)
+                        }
+                        selectedIds = emptySet()
+                    },
+                )
+            } else {
+                DownloadsDefaultTopBar(
+                    hasDownloads = hasDownloads,
+                    hasFailedDownloads = hasFailedDownloads,
+                    hasActiveDownloads = hasActiveDownloads,
+                    searchActive = searchActive,
+                    searchQuery = searchQuery,
+                    isArchived = isArchived,
+                    gridLayoutEnabled = downloadsData?.gridLayoutEnabled ?: false,
+                    searchFocusRequester = searchFocusRequester,
+                    onSearchActiveChange = { searchActive = it },
+                    onSearchQueryChange = onUpdateSearchQuery,
+                    onNavigateBack = onNavigateBack,
+                    onNavigateToArchived = onNavigateToArchived,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onSelectAll = { selectedIds = allIds },
+                    onScrollToTop = onScrollToTop,
+                    onRetryFailedAndScrollToTop = onRetryFailedAndScrollToTop,
+                    onStopAllDownloads = onStopAllDownloads,
+                    onToggleGridLayout = onToggleGridLayout,
+                )
+            }
         },
         snackbarHost = {
             SnackbarHost(snackbarHostState) { snackbarData ->
@@ -393,8 +399,7 @@ internal fun DownloadsScreenContent(
             when (val state = uiState) {
                 is DownloadsUiState.Loading -> {
                     LoadingState(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         alignment = Alignment.Center,
                     )
                 }
@@ -402,13 +407,11 @@ internal fun DownloadsScreenContent(
                 is DownloadsUiState.Data -> {
                     with(state.data) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxSize(),
+                            modifier = Modifier.fillMaxSize(),
                         ) {
                             availableUpdate?.let {
                                 AvailableUpdateBanner(
-                                    modifier = Modifier
-                                        .fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth(),
                                     tag = it.tag,
                                     localFilePath = it.localFilePath,
                                     onClick = { onInstallAvailableUpdate() },
@@ -424,7 +427,7 @@ internal fun DownloadsScreenContent(
                                 leftSwipeAction = leftSwipeAction,
                                 rightSwipeAction = rightSwipeAction,
                                 hasAvailableUpdateBanner = availableUpdate != null,
-                                searchQuery = searchQuery.text,
+                                searchQuery = searchQuery,
                                 gridLayoutEnabled = gridLayoutEnabled,
                                 lazyGridState = lazyGridState,
                                 onItemClick = { item ->
@@ -435,20 +438,11 @@ internal fun DownloadsScreenContent(
                                     onNavigateToDownload(item)
                                 },
                                 onPauseResume = { item ->
-                                    when (item.status) {
-                                        DownloadStatusUiData.QUEUED,
-                                        DownloadStatusUiData.WAITING_FOR_NETWORK,
-                                        DownloadStatusUiData.WAITING_FOR_WIFI,
-                                        DownloadStatusUiData.DOWNLOADING,
-                                        DownloadStatusUiData.METADATA -> {
-                                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                            onStopDownload(item.id)
-                                        }
-
-                                        else -> {
-                                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                            onRetryDownload(item.id)
-                                        }
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    if (item.status.isActive) {
+                                        onStopDownload(item.id)
+                                    } else {
+                                        onRetryDownload(item.id)
                                     }
                                 },
                                 onSelectionChange = {
@@ -476,412 +470,6 @@ internal fun DownloadsScreenContent(
                 is DownloadsUiState.Error -> DownloadsError()
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DownloadsTopBar(
-    selectionMode: Boolean,
-    selectedIds: Set<Long>,
-    dismissingIds: Set<Long>,
-    archivingIds: Set<Long>,
-    allSelected: Boolean,
-    allIds: Set<Long>,
-    hasDownloads: Boolean,
-    hasFailedDownloads: Boolean,
-    hasActiveDownloads: Boolean,
-    selectionCountTitle: String,
-    selectionSizeTitle: String,
-    shouldMarkSelectionSeen: Boolean,
-    searchActive: Boolean,
-    searchQuery: TextFieldValue,
-    isArchived: Boolean,
-    gridLayoutEnabled: Boolean,
-    lazyGridState: LazyGridState,
-    searchFocusRequester: FocusRequester,
-    onSelectionChange: (Set<Long>) -> Unit,
-    onDismissingIdsChange: (Set<Long>) -> Unit,
-    onArchivingIdsChange: (Set<Long>) -> Unit,
-    onSearchActiveChange: (Boolean) -> Unit,
-    onSearchQueryChange: (TextFieldValue) -> Unit,
-    onNavigateBack: () -> Unit,
-    onNavigateToArchived: () -> Unit,
-    onNavigateToSettings: () -> Unit,
-    onToggleDownloadsSeen: (Set<Long>) -> Unit,
-    onMarkDownloadsPendingDelete: (Set<Long>, Boolean) -> Unit,
-    onUpdateDownloadsArchived: (Set<Long>, Boolean) -> Unit,
-    onRetryFailedDownloads: () -> Unit,
-    onStopAllDownloads: () -> Unit,
-    onToggleGridLayout: () -> Unit,
-) {
-    val view = LocalView.current
-    val dimens = LocalDimens.current
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    val coroutineScope = rememberCoroutineScope()
-
-    if (selectionMode) {
-        TopAppBar(
-            colors = RefineryTopAppBarDefaults.colors(),
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        onSelectionChange(emptySet())
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null,
-                    )
-                }
-            },
-            title = {
-                Column {
-                    Text(
-                        text = selectionCountTitle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = selectionSizeTitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            },
-            actions = {
-                IconButton(
-                    onClick = {
-                        onSelectionChange(
-                            if (allSelected) {
-                                emptySet()
-                            } else {
-                                allIds
-                            }
-                        )
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.SelectAll,
-                        contentDescription = stringResource(R.string.content_description_select_all),
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        onToggleDownloadsSeen(selectedIds)
-                    },
-                ) {
-                    Icon(
-                        imageVector = if (shouldMarkSelectionSeen) {
-                            Icons.Filled.Visibility
-                        } else {
-                            Icons.Filled.VisibilityOff
-                        },
-                        contentDescription = if (shouldMarkSelectionSeen) {
-                            stringResource(R.string.content_description_mark_seen)
-                        } else {
-                            stringResource(R.string.content_description_mark_unseen)
-                        },
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        val visibleSelectedIds = getBulkDeleteVisibleIds(
-                            selectedIds = selectedIds,
-                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
-                        )
-                        val hiddenSelectedIds = selectedIds - visibleSelectedIds
-                        onArchivingIdsChange(archivingIds + visibleSelectedIds)
-                        if (hiddenSelectedIds.isNotEmpty()) {
-                            onUpdateDownloadsArchived(hiddenSelectedIds, !isArchived)
-                        }
-                        onSelectionChange(emptySet())
-                    },
-                ) {
-                    Icon(
-                        imageVector = if (isArchived) {
-                            Icons.Filled.Unarchive
-                        } else {
-                            Icons.Filled.Archive
-                        },
-                        contentDescription = if (isArchived) {
-                            stringResource(R.string.content_description_unarchive)
-                        } else {
-                            stringResource(R.string.content_description_archive)
-                        },
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        val visibleSelectedIds = getBulkDeleteVisibleIds(
-                            selectedIds = selectedIds,
-                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
-                        )
-                        val hiddenSelectedIds = selectedIds - visibleSelectedIds
-                        onDismissingIdsChange(dismissingIds + visibleSelectedIds)
-                        if (hiddenSelectedIds.isNotEmpty()) {
-                            onMarkDownloadsPendingDelete(hiddenSelectedIds, true)
-                        }
-                        onSelectionChange(emptySet())
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.content_description_delete),
-                    )
-                }
-            },
-        )
-    } else {
-        TopAppBar(
-            colors = RefineryTopAppBarDefaults.colors(),
-            navigationIcon = {
-                if (isArchived) {
-                    IconButton(
-                        onClick = onNavigateBack,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.content_description_back),
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = {},
-                    ) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(id = R.drawable.ic_logo_appbar),
-                            contentDescription = stringResource(R.string.app_name),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            },
-            title = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    AnimatedVisibility(
-                        visible = !searchActive,
-                        enter = Transitions.titleEnter,
-                        exit = Transitions.titleExit,
-                    ) {
-                        Text(
-                            modifier = Modifier
-                                .combinedClickable {
-                                    coroutineScope.launch {
-                                        lazyGridState.animateScrollToItem(0)
-                                    }
-                                },
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = TextStyles.downloadsTitle(),
-                            text = if (isArchived) {
-                                stringResource(R.string.screen_title_archived)
-                            } else {
-                                stringResource(R.string.app_name)
-                            },
-                            maxLines = 1,
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = searchActive,
-                        enter = Transitions.searchEnter,
-                        exit = Transitions.searchExit,
-                    ) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = onSearchQueryChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(end = dimens.spacingSmall)
-                                .focusRequester(searchFocusRequester),
-                            singleLine = true,
-                            placeholder = {
-                                Text(text = stringResource(R.string.hint_search))
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Search,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    contentDescription = null,
-                                )
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                            ),
-                        )
-                    }
-                }
-            },
-            actions = {
-                IconButton(
-                    onClick = {
-                        onSearchActiveChange(!searchActive)
-                        if (searchActive) {
-                            onSearchQueryChange(TextFieldValue(""))
-                            keyboardController?.hide()
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = if (searchActive) {
-                            Icons.Filled.Close
-                        } else {
-                            Icons.Filled.Search
-                        },
-                        contentDescription = null,
-                    )
-                }
-                if (!searchActive) {
-                    IconButton(
-                        onClick = {
-                            onToggleGridLayout()
-                        },
-                    ) {
-                        Icon(
-                            imageVector = if (gridLayoutEnabled) {
-                                Icons.AutoMirrored.Filled.ViewList
-                            } else {
-                                Icons.Filled.ViewModule
-                            },
-                            contentDescription = if (gridLayoutEnabled) {
-                                stringResource(R.string.content_description_use_list_layout)
-                            } else {
-                                stringResource(R.string.content_description_use_grid_layout)
-                            },
-                        )
-                    }
-                }
-                var menuExpanded by remember { mutableStateOf(false) }
-                IconButton(
-                    onClick = {
-                        menuExpanded = !menuExpanded
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = null,
-                    )
-                }
-                DropdownMenu(
-                    modifier = Modifier
-                        .padding(end = dimens.spacingSmall),
-                    expanded = menuExpanded,
-                    onDismissRequest = {
-                        menuExpanded = false
-                    },
-                ) {
-                    if (hasDownloads) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = stringResource(R.string.select_all),
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.SelectAll,
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                onSelectionChange(allIds)
-                                menuExpanded = false
-                            },
-                        )
-                    }
-                    if (hasFailedDownloads) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = stringResource(R.string.retry_failed),
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Refresh,
-                                    contentDescription = stringResource(R.string.content_description_retry_failed),
-                                )
-                            },
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                onRetryFailedDownloads()
-                                coroutineScope.launch {
-                                    delay(RETRY_FAILED_SCROLL_DELAY_MILLIS.milliseconds)
-                                    lazyGridState.animateScrollToItem(0)
-                                }
-                                menuExpanded = false
-                            },
-                        )
-                    }
-                    if (hasActiveDownloads) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = stringResource(R.string.notification_action_stop_all),
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = stringResource(R.string.notification_action_stop_all),
-                                )
-                            },
-                            onClick = {
-                                onStopAllDownloads()
-                                menuExpanded = false
-                            },
-                        )
-                    }
-                    if (!isArchived) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = stringResource(R.string.screen_title_archived),
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Archive,
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                onNavigateToArchived()
-                                menuExpanded = false
-                            },
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = stringResource(R.string.screen_title_settings),
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Settings,
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            onNavigateToSettings()
-                            menuExpanded = false
-                        },
-                    )
-                }
-            },
-        )
     }
 }
 
@@ -1002,20 +590,17 @@ private fun DownloadsContent(
         }
     }
     Box(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
     ) {
         AnimatedVisibility(
-            modifier = Modifier
-                .align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center),
             visible = visibleCount == 0,
             enter = Transitions.emptyEnter,
             exit = Transitions.emptyExit,
         ) {
             if (searchQuery.isNotBlank()) {
                 EmptyState(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     icon = Icons.Filled.Search,
                     title = stringResource(
                         R.string.search_no_results_title,
@@ -1025,15 +610,13 @@ private fun DownloadsContent(
                 )
             } else {
                 DownloadsIntro(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     archived = archived,
                 )
             }
         }
         LazyVerticalGrid(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             columns = if (gridLayoutEnabled) {
                 GridCells.Adaptive(DOWNLOAD_GRID_MIN_CELL_WIDTH)
             } else {
@@ -1057,22 +640,21 @@ private fun DownloadsContent(
                 items = items,
                 key = { it.id },
             ) { item ->
-                DownloadsListRow(
+                DownloadItem(
                     item = item,
                     selectedIds = selectedIds,
                     isRestoring = item.id in restoringItemIds,
                     gridLayoutEnabled = gridLayoutEnabled,
-                    modifier = Modifier
-                        .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = spring(),
-                            fadeOutSpec = null,
-                        ),
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        placementSpec = spring(),
+                        fadeOutSpec = null,
+                    ),
                     onItemClick = onItemClick,
                     onPauseResume = { clickedItem ->
                         if (selectedIds.isNotEmpty()) {
                             onSelectionChange(toggleSelection(selectedIds, clickedItem.id))
-                            return@DownloadsListRow
+                            return@DownloadItem
                         }
                         val shouldScrollToTop = shouldScrollToTopOnPauseResume(clickedItem.status)
                         onPauseResume(clickedItem)
@@ -1152,8 +734,7 @@ private fun DownloadsContent(
         }
         if (showScrollToBottom) {
             ScrollToBottomButton(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd),
+                modifier = Modifier.align(Alignment.BottomEnd),
                 onClick = {
                     coroutineScope.launch {
                         val targetIndex = items.lastIndex
@@ -1169,7 +750,7 @@ private fun DownloadsContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DownloadsListRow(
+private fun DownloadItem(
     item: DownloadItemUiData,
     selectedIds: Set<Long>,
     isPendingDismiss: Boolean,
@@ -1262,8 +843,7 @@ private fun DownloadsListRow(
     }
 
     AnimatedVisibility(
-        modifier = modifier
-            .zIndex(if (gridSwipeActive) 1f else 0f),
+        modifier = modifier.zIndex(if (gridSwipeActive) 1f else 0f),
         visibleState = visibilityState,
         enter = Transitions.listItemEnter,
         exit = if (skipDismissAnimation) {
@@ -1310,7 +890,7 @@ private fun DownloadsListRow(
                         onOpen = onOpen,
                     )
                 } else {
-                    DownloadItem(
+                    DownloadListItem(
                         item = item,
                         isSelected = isSelected,
                         interactionEnabled = interactionEnabled,
@@ -1347,9 +927,7 @@ private fun DownloadsListRow(
                     enableDismissFromEndToStart = swipeEnabled
                             && leftSwipeAction != DownloadSwipeActionUiData.NONE,
                     onDismiss = { dismissValue ->
-                        if (hasHandledCurrentSwipe) {
-                            return@SwipeToDismissBox
-                        }
+                        if (hasHandledCurrentSwipe) return@SwipeToDismissBox
                         val swipeAction = getSwipeActionForDismissValue(
                             dismissValue = dismissValue,
                             leftSwipeAction = leftSwipeAction,
@@ -1589,8 +1167,7 @@ private fun GridSwipeToDismiss(
             ),
     ) {
         SwipeActionBackground(
-            modifier = Modifier
-                .matchParentSize(),
+            modifier = Modifier.matchParentSize(),
             archived = archived,
             seen = seen,
             leftSwipeAction = leftSwipeAction,
@@ -1598,8 +1175,7 @@ private fun GridSwipeToDismiss(
             offsetPx = logicalOffset(offsetPx),
         )
         Box(
-            modifier = Modifier
-                .offset { IntOffset(offsetPx.roundToInt(), 0) },
+            modifier = Modifier.offset { IntOffset(offsetPx.roundToInt(), 0) },
         ) {
             content()
         }
@@ -1664,8 +1240,7 @@ private fun SwipeActionBackground(
         shape = MaterialTheme.shapes.medium,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = if (isEndToStart) {
                 Alignment.CenterEnd
             } else {
@@ -1673,11 +1248,10 @@ private fun SwipeActionBackground(
             },
         ) {
             Icon(
-                modifier = Modifier
-                    .padding(
-                        start = if (isEndToStart) dimens.zero else dimens.spacingMedium,
-                        end = if (isEndToStart) dimens.spacingMedium else dimens.zero,
-                    ),
+                modifier = Modifier.padding(
+                    start = if (isEndToStart) dimens.zero else dimens.spacingMedium,
+                    end = if (isEndToStart) dimens.spacingMedium else dimens.zero,
+                ),
                 imageVector = getSwipeActionIcon(
                     action = swipeAction,
                     archived = archived,
@@ -1751,197 +1325,10 @@ private fun ScrollToBottomButton(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                modifier = Modifier
-                    .size(dimens.iconXSmall),
+                modifier = Modifier.size(dimens.iconXSmall),
                 imageVector = Icons.Default.ArrowDownward,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 contentDescription = null,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DownloadGridItem(
-    item: DownloadItemUiData,
-    isSelected: Boolean,
-    interactionEnabled: Boolean,
-    longClickEnabled: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    onPauseResume: () -> Unit,
-    onOpen: () -> Unit,
-) {
-    val dimens = LocalDimens.current
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        tonalElevation = dimens.tonalElevationLow,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    enabled = interactionEnabled,
-                    onClick = onClick,
-                    onLongClick = if (longClickEnabled) {
-                        onLongClick
-                    } else {
-                        null
-                    },
-                ),
-        ) {
-            DownloadPrimaryActionButton(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 10f),
-                thumbnailFilePath = item.thumbnailFilePath,
-                status = item.status,
-                enabled = interactionEnabled,
-                onPauseResume = onPauseResume,
-                onOpen = onOpen,
-            )
-            Column(
-                modifier = Modifier
-                    .padding(dimens.spacingSmall),
-            ) {
-                DownloadItemTitle(item = item)
-                Spacer(modifier = Modifier.height(dimens.spacingSmall))
-                DownloadProgressSection(
-                    status = item.status,
-                    progressFraction = item.progressFraction,
-                    etaSeconds = item.etaSeconds,
-                    bytesDownloaded = item.bytesDownloaded,
-                    completedAtMillis = item.completedAtMillis,
-                    alwaysShowBar = false,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DownloadItem(
-    item: DownloadItemUiData,
-    isSelected: Boolean,
-    interactionEnabled: Boolean,
-    longClickEnabled: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    onPauseResume: () -> Unit,
-    onOpen: () -> Unit,
-) {
-    val dimens = LocalDimens.current
-
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.background
-        },
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    enabled = interactionEnabled,
-                    onClick = onClick,
-                    onLongClick = if (longClickEnabled) {
-                        onLongClick
-                    } else {
-                        null
-                    },
-                )
-                .padding(
-                    vertical = dimens.spacingSmall,
-                    horizontal = dimens.spacingMedium,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DownloadPrimaryActionButton(
-                modifier = Modifier
-                    .size(dimens.downloadListThumbnailSize),
-                thumbnailFilePath = item.thumbnailFilePath,
-                status = item.status,
-                enabled = interactionEnabled,
-                onPauseResume = onPauseResume,
-                onOpen = onOpen,
-            )
-            Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
-            Column(
-                modifier = Modifier
-                    .weight(1f),
-            ) {
-                val showInlineProgressBar = when (item.status) {
-                    DownloadStatusUiData.QUEUED,
-                    DownloadStatusUiData.METADATA,
-                    DownloadStatusUiData.DOWNLOADING -> true
-
-                    else -> false
-                }
-                DownloadItemTitle(item = item)
-                Spacer(
-                    modifier = Modifier.height(
-                        if (showInlineProgressBar) {
-                            dimens.spacingMediumAlt
-                        } else {
-                            dimens.spacingXXSmall
-                        },
-                    ),
-                )
-                DownloadProgressSection(
-                    status = item.status,
-                    progressFraction = item.progressFraction,
-                    etaSeconds = item.etaSeconds,
-                    bytesDownloaded = item.bytesDownloaded,
-                    completedAtMillis = item.completedAtMillis,
-                    alwaysShowBar = false,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DownloadItemTitle(
-    item: DownloadItemUiData,
-) {
-    val dimens = LocalDimens.current
-
-    val showUnseen = !item.seen && item.status == DownloadStatusUiData.COMPLETED
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            modifier = Modifier
-                .weight(1f),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = if (showUnseen) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Normal
-                },
-            ),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
-            text = item.title,
-        )
-        if (showUnseen) {
-            Spacer(modifier = Modifier.width(dimens.spacingSmall))
-            Box(
-                modifier = Modifier
-                    .size(dimens.dotSize)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(50),
-                    ),
             )
         }
     }
@@ -1978,22 +1365,13 @@ private fun DownloadsError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_downloads),
     )
 }
 
-private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = when (status) {
-    DownloadStatusUiData.QUEUED,
-    DownloadStatusUiData.WAITING_FOR_NETWORK,
-    DownloadStatusUiData.WAITING_FOR_WIFI,
-    DownloadStatusUiData.DOWNLOADING,
-    DownloadStatusUiData.METADATA -> false
-
-    else -> true
-}
+private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = !status.isActive
 
 private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
     return if (itemId in selectedIds) {
@@ -2003,18 +1381,44 @@ private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
     }
 }
 
-internal fun getBulkDeleteVisibleIds(
+internal data class SelectedItemIds(
+    val visible: Set<Long>,
+    val offscreen: Set<Long>,
+)
+
+internal fun splitSelectedItemIds(
     selectedIds: Set<Long>,
     visibleItemKeys: List<Any>,
-): Set<Long> {
+): SelectedItemIds {
     if (selectedIds.isEmpty() || visibleItemKeys.isEmpty()) {
-        return emptySet()
+        return SelectedItemIds(
+            visible = emptySet(),
+            offscreen = selectedIds,
+        )
     }
     val visibleIds = visibleItemKeys
         .filterIsInstance<Long>()
         .toSet()
+    val visibleSelectedIds = selectedIds.intersect(visibleIds)
 
-    return selectedIds.intersect(visibleIds)
+    return SelectedItemIds(
+        visible = visibleSelectedIds,
+        offscreen = selectedIds - visibleSelectedIds,
+    )
+}
+
+internal fun areAllItemsSelected(
+    selectedIds: Set<Long>,
+    availableIds: Set<Long>,
+): Boolean {
+    return availableIds.isNotEmpty() && availableIds.all(selectedIds::contains)
+}
+
+internal fun pruneSelectedItemIds(
+    selectedIds: Set<Long>,
+    availableIds: Set<Long>?,
+): Set<Long> {
+    return availableIds?.let(selectedIds::intersect) ?: selectedIds
 }
 
 internal fun hasNewVisibleItem(

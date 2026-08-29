@@ -14,10 +14,10 @@ import org.strigate.ferrot.presentation.screen.AboutScreen
 import org.strigate.ferrot.presentation.screen.ArchivedScreen
 import org.strigate.ferrot.presentation.screen.CookiesScreen
 import org.strigate.ferrot.presentation.screen.DownloadScreen
-import org.strigate.ferrot.presentation.screen.DownloadsScreen
 import org.strigate.ferrot.presentation.screen.GetCookiesScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
 import org.strigate.ferrot.presentation.screen.UpdatesScreen
+import org.strigate.ferrot.presentation.screen.downloads.DownloadsScreen
 
 @Composable
 fun MainNavHost(
