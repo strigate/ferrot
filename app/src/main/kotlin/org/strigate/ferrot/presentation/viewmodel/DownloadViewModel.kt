@@ -69,6 +69,7 @@ class DownloadViewModel @Inject constructor(
                 .map { it.id }
                 .toList()
         }
+        .distinctUntilChanged()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),

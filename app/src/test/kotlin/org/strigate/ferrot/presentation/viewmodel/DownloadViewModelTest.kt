@@ -329,6 +329,54 @@ class DownloadViewModelTest {
     }
 
     @Test
+    fun uiState_publishesLiveOrder_whenRetriedDownloadMovesToActivePrefix() =
+        runTest(testDispatcher) {
+            val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L))
+            val viewModel = createViewModel(
+                initialId = 20L,
+                downloadIdsFlow = downloadIdsFlow,
+            )
+            val collector = collectUiState(backgroundScope, viewModel)
+
+            waitForUiState(viewModel) { state ->
+                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+                data.data.downloadIds == listOf(10L, 20L) && data.data.id == 20L
+            }
+            downloadIdsFlow.value = listOf(20L, 10L)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as DownloadUiState.Data
+            assertEquals(listOf(20L, 10L), state.data.downloadIds)
+            assertEquals(20L, state.data.id)
+            assertEquals(20L, viewModel.selectedId.value)
+
+            collector.cancel()
+        }
+
+    @Test
+    fun uiState_publishesUpdatedOrder_whenDownloadsAreAddedAndRemoved() = runTest(testDispatcher) {
+        val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 30L))
+        val viewModel = createViewModel(
+            initialId = 10L,
+            downloadIdsFlow = downloadIdsFlow,
+        )
+        val collector = collectUiState(backgroundScope, viewModel)
+
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.downloadIds == listOf(10L, 20L, 30L) && data.data.id == 10L
+        }
+        downloadIdsFlow.value = listOf(40L, 30L, 10L)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as DownloadUiState.Data
+        assertEquals(listOf(40L, 30L, 10L), state.data.downloadIds)
+        assertEquals(10L, state.data.id)
+
+        collector.cancel()
+    }
+
+    @Test
     fun selectDownload_updatesSelectedId_andDefaultsMediaToVideo() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadIdsFlow = MutableStateFlow(listOf(10L, 20L, 44L)),

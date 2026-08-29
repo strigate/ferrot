@@ -10,7 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,21 +64,44 @@ internal fun DownloadPager(
         val resolvedPage = remember(downloadIds, selectedId) {
             downloadIds.indexOfFirst { it == selectedId }
         }
+        val synchronizedIds = remember { mutableStateOf(downloadIds) }
+        val synchronizedSelectedId = remember { mutableStateOf(selectedId) }
+        val isReanchoring = rememberUpdatedState(
+            downloadIds != synchronizedIds.value || selectedId != synchronizedSelectedId.value,
+        )
+        val currentDownloadIds = rememberUpdatedState(downloadIds)
+        val currentSelectedId = rememberUpdatedState(selectedId)
+        val currentOnDownloadPageSelected = rememberUpdatedState(onDownloadPageSelected)
 
         LaunchedEffect(downloadIds) {
             onEnsureDefaults(downloadIds)
         }
-        LaunchedEffect(resolvedPage) {
-            if (resolvedPage >= 0 && pagerState.currentPage != resolvedPage) {
-                pagerState.scrollToPage(resolvedPage)
+        LaunchedEffect(downloadIds, selectedId) {
+            if (resolvedPage >= 0) {
+                try {
+                    if (pagerState.currentPage != resolvedPage) {
+                        pagerState.scrollToPage(resolvedPage)
+                    }
+                } finally {
+                    synchronizedIds.value = downloadIds
+                    synchronizedSelectedId.value = selectedId
+                }
             }
         }
-        LaunchedEffect(pagerState, downloadIds) {
-            snapshotFlow { pagerState.currentPage }
-                .mapNotNull { pageIndex -> downloadIds.getOrNull(pageIndex) }
+        LaunchedEffect(pagerState) {
+            snapshotFlow {
+                if (isReanchoring.value) {
+                    null
+                } else {
+                    currentDownloadIds.value.getOrNull(pagerState.settledPage)
+                }
+            }
+                .mapNotNull { it }
                 .distinctUntilChanged()
                 .collect { downloadId ->
-                    onDownloadPageSelected(downloadId)
+                    if (downloadId != currentSelectedId.value) {
+                        currentOnDownloadPageSelected.value(downloadId)
+                    }
                 }
         }
 
