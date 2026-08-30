@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
+import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOADS
@@ -31,6 +32,8 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL_UID
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.ShareIntentParser
+import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.theme.Dimens
 import org.strigate.ferrot.presentation.theme.LocalDimens
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
@@ -64,20 +68,21 @@ class MainActivity : ComponentActivity() {
         when (intent.getStringExtra(EXTRA_ACTION)) {
             ACTION_START_DOWNLOAD_FROM_SHARE -> {
                 val sharedUrlUid = intent.getStringExtra(EXTRA_SHARED_URL_UID)
-                if (!sharedUrlUid.isNullOrBlank() && handledUids.contains(sharedUrlUid)) {
+                val sharedUrl = intent.getStringExtra(EXTRA_SHARED_URL)
+                    ?.let(ShareIntentParser::normalizeHttpUrl)
+
+                if (sharedUrl == null || sharedUrlUid.isNullOrBlank()) {
+                    toast(R.string.toast_share_no_url, true)
                     return
                 }
-                val sharedUrl = intent.getStringExtra(EXTRA_SHARED_URL)
-                if (!sharedUrl.isNullOrBlank()) {
-                    sharedUrlUid?.let {
-                        handledUids.add(it)
-                        viewModel.startDownload(sharedUrl)
-                        viewModel.navigateTo(
-                            route = Screen.Downloads.route,
-                            popUpToRoute = Screen.Downloads.route,
-                        )
-                    }
+                if (!markShareHandled(sharedUrlUid)) {
+                    return
                 }
+                viewModel.startDownload(sharedUrl)
+                viewModel.navigateTo(
+                    route = Screen.Downloads.route,
+                    popUpToRoute = Screen.Downloads.route,
+                )
                 return
             }
 
@@ -196,7 +201,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun markShareHandled(uid: String): Boolean {
+        if (handledShareUids.contains(uid)) {
+            return false
+        }
+        if (handledShareUids.size >= MAX_HANDLED_SHARE_UIDS) {
+            handledShareUids.iterator().next().let(handledShareUids::remove)
+        }
+        handledShareUids.add(uid)
+        return true
+    }
+
     companion object {
-        private val handledUids = mutableListOf<String>()
+        private const val MAX_HANDLED_SHARE_UIDS = 64
+        private val handledShareUids = LinkedHashSet<String>()
     }
 }

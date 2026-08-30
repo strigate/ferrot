@@ -35,6 +35,7 @@ import androidx.navigation.NavController
 import org.strigate.ferrot.R
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.extensions.copyToClipboard
+import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.helper.PlayHelper
 import org.strigate.ferrot.helper.SaveHelper
 import org.strigate.ferrot.helper.ShareHelper
@@ -93,7 +94,9 @@ fun DownloadScreen(
                 }
 
                 is DownloadEvent.Share -> {
-                    ShareHelper.shareFileIfExists(context, event.path)
+                    if (!ShareHelper.shareFileIfExists(context, event.path)) {
+                        context.toast(R.string.toast_share_failed, true)
+                    }
                 }
 
                 is DownloadEvent.Save -> {
