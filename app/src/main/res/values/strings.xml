@@ -121,6 +121,8 @@
     <string name="toast_cookie_set_failed">Could not save cookies</string>
     <string name="toast_cookie_set_preview_failed">Could not load cookies</string>
     <string name="toast_cookie_webview_invalid_url">Enter a valid site URL</string>
+    <string name="toast_share_no_url">No link found in shared content</string>
+    <string name="toast_share_failed">Could not share the download</string>
     <string name="toast_unable_to_open_link">Unable to open link</string>
 
     <!-- Settings: sections -->
