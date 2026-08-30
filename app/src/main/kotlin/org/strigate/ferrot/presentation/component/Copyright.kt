@@ -43,12 +43,13 @@ fun Copyright(
             ),
         ) {
             Column(
-                modifier = Modifier.padding(
-                    start = refineryDimens.spacingLarge,
-                    top = refineryDimens.spacingMedium,
-                    end = refineryDimens.spacingLarge,
-                    bottom = refineryDimens.spacingLarge,
-                ),
+                modifier = Modifier
+                    .padding(
+                        start = refineryDimens.spacingLarge,
+                        top = refineryDimens.spacingMedium,
+                        end = refineryDimens.spacingLarge,
+                        bottom = refineryDimens.spacingLarge,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(

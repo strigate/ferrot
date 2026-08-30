@@ -644,11 +644,12 @@ private fun DownloadsContent(
                     selectedIds = selectedIds,
                     isRestoring = item.id in restoringItemIds,
                     gridLayoutEnabled = gridLayoutEnabled,
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = null,
-                        placementSpec = spring(),
-                        fadeOutSpec = null,
-                    ),
+                    modifier = Modifier
+                        .animateItem(
+                            fadeInSpec = null,
+                            placementSpec = spring(),
+                            fadeOutSpec = null,
+                        ),
                     onItemClick = onItemClick,
                     onPauseResume = { clickedItem ->
                         if (selectedIds.isNotEmpty()) {
@@ -1247,10 +1248,11 @@ private fun SwipeActionBackground(
             },
         ) {
             Icon(
-                modifier = Modifier.padding(
-                    start = if (isEndToStart) dimens.zero else dimens.spacingMedium,
-                    end = if (isEndToStart) dimens.spacingMedium else dimens.zero,
-                ),
+                modifier = Modifier
+                    .padding(
+                        start = if (isEndToStart) dimens.zero else dimens.spacingMedium,
+                        end = if (isEndToStart) dimens.spacingMedium else dimens.zero,
+                    ),
                 imageVector = getSwipeActionIcon(
                     action = swipeAction,
                     archived = archived,

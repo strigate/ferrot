@@ -39,11 +39,12 @@ fun ColorPickerSetting(
     val chipColor = MaterialTheme.colorScheme.surface
     val chipTextColor = MaterialTheme.colorScheme.onSurface
     val clickableModifier = if (onClick != null) {
-        Modifier.combinedClickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(),
-            onClick = onClick,
-        )
+        Modifier
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+                onClick = onClick,
+            )
     } else {
         Modifier
     }
