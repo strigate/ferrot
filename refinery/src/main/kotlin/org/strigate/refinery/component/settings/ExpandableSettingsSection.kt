@@ -63,8 +63,7 @@ fun ExpandableSettingsSection(
                 title = title,
             ) {
                 Icon(
-                    modifier = Modifier
-                        .size(refineryDimens.iconXSmallAlt),
+                    modifier = Modifier.size(refineryDimens.iconXSmallAlt),
                     imageVector = if (expanded) {
                         Icons.Filled.KeyboardArrowUp
                     } else {

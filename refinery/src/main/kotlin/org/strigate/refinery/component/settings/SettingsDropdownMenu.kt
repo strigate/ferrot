@@ -33,8 +33,7 @@ internal fun SettingsDropdownMenu(
     }
     val refineryDimens = LocalRefineryDimens.current
     DropdownMenu(
-        modifier = modifier
-            .padding(end = refineryDimens.spacingSmall),
+        modifier = modifier.padding(end = refineryDimens.spacingSmall),
         onDismissRequest = onDismissRequest,
         expanded = expanded,
         shape = MaterialTheme.shapes.medium,

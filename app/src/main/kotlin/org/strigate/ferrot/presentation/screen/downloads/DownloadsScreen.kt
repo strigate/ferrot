@@ -317,8 +317,7 @@ internal fun DownloadsScreenContent(
     )
 
     Scaffold(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (selectionMode) {

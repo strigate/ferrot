@@ -258,8 +258,7 @@ internal fun GetCookiesScreenContent(
                 color = MaterialTheme.colorScheme.background,
             ) {
                 BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     if (state.requestedUrl == null) {
                         Box(

@@ -52,8 +52,7 @@ fun Copyright(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
-                    modifier = Modifier
-                        .height(refineryDimens.iconLarge),
+                    modifier = Modifier.height(refineryDimens.iconLarge),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                         alpha = 0.8f,
                     ),
