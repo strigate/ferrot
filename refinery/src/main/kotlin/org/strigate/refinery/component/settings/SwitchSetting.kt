@@ -44,8 +44,7 @@ fun SwitchSetting(
             ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -69,8 +68,7 @@ fun SwitchSetting(
                 }
             }
             Switch(
-                modifier = Modifier
-                    .height(refineryDimens.iconXSmall),
+                modifier = Modifier.height(refineryDimens.iconXSmall),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),

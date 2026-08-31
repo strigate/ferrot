@@ -126,15 +126,13 @@ internal fun SettingsScreenContent(
         },
         content = { contentPadding ->
             Surface(
-                modifier = modifier
-                    .padding(contentPadding),
+                modifier = modifier.padding(contentPadding),
                 color = MaterialTheme.colorScheme.background,
             ) {
                 when (val state = uiState) {
                     is SettingsUiState.Loading -> {
                         LoadingState(
-                            modifier = Modifier
-                                .fillMaxSize(),
+                            modifier = Modifier.fillMaxSize(),
                             alignment = Alignment.Center,
                         )
                     }
@@ -238,8 +236,7 @@ private fun SettingsError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_settings),
     )

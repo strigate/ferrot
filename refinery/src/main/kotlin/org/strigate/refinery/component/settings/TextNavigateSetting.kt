@@ -53,15 +53,13 @@ fun TextNavigateSetting(
                 .padding(refineryDimens.spacingMedium),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (icon != null) {
                     Icon(
-                        modifier = Modifier
-                            .size(refineryDimens.iconXSmallAlt),
+                        modifier = Modifier.size(refineryDimens.iconXSmallAlt),
                         imageVector = icon,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         contentDescription = null,
@@ -88,8 +86,7 @@ fun TextNavigateSetting(
                     }
                 }
                 Icon(
-                    modifier = Modifier
-                        .size(refineryDimens.iconXSmallAlt),
+                    modifier = Modifier.size(refineryDimens.iconXSmallAlt),
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     contentDescription = null,

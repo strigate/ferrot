@@ -43,17 +43,17 @@ fun Copyright(
             ),
         ) {
             Column(
-                modifier = Modifier.padding(
-                    start = refineryDimens.spacingLarge,
-                    top = refineryDimens.spacingMedium,
-                    end = refineryDimens.spacingLarge,
-                    bottom = refineryDimens.spacingLarge,
-                ),
+                modifier = Modifier
+                    .padding(
+                        start = refineryDimens.spacingLarge,
+                        top = refineryDimens.spacingMedium,
+                        end = refineryDimens.spacingLarge,
+                        bottom = refineryDimens.spacingLarge,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
-                    modifier = Modifier
-                        .height(refineryDimens.iconLarge),
+                    modifier = Modifier.height(refineryDimens.iconLarge),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                         alpha = 0.8f,
                     ),

@@ -48,8 +48,7 @@ fun <T> DropdownSetting(
     val chipTextColor = MaterialTheme.colorScheme.onSurface
 
     Box(
-        modifier = modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
@@ -67,8 +66,7 @@ fun <T> DropdownSetting(
                 ),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {

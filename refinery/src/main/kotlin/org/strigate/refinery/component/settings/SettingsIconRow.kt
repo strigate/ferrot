@@ -37,13 +37,11 @@ fun SettingsIconRow(
         ) {
             items.forEach { item ->
                 IconButton(
-                    modifier = Modifier
-                        .size(refineryDimens.iconSmall + refineryDimens.spacingXSmallAlt),
+                    modifier = Modifier.size(refineryDimens.iconSmall + refineryDimens.spacingXSmallAlt),
                     onClick = item.onClick,
                 ) {
                     Icon(
-                        modifier = Modifier
-                            .size(refineryDimens.iconXSmall),
+                        modifier = Modifier.size(refineryDimens.iconXSmall),
                         painter = item.painter,
                         contentDescription = item.contentDescription,
                     )

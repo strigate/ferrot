@@ -451,10 +451,11 @@ private fun FileExtensionPill(
         tonalElevation = dimens.tonalElevationHigh,
     ) {
         Text(
-            modifier = Modifier.padding(
-                horizontal = dimens.spacingSmall,
-                vertical = dimens.spacingXXSmall,
-            ),
+            modifier = Modifier
+                .padding(
+                    horizontal = dimens.spacingSmall,
+                    vertical = dimens.spacingXXSmall,
+                ),
             color = MaterialTheme.colorScheme.onSecondaryContainer,
             style = MaterialTheme.typography.titleMedium,
             text = text,
@@ -491,12 +492,13 @@ private fun MetaItem(
             Spacer(modifier = Modifier.height(dimens.spacingXXSmall))
             if (isUrl) {
                 Text(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                    ) {
-                        onUrlClick(value)
-                    },
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = LocalIndication.current,
+                        ) {
+                            onUrlClick(value)
+                        },
                     style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.Underline,
                     ),

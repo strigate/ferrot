@@ -119,8 +119,7 @@ internal fun UpdatesScreenContent(
                 when (val state = uiState) {
                     is UpdatesUiState.Loading -> {
                         LoadingState(
-                            modifier = Modifier
-                                .fillMaxSize(),
+                            modifier = Modifier.fillMaxSize(),
                             alignment = Alignment.Center,
                         )
                     }
@@ -199,8 +198,7 @@ private fun UpdatesError(
     modifier: Modifier = Modifier,
 ) {
     ErrorState(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         alignment = Alignment.Center,
         text = stringResource(R.string.error_failed_to_load_update_settings),
     )

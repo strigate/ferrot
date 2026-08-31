@@ -225,8 +225,7 @@ internal fun AboutScreenContent(
                         )
                     }
                     Copyright(
-                        modifier = Modifier
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         onLogoClick = {
                             onUrlClick(urlStrigate)
                         },

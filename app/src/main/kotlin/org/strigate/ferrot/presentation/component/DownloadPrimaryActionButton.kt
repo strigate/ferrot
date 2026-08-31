@@ -86,14 +86,12 @@ fun DownloadPrimaryActionButton(
         tonalElevation = refineryDimens.tonalElevationHigh,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             thumbnailFile?.let {
                 AsyncImage(
-                    modifier = Modifier
-                        .matchParentSize(),
+                    modifier = Modifier.matchParentSize(),
                     model = ImageRequest.Builder(context)
                         .data(it)
                         .crossfade(true)
