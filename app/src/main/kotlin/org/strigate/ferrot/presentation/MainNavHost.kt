@@ -11,12 +11,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.strigate.ferrot.presentation.screen.AboutScreen
-import org.strigate.ferrot.presentation.screen.ArchivedScreen
 import org.strigate.ferrot.presentation.screen.CookiesScreen
 import org.strigate.ferrot.presentation.screen.GetCookiesScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
 import org.strigate.ferrot.presentation.screen.UpdatesScreen
 import org.strigate.ferrot.presentation.screen.download.DownloadScreen
+import org.strigate.ferrot.presentation.screen.downloads.ArchivedScreen
 import org.strigate.ferrot.presentation.screen.downloads.DownloadsScreen
 
 @Composable
