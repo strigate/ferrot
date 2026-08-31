@@ -2,43 +2,12 @@ package org.strigate.ferrot.presentation.screen.downloads
 
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Unarchive
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -47,83 +16,45 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
-import androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.helper.InstallHelper
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.component.AvailableUpdateBanner
-import org.strigate.ferrot.presentation.component.state.EmptyState
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
 import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
-import org.strigate.ferrot.presentation.model.DownloadStatusUiData
-import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
-import org.strigate.ferrot.presentation.theme.LocalDimens
-import org.strigate.ferrot.presentation.transitions.Transitions
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val SEARCH_FOCUS_DELAY_MILLIS = 357L
 private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
-private const val SNAP_BACK_SWIPE_THRESHOLD_RATIO = 0.3f
-private const val DISMISS_SWIPE_THRESHOLD_RATIO = 0.5f
-private const val GRID_SWIPE_OFFSET_ANIMATION_MILLIS = 280
-private const val GRID_SWIPE_REMOVAL_DELAY_MILLIS = 357L
-private const val LIST_SWIPE_REMOVAL_DELAY_MILLIS = 120L
-
-private val DOWNLOAD_GRID_MIN_CELL_WIDTH = 160.dp
-private val GRID_SWIPE_VELOCITY_THRESHOLD = 125.dp
 
 @Composable
 fun DownloadsScreen(
@@ -186,6 +117,18 @@ fun DownloadsScreen(
         onStopAllDownloads = viewModel::stopAllDownloads,
         onToggleGridLayout = viewModel::toggleGridLayoutEnabled,
         modifier = modifier,
+    )
+}
+
+@Composable
+fun ArchivedScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+) {
+    DownloadsScreen(
+        modifier = modifier,
+        navController = navController,
+        archived = true,
     )
 }
 
@@ -523,844 +466,6 @@ private fun PendingDeleteSnackbarEffect(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DownloadsContent(
-    items: List<DownloadItemUiData>,
-    selectedIds: Set<Long>,
-    dismissingIds: Set<Long>,
-    archivingIds: Set<Long>,
-    pendingDeleteIds: Set<Long>,
-    archived: Boolean,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-    hasAvailableUpdateBanner: Boolean,
-    searchQuery: String,
-    gridLayoutEnabled: Boolean,
-    lazyGridState: LazyGridState,
-    onItemClick: (DownloadItemUiData) -> Unit,
-    onPauseResume: (DownloadItemUiData) -> Unit,
-    onSelectionChange: (Set<Long>) -> Unit,
-    onBulkDismissAnimationFinished: (Long) -> Unit,
-    onBulkArchiveAnimationFinished: (Long) -> Unit,
-    onToggleSeen: (Long) -> Unit,
-    onMarkPendingDelete: (Set<Long>) -> Unit,
-) {
-    val dimens = LocalDimens.current
-
-    val coroutineScope = rememberCoroutineScope()
-    val itemIds = remember(items) { items.map(DownloadItemUiData::id) }
-    val latestItemIds by rememberUpdatedState(itemIds)
-    val animatingOutIds = remember { mutableStateMapOf<Long, Boolean>() }
-    val swipeActionIds = remember { mutableStateMapOf<Long, DownloadSwipeActionUiData>() }
-    val delayedSwipeActionIds = remember { mutableStateMapOf<Long, Boolean>() }
-    val showScrollToBottom by remember {
-        derivedStateOf {
-            val layoutInfo = lazyGridState.layoutInfo
-            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index
-            val atBottom = lastVisibleIndex == layoutInfo.totalItemsCount - 1
-            !atBottom && (lazyGridState.firstVisibleItemIndex > 0 || lazyGridState.firstVisibleItemScrollOffset > 0)
-        }
-    }
-    var previousItemIds by remember { mutableStateOf<List<Long>>(emptyList()) }
-    var previousPendingDeleteIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
-    val restoringItemIds = getRestoredItemIds(
-        previousPendingDeleteIds = previousPendingDeleteIds,
-        currentItemIds = itemIds,
-        currentPendingDeleteIds = pendingDeleteIds,
-    )
-    val visibleCount = items.size
-
-    LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
-        if (hasNewVisibleItem(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
-            lazyGridState.scrollToItem(0)
-        }
-        previousItemIds = itemIds
-        previousPendingDeleteIds = pendingDeleteIds
-    }
-    LaunchedEffect(restoringItemIds, itemIds) {
-        if (shouldScrollToTopOnRestore(
-                restoredItemIds = restoringItemIds,
-                currentItemIds = itemIds,
-                firstVisibleItemIndex = lazyGridState.firstVisibleItemIndex,
-            )
-        ) {
-            lazyGridState.scrollToItem(0)
-        }
-    }
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        AnimatedVisibility(
-            modifier = Modifier.align(Alignment.Center),
-            visible = visibleCount == 0,
-            enter = Transitions.emptyEnter,
-            exit = Transitions.emptyExit,
-        ) {
-            if (searchQuery.isNotBlank()) {
-                EmptyState(
-                    modifier = Modifier.fillMaxSize(),
-                    icon = Icons.Filled.Search,
-                    title = stringResource(
-                        R.string.search_no_results_title,
-                        searchQuery,
-                    ),
-                    body = stringResource(R.string.search_no_results_body),
-                )
-            } else {
-                DownloadsIntro(
-                    modifier = Modifier.fillMaxSize(),
-                    archived = archived,
-                )
-            }
-        }
-        LazyVerticalGrid(
-            modifier = Modifier.fillMaxSize(),
-            columns = if (gridLayoutEnabled) {
-                GridCells.Adaptive(DOWNLOAD_GRID_MIN_CELL_WIDTH)
-            } else {
-                GridCells.Fixed(1)
-            },
-            state = lazyGridState,
-            contentPadding = PaddingValues(
-                start = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
-                top = if (hasAvailableUpdateBanner) dimens.spacingXSmall else dimens.zero,
-                end = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
-                bottom = dimens.spacingXSmall,
-            ),
-            horizontalArrangement = Arrangement.spacedBy(
-                dimens.spacingSmall,
-            ),
-            verticalArrangement = Arrangement.spacedBy(
-                if (gridLayoutEnabled) dimens.spacingSmall else dimens.spacingXXSmall,
-            ),
-        ) {
-            items(
-                items = items,
-                key = { it.id },
-            ) { item ->
-                DownloadItem(
-                    item = item,
-                    selectedIds = selectedIds,
-                    isRestoring = item.id in restoringItemIds,
-                    gridLayoutEnabled = gridLayoutEnabled,
-                    modifier = Modifier
-                        .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = spring(),
-                            fadeOutSpec = null,
-                        ),
-                    onItemClick = onItemClick,
-                    onPauseResume = { clickedItem ->
-                        if (selectedIds.isNotEmpty()) {
-                            onSelectionChange(toggleSelection(selectedIds, clickedItem.id))
-                            return@DownloadItem
-                        }
-                        val shouldScrollToTop = shouldScrollToTopOnPauseResume(clickedItem.status)
-                        onPauseResume(clickedItem)
-                        if (shouldScrollToTop) {
-                            coroutineScope.launch {
-                                lazyGridState.animateScrollToItem(0)
-                            }
-                        }
-                    },
-                    onSelectionChange = onSelectionChange,
-                    isPendingDismiss = animatingOutIds[item.id] == true
-                            || item.id in dismissingIds
-                            || item.id in archivingIds,
-                    isInteractionBlocked = item.id in swipeActionIds,
-                    skipDismissAnimation = item.id in delayedSwipeActionIds,
-                    archived = archived,
-                    seen = item.seen,
-                    leftSwipeAction = leftSwipeAction,
-                    rightSwipeAction = rightSwipeAction,
-                    onSwipeActionPerformed = { itemId, action ->
-                        if (action == DownloadSwipeActionUiData.SEEN) {
-                            onToggleSeen(itemId)
-                        } else {
-                            swipeActionIds[itemId] = action
-                            onSelectionChange(selectedIds - itemId)
-                            delayedSwipeActionIds[itemId] = true
-                            coroutineScope.launch {
-                                val placementDelayMillis = if (gridLayoutEnabled) {
-                                    GRID_SWIPE_REMOVAL_DELAY_MILLIS
-                                } else {
-                                    LIST_SWIPE_REMOVAL_DELAY_MILLIS
-                                }
-                                delay(placementDelayMillis.milliseconds)
-                                if (swipeActionIds[itemId] == action) {
-                                    if (itemId in latestItemIds) {
-                                        animatingOutIds[itemId] = true
-                                    } else {
-                                        delayedSwipeActionIds.remove(itemId)
-                                        swipeActionIds.remove(itemId)
-                                        when (action) {
-                                            DownloadSwipeActionUiData.DELETE -> {
-                                                onMarkPendingDelete(setOf(itemId))
-                                            }
-
-                                            DownloadSwipeActionUiData.ARCHIVE -> {
-                                                onBulkArchiveAnimationFinished(itemId)
-                                            }
-
-                                            else -> Unit
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    onDismissAnimationFinished = { itemId ->
-                        delayedSwipeActionIds.remove(itemId)
-                        val swipeAction = swipeActionIds.remove(itemId)
-                        if (
-                            animatingOutIds.remove(itemId) == true &&
-                            swipeAction == DownloadSwipeActionUiData.DELETE
-                        ) {
-                            onMarkPendingDelete(setOf(itemId))
-                        }
-                        if (swipeAction == DownloadSwipeActionUiData.ARCHIVE) {
-                            onBulkArchiveAnimationFinished(itemId)
-                        }
-                        if (itemId in dismissingIds) {
-                            onBulkDismissAnimationFinished(itemId)
-                        }
-                        if (itemId in archivingIds) {
-                            onBulkArchiveAnimationFinished(itemId)
-                        }
-                    },
-                )
-            }
-        }
-        if (showScrollToBottom) {
-            ScrollToBottomButton(
-                modifier = Modifier.align(Alignment.BottomEnd),
-                onClick = {
-                    coroutineScope.launch {
-                        val targetIndex = items.lastIndex
-                        if (targetIndex >= 0) {
-                            lazyGridState.animateScrollToItem(index = targetIndex)
-                        }
-                    }
-                },
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DownloadItem(
-    item: DownloadItemUiData,
-    selectedIds: Set<Long>,
-    isPendingDismiss: Boolean,
-    isInteractionBlocked: Boolean,
-    skipDismissAnimation: Boolean,
-    isRestoring: Boolean,
-    gridLayoutEnabled: Boolean,
-    archived: Boolean,
-    seen: Boolean,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-    modifier: Modifier = Modifier,
-    onItemClick: (DownloadItemUiData) -> Unit,
-    onPauseResume: (DownloadItemUiData) -> Unit,
-    onSelectionChange: (Set<Long>) -> Unit,
-    onSwipeActionPerformed: (Long, DownloadSwipeActionUiData) -> Unit,
-    onDismissAnimationFinished: (Long) -> Unit,
-) {
-    val coroutineScope = rememberCoroutineScope()
-    val interactionEnabled = !isPendingDismiss && !isInteractionBlocked
-    val swipeEnabled = !isPendingDismiss && selectedIds.isEmpty()
-            && (!isInteractionBlocked || gridLayoutEnabled)
-            && (leftSwipeAction != DownloadSwipeActionUiData.NONE || rightSwipeAction != DownloadSwipeActionUiData.NONE)
-
-    val longClickEnabled = interactionEnabled && selectedIds.isEmpty()
-    val isSelected = selectedIds.contains(item.id)
-
-    var currentSwipeThresholdRatio by remember(
-        item.id,
-        leftSwipeAction,
-        rightSwipeAction,
-    ) {
-        mutableFloatStateOf(DISMISS_SWIPE_THRESHOLD_RATIO)
-    }
-    var rowWidthPx by remember { mutableFloatStateOf(0f) }
-    var hasHandledCurrentSwipe by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
-        mutableStateOf(false)
-    }
-    var pendingSnapBackSwipeAction by remember(item.id, seen, leftSwipeAction, rightSwipeAction) {
-        mutableStateOf<DownloadSwipeActionUiData?>(null)
-    }
-    var gridSwipeActive by remember(item.id) { mutableStateOf(false) }
-    val dismissState = key(item.id, seen, leftSwipeAction, rightSwipeAction) {
-        rememberSwipeToDismissBoxState(
-            positionalThreshold = { totalDistance ->
-                totalDistance * currentSwipeThresholdRatio
-            },
-        )
-    }
-    val visibilityState = remember(item.id) {
-        MutableTransitionState(!isRestoring)
-    }
-
-    LaunchedEffect(isPendingDismiss, isRestoring, swipeEnabled) {
-        visibilityState.targetState = !isPendingDismiss
-        if (isRestoring) {
-            visibilityState.targetState = true
-        }
-        if (!isPendingDismiss && !isInteractionBlocked) {
-            runCatching {
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-            }
-        }
-    }
-    LaunchedEffect(
-        item.id,
-        isPendingDismiss,
-        visibilityState.currentState,
-        visibilityState.targetState,
-    ) {
-        if (isPendingDismiss && !visibilityState.currentState && !visibilityState.targetState) {
-            onDismissAnimationFinished(item.id)
-        }
-    }
-    LaunchedEffect(isPendingDismiss) {
-        if (!isPendingDismiss) {
-            hasHandledCurrentSwipe = false
-        }
-    }
-    LaunchedEffect(dismissState, leftSwipeAction, rightSwipeAction) {
-        snapshotFlow { runCatching { dismissState.requireOffset() }.getOrDefault(0f) }
-            .distinctUntilChanged()
-            .collectLatest { offsetPx ->
-                currentSwipeThresholdRatio = getSwipeThresholdRatio(
-                    offsetPx = offsetPx,
-                    leftSwipeAction = leftSwipeAction,
-                    rightSwipeAction = rightSwipeAction,
-                )
-            }
-    }
-
-    AnimatedVisibility(
-        modifier = modifier.zIndex(if (gridSwipeActive) 1f else 0f),
-        visibleState = visibilityState,
-        enter = Transitions.listItemEnter,
-        exit = if (skipDismissAnimation) {
-            ExitTransition.None
-        } else {
-            Transitions.listItemExit
-        },
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    rowWidthPx = coordinates.size.width.toFloat()
-                },
-        ) {
-            val onClick = {
-                if (selectedIds.isNotEmpty()) {
-                    onSelectionChange(toggleSelection(selectedIds, item.id))
-                } else {
-                    onItemClick(item)
-                }
-            }
-            val onOpen = {
-                if (selectedIds.isNotEmpty()) {
-                    onSelectionChange(toggleSelection(selectedIds, item.id))
-                } else {
-                    onItemClick(item)
-                }
-            }
-            val itemContent: @Composable () -> Unit = {
-                if (gridLayoutEnabled) {
-                    DownloadGridItem(
-                        item = item,
-                        isSelected = isSelected,
-                        interactionEnabled = interactionEnabled,
-                        longClickEnabled = longClickEnabled,
-                        onClick = onClick,
-                        onLongClick = {
-                            onSelectionChange(selectedIds + item.id)
-                        },
-                        onPauseResume = {
-                            onPauseResume(item)
-                        },
-                        onOpen = onOpen,
-                    )
-                } else {
-                    DownloadListItem(
-                        item = item,
-                        isSelected = isSelected,
-                        interactionEnabled = interactionEnabled,
-                        longClickEnabled = longClickEnabled,
-                        onClick = onClick,
-                        onLongClick = {
-                            onSelectionChange(selectedIds + item.id)
-                        },
-                        onPauseResume = {
-                            onPauseResume(item)
-                        },
-                        onOpen = onOpen,
-                    )
-                }
-            }
-            if (gridLayoutEnabled) {
-                GridSwipeToDismiss(
-                    enabled = swipeEnabled,
-                    archived = archived,
-                    seen = seen,
-                    leftSwipeAction = leftSwipeAction,
-                    rightSwipeAction = rightSwipeAction,
-                    onSwipeActionPerformed = { action ->
-                        onSwipeActionPerformed(item.id, action)
-                    },
-                    onSwipeActiveChange = { gridSwipeActive = it },
-                    content = { itemContent() },
-                )
-            } else {
-                SwipeToDismissBox(
-                    state = dismissState,
-                    enableDismissFromStartToEnd = swipeEnabled
-                            && rightSwipeAction != DownloadSwipeActionUiData.NONE,
-                    enableDismissFromEndToStart = swipeEnabled
-                            && leftSwipeAction != DownloadSwipeActionUiData.NONE,
-                    onDismiss = { dismissValue ->
-                        if (hasHandledCurrentSwipe) return@SwipeToDismissBox
-                        val swipeAction = getSwipeActionForDismissValue(
-                            dismissValue = dismissValue,
-                            leftSwipeAction = leftSwipeAction,
-                            rightSwipeAction = rightSwipeAction,
-                        )
-                        if (swipeAction == DownloadSwipeActionUiData.NONE) {
-                            return@SwipeToDismissBox
-                        }
-                        if (isSnapBackSwipeAction(swipeAction)) {
-                            hasHandledCurrentSwipe = true
-                            pendingSnapBackSwipeAction = swipeAction
-                            coroutineScope.launch {
-                                runCatching {
-                                    dismissState.reset()
-                                }
-                            }
-                            return@SwipeToDismissBox
-                        }
-                        hasHandledCurrentSwipe = true
-                        onSwipeActionPerformed(item.id, swipeAction)
-                    },
-                    backgroundContent = {
-                        SwipeActionBackground(
-                            archived = archived,
-                            seen = seen,
-                            leftSwipeAction = leftSwipeAction,
-                            rightSwipeAction = rightSwipeAction,
-                            offsetPx = runCatching {
-                                dismissState.requireOffset()
-                            }.getOrDefault(0f),
-                        )
-                    },
-                    content = { itemContent() },
-                )
-            }
-        }
-    }
-
-    LaunchedEffect(dismissState, leftSwipeAction, rightSwipeAction) {
-        snapshotFlow {
-            Pair(
-                dismissState.currentValue,
-                runCatching { dismissState.requireOffset() }.getOrDefault(0f),
-            )
-        }
-            .distinctUntilChanged()
-            .collectLatest { (value, offsetPx) ->
-                if (value == SwipeToDismissBoxValue.Settled && abs(offsetPx) < 1f) {
-                    pendingSnapBackSwipeAction?.let { swipeAction ->
-                        pendingSnapBackSwipeAction = null
-                        onSwipeActionPerformed(item.id, swipeAction)
-                    }
-                    hasHandledCurrentSwipe = false
-                }
-            }
-    }
-    LaunchedEffect(dismissState, rowWidthPx, leftSwipeAction, rightSwipeAction) {
-        snapshotFlow { runCatching { dismissState.requireOffset() }.getOrDefault(0f) }
-            .distinctUntilChanged()
-            .collectLatest { offsetPx ->
-                if (rowWidthPx <= 0f || hasHandledCurrentSwipe || pendingSnapBackSwipeAction != null) {
-                    return@collectLatest
-                }
-                val swipeAction = when {
-                    offsetPx > 0f -> rightSwipeAction
-                    offsetPx < 0f -> leftSwipeAction
-                    else -> DownloadSwipeActionUiData.NONE
-                }
-                if (!isSnapBackSwipeAction(swipeAction)) {
-                    return@collectLatest
-                }
-                val triggerDistancePx = rowWidthPx * SNAP_BACK_SWIPE_THRESHOLD_RATIO
-                if (abs(offsetPx) < triggerDistancePx) {
-                    return@collectLatest
-                }
-                hasHandledCurrentSwipe = true
-                pendingSnapBackSwipeAction = swipeAction
-                coroutineScope.launch {
-                    runCatching {
-                        dismissState.reset()
-                    }
-                }
-            }
-    }
-}
-
-@Composable
-private fun GridSwipeToDismiss(
-    enabled: Boolean,
-    archived: Boolean,
-    seen: Boolean,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-    onSwipeActionPerformed: (DownloadSwipeActionUiData) -> Unit,
-    onSwipeActiveChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit,
-) {
-    val view = LocalView.current
-    val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
-
-    val coroutineScope = rememberCoroutineScope()
-    var offsetPx by remember { mutableFloatStateOf(0f) }
-    var cardLeftPx by remember { mutableFloatStateOf(0f) }
-    var cardWidthPx by remember { mutableFloatStateOf(0f) }
-    var handlingSwipe by remember { mutableStateOf(false) }
-
-    suspend fun animateOffsetTo(targetOffsetPx: Float) {
-        animate(
-            initialValue = offsetPx,
-            targetValue = targetOffsetPx,
-            animationSpec = tween(GRID_SWIPE_OFFSET_ANIMATION_MILLIS),
-        ) { value, _ ->
-            offsetPx = value
-        }
-    }
-
-    fun swipeActionForPhysicalOffset(physicalOffsetPx: Float): DownloadSwipeActionUiData = when {
-        physicalOffsetPx == 0f -> DownloadSwipeActionUiData.NONE
-        (physicalOffsetPx > 0f) == (layoutDirection == LayoutDirection.Ltr) -> rightSwipeAction
-        else -> leftSwipeAction
-    }
-
-    fun logicalOffset(physicalOffsetPx: Float): Float = when (layoutDirection) {
-        LayoutDirection.Ltr -> physicalOffsetPx
-        LayoutDirection.Rtl -> -physicalOffsetPx
-    }
-
-    val positiveSwipeAction = swipeActionForPhysicalOffset(1f)
-    val negativeSwipeAction = swipeActionForPhysicalOffset(-1f)
-    val velocityThresholdPx = with(density) {
-        GRID_SWIPE_VELOCITY_THRESHOLD.toPx()
-    }
-
-    fun swipeActionForOffset(): DownloadSwipeActionUiData = when {
-        offsetPx > 0f -> positiveSwipeAction
-        offsetPx < 0f -> negativeSwipeAction
-        else -> DownloadSwipeActionUiData.NONE
-    }
-
-    val draggableState = rememberDraggableState { deltaPx ->
-        if (handlingSwipe || cardWidthPx <= 0f) {
-            return@rememberDraggableState
-        }
-        onSwipeActiveChange(true)
-        val viewportWidthPx = view.width.toFloat().coerceAtLeast(cardWidthPx)
-        val maximumStartToEndOffsetPx = (viewportWidthPx - cardLeftPx)
-            .coerceAtLeast(cardWidthPx)
-        val maximumEndToStartOffsetPx = (cardLeftPx + cardWidthPx)
-            .coerceAtLeast(cardWidthPx)
-        val minimumOffsetPx = if (negativeSwipeAction == DownloadSwipeActionUiData.NONE) {
-            0f
-        } else {
-            -maximumEndToStartOffsetPx
-        }
-        val maximumOffsetPx = if (positiveSwipeAction == DownloadSwipeActionUiData.NONE) {
-            0f
-        } else {
-            maximumStartToEndOffsetPx
-        }
-        offsetPx = (offsetPx + deltaPx).coerceIn(minimumOffsetPx, maximumOffsetPx)
-
-        val swipeAction = swipeActionForOffset()
-        if (isSnapBackSwipeAction(swipeAction)
-            && abs(offsetPx) >= cardWidthPx * SNAP_BACK_SWIPE_THRESHOLD_RATIO
-        ) {
-            handlingSwipe = true
-            onSwipeActionPerformed(swipeAction)
-            coroutineScope.launch {
-                animateOffsetTo(0f)
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onGloballyPositioned { coordinates ->
-                cardLeftPx = coordinates.positionInWindow().x
-                cardWidthPx = coordinates.size.width.toFloat()
-            }
-            .draggable(
-                state = draggableState,
-                orientation = Orientation.Horizontal,
-                enabled = enabled,
-                onDragStopped = { velocityPxPerSecond ->
-                    if (handlingSwipe) {
-                        handlingSwipe = false
-                        onSwipeActiveChange(false)
-                        return@draggable
-                    }
-                    if (cardWidthPx <= 0f) {
-                        return@draggable
-                    }
-                    val fastSwipe = abs(velocityPxPerSecond) >= velocityThresholdPx
-                    val swipeAction = if (fastSwipe) {
-                        swipeActionForPhysicalOffset(velocityPxPerSecond)
-                    } else {
-                        swipeActionForOffset()
-                    }
-                    if (swipeAction == DownloadSwipeActionUiData.NONE) {
-                        animateOffsetTo(0f)
-                        onSwipeActiveChange(false)
-                        return@draggable
-                    }
-                    if (isSnapBackSwipeAction(swipeAction)) {
-                        if (fastSwipe) {
-                            handlingSwipe = true
-                            onSwipeActionPerformed(swipeAction)
-                        }
-                        animateOffsetTo(0f)
-                        handlingSwipe = false
-                        onSwipeActiveChange(false)
-                        return@draggable
-                    }
-                    if (!fastSwipe && abs(offsetPx) < cardWidthPx * DISMISS_SWIPE_THRESHOLD_RATIO) {
-                        animateOffsetTo(0f)
-                        onSwipeActiveChange(false)
-                        return@draggable
-                    }
-
-                    handlingSwipe = true
-                    onSwipeActionPerformed(swipeAction)
-                    val viewportWidthPx = view.width.toFloat().coerceAtLeast(cardWidthPx)
-                    val dismissesTowardEnd = if (fastSwipe) {
-                        velocityPxPerSecond > 0f
-                    } else {
-                        offsetPx > 0f
-                    }
-                    val targetOffsetPx = if (dismissesTowardEnd) {
-                        (viewportWidthPx - cardLeftPx).coerceAtLeast(cardWidthPx)
-                    } else {
-                        -(cardLeftPx + cardWidthPx).coerceAtLeast(cardWidthPx)
-                    }
-                    animateOffsetTo(targetOffsetPx)
-                },
-            ),
-    ) {
-        SwipeActionBackground(
-            modifier = Modifier.matchParentSize(),
-            archived = archived,
-            seen = seen,
-            leftSwipeAction = leftSwipeAction,
-            rightSwipeAction = rightSwipeAction,
-            offsetPx = logicalOffset(offsetPx),
-        )
-        Box(
-            modifier = Modifier.offset { IntOffset(offsetPx.roundToInt(), 0) },
-        ) {
-            content()
-        }
-    }
-}
-
-private fun isSnapBackSwipeAction(
-    swipeAction: DownloadSwipeActionUiData,
-): Boolean {
-    return swipeAction == DownloadSwipeActionUiData.SEEN
-}
-
-private fun getSwipeThresholdRatio(
-    offsetPx: Float,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-): Float {
-    val swipeAction = when {
-        offsetPx > 0f -> rightSwipeAction
-        offsetPx < 0f -> leftSwipeAction
-        else -> DownloadSwipeActionUiData.NONE
-    }
-    return if (isSnapBackSwipeAction(swipeAction)) {
-        SNAP_BACK_SWIPE_THRESHOLD_RATIO
-    } else {
-        DISMISS_SWIPE_THRESHOLD_RATIO
-    }
-}
-
-@Composable
-private fun SwipeActionBackground(
-    archived: Boolean,
-    seen: Boolean,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-    offsetPx: Float,
-    modifier: Modifier = Modifier,
-) {
-    val dimens = LocalDimens.current
-
-    val swipeAction = when {
-        offsetPx > 0f -> rightSwipeAction
-        offsetPx < 0f -> leftSwipeAction
-        else -> DownloadSwipeActionUiData.NONE
-    }
-    val isEndToStart = offsetPx < 0f
-    val containerColor = when (swipeAction) {
-        DownloadSwipeActionUiData.DELETE -> MaterialTheme.colorScheme.errorContainer
-        DownloadSwipeActionUiData.ARCHIVE -> MaterialTheme.colorScheme.secondaryContainer
-        DownloadSwipeActionUiData.SEEN -> MaterialTheme.colorScheme.tertiaryContainer
-        DownloadSwipeActionUiData.NONE -> Color.Transparent
-    }
-    val contentColor = when (swipeAction) {
-        DownloadSwipeActionUiData.DELETE -> MaterialTheme.colorScheme.onErrorContainer
-        DownloadSwipeActionUiData.ARCHIVE -> MaterialTheme.colorScheme.onSecondaryContainer
-        DownloadSwipeActionUiData.SEEN -> MaterialTheme.colorScheme.onTertiaryContainer
-        DownloadSwipeActionUiData.NONE -> Color.Transparent
-    }
-    Surface(
-        modifier = modifier,
-        color = containerColor,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = if (isEndToStart) {
-                Alignment.CenterEnd
-            } else {
-                Alignment.CenterStart
-            },
-        ) {
-            Icon(
-                modifier = Modifier
-                    .padding(
-                        start = if (isEndToStart) dimens.zero else dimens.spacingMedium,
-                        end = if (isEndToStart) dimens.spacingMedium else dimens.zero,
-                    ),
-                imageVector = getSwipeActionIcon(
-                    action = swipeAction,
-                    archived = archived,
-                    seen = seen,
-                ),
-                tint = contentColor,
-                contentDescription = null,
-            )
-        }
-    }
-}
-
-private fun getSwipeActionIcon(
-    action: DownloadSwipeActionUiData,
-    archived: Boolean,
-    seen: Boolean,
-): ImageVector {
-    return when (action) {
-        DownloadSwipeActionUiData.NONE -> Icons.Filled.MoreVert
-        DownloadSwipeActionUiData.ARCHIVE -> {
-            if (archived) {
-                Icons.Filled.Unarchive
-            } else {
-                Icons.Filled.Archive
-            }
-        }
-
-        DownloadSwipeActionUiData.SEEN -> {
-            if (seen) {
-                Icons.Filled.VisibilityOff
-            } else {
-                Icons.Filled.Visibility
-            }
-        }
-
-        DownloadSwipeActionUiData.DELETE -> Icons.Filled.Delete
-    }
-}
-
-private fun getSwipeActionForDismissValue(
-    dismissValue: SwipeToDismissBoxValue,
-    leftSwipeAction: DownloadSwipeActionUiData,
-    rightSwipeAction: DownloadSwipeActionUiData,
-): DownloadSwipeActionUiData {
-    return when (dismissValue) {
-        StartToEnd -> rightSwipeAction
-        EndToStart -> leftSwipeAction
-        SwipeToDismissBoxValue.Settled -> DownloadSwipeActionUiData.NONE
-    }
-}
-
-@Composable
-private fun ScrollToBottomButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val dimens = LocalDimens.current
-    IconButton(
-        modifier = Modifier
-            .then(modifier)
-            .padding(dimens.spacingMedium),
-        onClick = onClick,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(dimens.overlayButton)
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(dimens.overlayButton / 2),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                modifier = Modifier.size(dimens.iconXSmall),
-                imageVector = Icons.Default.ArrowDownward,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                contentDescription = null,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DownloadsIntro(
-    modifier: Modifier = Modifier,
-    archived: Boolean = false,
-) {
-    val appName = stringResource(R.string.app_name)
-    EmptyState(
-        modifier = modifier,
-        icon = if (archived) {
-            Icons.Filled.Archive
-        } else {
-            ImageVector.vectorResource(id = R.drawable.ic_logo)
-        },
-        title = if (archived) {
-            stringResource(R.string.archived_intro_title)
-        } else {
-            stringResource(R.string.downloads_intro_title, appName)
-        },
-        body = if (archived) {
-            stringResource(R.string.archived_intro_body)
-        } else {
-            stringResource(R.string.downloads_intro_body, appName)
-        },
-    )
-}
-
 @Composable
 private fun DownloadsError(
     modifier: Modifier = Modifier,
@@ -1372,20 +477,18 @@ private fun DownloadsError(
     )
 }
 
-private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = !status.isActive
-
-private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
-    return if (itemId in selectedIds) {
-        selectedIds - itemId
+private fun getPendingDeleteSnackbarMessage(
+    snackbarDeleteIds: Set<Long>,
+    snackbarSingleDeleteMessage: String,
+    snackbarBulkDeleteMessage: String,
+): String {
+    val deletedCount = snackbarDeleteIds.size
+    return if (deletedCount > 1) {
+        "$deletedCount $snackbarBulkDeleteMessage"
     } else {
-        selectedIds + itemId
+        snackbarSingleDeleteMessage
     }
 }
-
-internal data class SelectedItemIds(
-    val visible: Set<Long>,
-    val offscreen: Set<Long>,
-)
 
 internal fun splitSelectedItemIds(
     selectedIds: Set<Long>,
@@ -1422,56 +525,7 @@ internal fun pruneSelectedItemIds(
     return availableIds?.let(selectedIds::intersect) ?: selectedIds
 }
 
-internal fun hasNewVisibleItem(
-    previousItemIds: List<Long>,
-    currentItemIds: List<Long>,
-    previousPendingDeleteIds: Set<Long>,
-    searchQuery: String,
-): Boolean {
-    if (searchQuery.isNotBlank()) {
-        return false
-    }
-    if (previousItemIds.isEmpty() || currentItemIds.isEmpty()) {
-        return false
-    }
-    val previousIdsSet = previousItemIds.toSet()
-    return currentItemIds.any { it !in previousIdsSet && it !in previousPendingDeleteIds }
-}
-
-internal fun getRestoredItemIds(
-    previousPendingDeleteIds: Set<Long>,
-    currentItemIds: List<Long>,
-    currentPendingDeleteIds: Set<Long>,
-): Set<Long> {
-    if (previousPendingDeleteIds.isEmpty()) {
-        return emptySet()
-    }
-    return previousPendingDeleteIds
-        .intersect(currentItemIds.toSet())
-        .minus(currentPendingDeleteIds)
-}
-
-internal fun shouldScrollToTopOnRestore(
-    restoredItemIds: Set<Long>,
-    currentItemIds: List<Long>,
-    firstVisibleItemIndex: Int,
-): Boolean {
-    if (restoredItemIds.isEmpty() || currentItemIds.isEmpty()) {
-        return false
-    }
-    val userWasNearTop = firstVisibleItemIndex <= 1
-    return userWasNearTop && currentItemIds.first() in restoredItemIds
-}
-
-private fun getPendingDeleteSnackbarMessage(
-    snackbarDeleteIds: Set<Long>,
-    snackbarSingleDeleteMessage: String,
-    snackbarBulkDeleteMessage: String,
-): String {
-    val deletedCount = snackbarDeleteIds.size
-    return if (deletedCount > 1) {
-        "$deletedCount $snackbarBulkDeleteMessage"
-    } else {
-        snackbarSingleDeleteMessage
-    }
-}
+internal data class SelectedItemIds(
+    val visible: Set<Long>,
+    val offscreen: Set<Long>,
+)
