@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -33,11 +34,13 @@ import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.DownloadWithMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.RequestRefreshDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
+import org.strigate.ferrot.domain.usecase.downloadmetadata.IsDownloadThumbnailAvailableUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadEvent
 import org.strigate.ferrot.presentation.mapper.toPageUiData
 import org.strigate.ferrot.presentation.model.DownloadPageUiData
+import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import javax.inject.Inject
@@ -55,6 +58,7 @@ class DownloadViewModel @Inject constructor(
     private val clearNotificationsByDownloadIdUseCase: ClearNotificationsByDownloadIdUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
     private val requestRefreshDownloadMetadataUseCase: RequestRefreshDownloadMetadataUseCase,
+    private val isDownloadThumbnailAvailableUseCase: IsDownloadThumbnailAvailableUseCase,
     downloadWithMetadataUseCase: DownloadWithMetadataUseCase,
 ) : ViewModel() {
     private val initialId: Long? = savedStateHandle[Screen.Download.ARG_DOWNLOAD_ID]
@@ -156,7 +160,6 @@ class DownloadViewModel @Inject constructor(
             )
         }
             .distinctUntilChanged()
-            .flowOn(Dispatchers.Default)
     }
 
     fun getDownloadPageUiData(downloadId: Long): Flow<DownloadPageUiData?> {
@@ -166,24 +169,63 @@ class DownloadViewModel @Inject constructor(
             .getDownloadVideoByDownloadIdAsFlowUseCase(downloadId)
         val audioFlow = downloadAudioUseCase
             .getDownloadAudioByDownloadIdAsFlowUseCase(downloadId)
-        val metadataFlow = downloadMetadataUseCase
-            .getDownloadMetadataByIdAsFlowUseCase(downloadId)
+        val metadataFlow = flow {
+            var emissionIndex = 0
+            downloadMetadataUseCase
+                .getDownloadMetadataByIdAsFlowUseCase(downloadId)
+                .collect { metadata ->
+                    emit(IndexedValue(emissionIndex++, metadata))
+                }
+        }
         val progressFlow = downloadProgressUseCase
             .getDownloadProgressByDownloadIdAsFlowUseCase(downloadId)
 
-        return combine(
-            downloadFlow,
-            videoFlow,
-            audioFlow,
-            metadataFlow,
-            progressFlow,
-        ) { base, video, audio, metadata, progress ->
-            base?.toPageUiData(
-                video = video,
-                audio = audio,
-                metadata = metadata,
-                progress = progress,
-            )
+        return flow {
+            var previousStatus: DownloadStatus? = null
+            var previousMetadataEmissionIndex = -1
+            var thumbnailAvailable: Boolean? = null
+
+            combine(
+                downloadFlow,
+                videoFlow,
+                audioFlow,
+                metadataFlow,
+                progressFlow,
+            ) { base, video, audio, metadataEmission, progress ->
+                Triple(
+                    base?.toPageUiData(
+                        video = video,
+                        audio = audio,
+                        metadata = metadataEmission.value,
+                        progress = progress,
+                    ),
+                    base?.status,
+                    metadataEmission.index,
+                )
+            }.collect { (data, status, metadataEmissionIndex) ->
+                if (data == null) {
+                    previousStatus = null
+                    previousMetadataEmissionIndex = -1
+                    thumbnailAvailable = null
+                    emit(null)
+                    return@collect
+                }
+
+                val completedNow = status == DownloadStatus.COMPLETED &&
+                        previousStatus != DownloadStatus.COMPLETED
+                if (
+                    thumbnailAvailable == null ||
+                    metadataEmissionIndex != previousMetadataEmissionIndex ||
+                    completedNow
+                ) {
+                    thumbnailAvailable = isDownloadThumbnailAvailableUseCase(
+                        data.metadata?.thumbnailFilePath,
+                    )
+                }
+                previousStatus = status
+                previousMetadataEmissionIndex = metadataEmissionIndex
+                emit(data.copy(thumbnailAvailable = thumbnailAvailable == true))
+            }
         }.flowOn(Dispatchers.Default)
     }
 
@@ -280,9 +322,11 @@ class DownloadViewModel @Inject constructor(
         startDownloadUseCase(downloadId)
     }
 
-    fun refreshDownloadMetadata(id: Long? = null) = viewModelScope.launch {
-        val downloadId = resolveDownloadId(id) ?: return@launch
-        requestRefreshDownloadMetadataUseCase(downloadId)
+    fun onPageVisible(downloadId: Long) = viewModelScope.launch {
+        val download = getDownloadPageUiData(downloadId).first() ?: return@launch
+        if (download.status == DownloadStatusUiData.COMPLETED && !download.thumbnailAvailable) {
+            requestRefreshDownloadMetadataUseCase(downloadId)
+        }
     }
 
     private fun getSelectedMediaFilePath(

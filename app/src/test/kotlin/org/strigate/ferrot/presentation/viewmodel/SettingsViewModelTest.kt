@@ -1,8 +1,10 @@
 package org.strigate.ferrot.presentation.viewmodel
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -37,6 +39,7 @@ import org.strigate.ferrot.domain.usecase.settings.SaveWifiOnlyDownloadsEnabledS
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.test.MainDispatcherRule
+import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -222,13 +225,29 @@ class SettingsViewModelTest {
             .invoke(DownloadSwipeAction.ARCHIVE)
     }
 
+    @Test
+    fun uiState_exposesErrorWhenSettingsCannotBeRead() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            wifiOnlyDownloadsEnabledFlow = flow { throw IOException("unavailable") },
+            automaticDuplicateDownloadDeletionEnabledFlow = MutableStateFlow(false),
+            leftSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.NONE),
+            rightSwipeActionFlow = MutableStateFlow(DownloadSwipeAction.NONE),
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect() }
+
+        waitForUiState(viewModel) { it is SettingsUiState.Error }
+        assertEquals(SettingsUiState.Error, viewModel.uiState.value)
+
+        collector.cancel()
+    }
+
     @After
     fun tearDown() {
         autoCloseable.close()
     }
 
     private fun createViewModel(
-        wifiOnlyDownloadsEnabledFlow: MutableStateFlow<Boolean>,
+        wifiOnlyDownloadsEnabledFlow: Flow<Boolean>,
         automaticDuplicateDownloadDeletionEnabledFlow: MutableStateFlow<Boolean>,
         cookiesEnabledFlow: MutableStateFlow<Boolean> = MutableStateFlow(true),
         leftSwipeActionFlow: MutableStateFlow<DownloadSwipeAction>,

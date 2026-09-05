@@ -12,4 +12,5 @@ data class DownloadPageUiData(
     val archived: Boolean,
     val errorMessage: String?,
     val completedAtMillis: Long?,
+    val thumbnailAvailable: Boolean = false,
 )
