@@ -1,11 +1,14 @@
 package org.strigate.ferrot.presentation.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -21,16 +24,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.never
-import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.model.AvailableUpdate
-import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.model.DownloadWithMetadata
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -46,18 +47,19 @@ import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsSeenUseCase
+import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
+import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.state.GetArchivedDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.state.GetDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.state.ToggleArchivedDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.state.ToggleDownloadsGridLayoutEnabledUseCase
-import org.strigate.ferrot.domain.usecase.downloadprogress.UpdateDownloadProgressUseCase
-import org.strigate.ferrot.domain.usecase.downloadwithmetadata.GetDownloadsWithMetadataAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
+import org.strigate.ferrot.test.MainDispatcherRule
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -67,6 +69,7 @@ class DownloadsViewModelTest {
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var autoCloseable: AutoCloseable
+    private val viewModels = mutableListOf<DownloadsViewModel>()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -780,7 +783,8 @@ class DownloadsViewModelTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(testDispatcher) {
+        viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
         autoCloseable.close()
     }
 
@@ -845,7 +849,7 @@ class DownloadsViewModelTest {
             clearNotificationsByDownloadIdUseCase = clearNotificationsByDownloadIdUseCase,
             settingsUseCase = settingsUseCase,
             stateUseCase = stateUseCase,
-        )
+        ).also { viewModels += it }
     }
 
     private suspend fun waitForUiState(

@@ -1,14 +1,5 @@
-package org.strigate.ferrot.presentation.screen
+package org.strigate.ferrot.presentation.screen.getcookies
 
-import android.annotation.SuppressLint
-import android.content.Intent
-import android.view.ViewGroup
-import android.webkit.CookieManager
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
@@ -36,7 +27,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,8 +45,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.doOnLayout
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
@@ -86,7 +74,6 @@ fun GetCookiesScreen(
     var requestedUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var currentUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var pageTitle by rememberSaveable { mutableStateOf<String?>(null) }
-    var webView by remember { mutableStateOf<WebView?>(null) }
     var overwritePrompt by remember { mutableStateOf<CookieOverwritePrompt?>(null) }
 
     val saveUrl = currentUrl ?: requestedUrl
@@ -111,11 +98,9 @@ fun GetCookiesScreen(
 
     fun saveCookies(url: String?, confirmOverwrite: Boolean = true) {
         val targetUrl = url ?: return
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.flush()
         viewModel.saveCookies(
             url = targetUrl,
-            cookieHeader = cookieManager.getCookie(targetUrl).orEmpty(),
+            cookieHeader = readWebViewCookieHeader(targetUrl),
             confirmOverwrite = confirmOverwrite,
         )
     }
@@ -142,11 +127,6 @@ fun GetCookiesScreen(
 
                 is GetCookiesEvent.Saved -> navController.popBackStack()
             }
-        }
-    }
-    DisposableEffect(Unit) {
-        onDispose {
-            webView?.destroy()
         }
     }
 
@@ -177,7 +157,6 @@ fun GetCookiesScreen(
             GetCookiesWebView(
                 modifier = webViewModifier,
                 requestedUrl = requestedUrl,
-                onWebViewCreated = { webView = it },
                 onCurrentUrlChanged = { url ->
                     currentUrl = url
                     addressText = url.toTextFieldValue()
@@ -346,108 +325,6 @@ private fun CookieLoginWarning(
             text = stringResource(R.string.cookies_webview_warning),
         )
     }
-}
-
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-private fun GetCookiesWebView(
-    requestedUrl: String?,
-    onWebViewCreated: (WebView) -> Unit,
-    onCurrentUrlChanged: (String) -> Unit,
-    onTitleChanged: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            CookieManager.getInstance().setAcceptCookie(true)
-            WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
-                settings.apply {
-                    cacheMode = WebSettings.LOAD_DEFAULT
-                    javaScriptEnabled = true
-                    javaScriptCanOpenWindowsAutomatically = true
-                    domStorageEnabled = true
-                    loadsImagesAutomatically = true
-                    safeBrowsingEnabled = true
-                    userAgentString = WebSettings.getDefaultUserAgent(context)
-                    useWideViewPort = true
-                    loadWithOverviewMode = false
-                    builtInZoomControls = false
-                    displayZoomControls = false
-                }
-                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        onTitleChanged(view?.title)
-                        if (!url.isNullOrBlank()) {
-                            onCurrentUrlChanged(url)
-                        }
-                    }
-
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView?,
-                        request: WebResourceRequest?,
-                    ): Boolean {
-                        val uri = request?.url ?: return false
-                        if (uri.scheme != "intent") {
-                            return false
-                        }
-                        if (!request.isForMainFrame) {
-                            return true
-                        }
-                        val fallbackUrl = runCatching {
-                            Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
-                                .getStringExtra("browser_fallback_url")
-                        }.getOrNull()?.let(::normalizeWebViewUrl)
-                        if (fallbackUrl != null) {
-                            view?.loadUrl(fallbackUrl)
-                        }
-                        return true
-                    }
-                }
-                webChromeClient = object : WebChromeClient() {}
-                onWebViewCreated(this)
-                requestedUrl?.let { url ->
-                    loadRequestedUrl(url)
-                }
-            }
-        },
-        update = { view ->
-            val url = requestedUrl ?: return@AndroidView
-            view.loadRequestedUrl(url)
-        },
-    )
-}
-
-private fun WebView.loadRequestedUrl(url: String) {
-    if (tag == url) {
-        return
-    }
-    tag = url
-    if (width > 0 && height > 0) {
-        loadUrl(url)
-    } else {
-        doOnLayout { loadUrl(url) }
-    }
-}
-
-private fun normalizeWebViewUrl(rawUrl: String): String? {
-    val trimmed = rawUrl.trim()
-    if (trimmed.isBlank()) {
-        return null
-    }
-    val candidate = if (trimmed.contains("://")) trimmed else "$DEFAULT_URL_PREFIX$trimmed"
-    return runCatching { URI(candidate) }
-        .getOrNull()
-        ?.takeIf { uri ->
-            uri.scheme == "http" || uri.scheme == "https"
-        }
-        ?.takeIf { uri -> !uri.host.isNullOrBlank() }
-        ?.toString()
 }
 
 private fun titleFromUrl(url: String): String {

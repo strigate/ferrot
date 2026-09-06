@@ -142,7 +142,7 @@ fun DownloadScreen(
             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
             viewModel.retryDownload(downloadId)
         },
-        onRefreshMetadataClick = viewModel::refreshDownloadMetadata,
+        onPageVisible = viewModel::onPageVisible,
         onUrlClick = uriHandler::openUri,
         onCopyText = context::copyToClipboard,
         modifier = modifier,
@@ -168,7 +168,7 @@ internal fun DownloadScreenContent(
     onSaveClick: (Long) -> Unit,
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
-    onRefreshMetadataClick: (Long) -> Unit,
+    onPageVisible: (Long) -> Unit,
     onUrlClick: (String) -> Unit,
     onCopyText: (String, String) -> Unit,
     modifier: Modifier = Modifier,
@@ -286,7 +286,7 @@ internal fun DownloadScreenContent(
                         onSaveClick = onSaveClick,
                         onShareClick = onShareClick,
                         onRetryClick = onRetryClick,
-                        onRefreshMetadataClick = onRefreshMetadataClick,
+                        onPageVisible = onPageVisible,
                         onUrlClick = onUrlClick,
                         onCopyText = onCopyText,
                         pagePadding = PaddingValues(

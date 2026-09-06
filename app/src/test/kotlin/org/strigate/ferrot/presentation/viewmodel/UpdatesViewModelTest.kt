@@ -2,8 +2,10 @@ package org.strigate.ferrot.presentation.viewmodel
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -35,6 +37,7 @@ import org.strigate.ferrot.domain.usecase.state.GetLastAvailableUpdateCheckMilli
 import org.strigate.ferrot.domain.usecase.state.GetLastDependencyUpdateCheckMillisUseCase
 import org.strigate.ferrot.presentation.state.UpdatesUiState
 import org.strigate.ferrot.test.MainDispatcherRule
+import java.io.IOException
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -210,13 +213,29 @@ class UpdatesViewModelTest {
         collector.cancel()
     }
 
+    @Test
+    fun uiState_exposesErrorWhenSettingsCannotBeRead() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            automaticAppUpdatesEnabledFlow = flow { throw IOException("unavailable") },
+            automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false),
+            lastAvailableCheckFlow = MutableStateFlow(0L),
+            lastDependencyCheckFlow = MutableStateFlow(0L),
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect() }
+
+        waitForUiState(viewModel) { it is UpdatesUiState.Error }
+        assertEquals(UpdatesUiState.Error, viewModel.uiState.value)
+
+        collector.cancel()
+    }
+
     @After
     fun tearDown() {
         autoCloseable.close()
     }
 
     private fun createViewModel(
-        automaticAppUpdatesEnabledFlow: MutableStateFlow<Boolean>,
+        automaticAppUpdatesEnabledFlow: Flow<Boolean>,
         automaticDependencyUpdatesEnabledFlow: MutableStateFlow<Boolean>,
         lastAvailableCheckFlow: MutableStateFlow<Long>,
         lastDependencyCheckFlow: MutableStateFlow<Long>,

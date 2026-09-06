@@ -75,7 +75,7 @@ internal fun DownloadPageContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onRetryClick: () -> Unit,
-    onRefreshMetadataClick: () -> Unit,
+    onPageVisible: () -> Unit,
     onUrlClick: (String) -> Unit,
     onCopyText: (String, String) -> Unit,
 ) {
@@ -140,23 +140,20 @@ internal fun DownloadPageContent(
             val canActOnSelected = status == DownloadStatusUiData.COMPLETED
                     && !selectedPath.isNullOrBlank()
 
-            val hasThumbnailFile = (
-                    metadata?.thumbnailFilePath
-                        ?.let(::File)
-                        ?.let { it.exists() && it.length() > 0L }
-                    ) == true
-
-            val needsMetadataRefresh = status == DownloadStatusUiData.COMPLETED &&
-                    !hasThumbnailFile
-
-            LaunchedEffect(id, isCurrentPage, needsMetadataRefresh) {
-                if (isCurrentPage && needsMetadataRefresh) {
-                    onRefreshMetadataClick()
+            LaunchedEffect(
+                id,
+                isCurrentPage,
+                status,
+                metadata?.thumbnailFilePath,
+                thumbnailAvailable
+            ) {
+                if (isCurrentPage) {
+                    onPageVisible()
                 }
             }
 
             ThumbnailCard(
-                thumbnailFilePath = metadata?.thumbnailFilePath,
+                thumbnailFilePath = metadata?.thumbnailFilePath.takeIf { thumbnailAvailable },
                 durationSeconds = metadata?.durationSeconds,
                 isCompleted = status == DownloadStatusUiData.COMPLETED,
                 showRetry = status == DownloadStatusUiData.FAILED || status == DownloadStatusUiData.STOPPED,
@@ -325,7 +322,6 @@ private fun ThumbnailCard(
     val dimens = LocalDimens.current
     val thumbnailFile = thumbnailFilePath
         ?.let { File(it) }
-        ?.takeIf { it.exists() && it.length() > 0 }
 
     val thumbnailContentDescription = stringResource(R.string.content_description_thumbnail)
     val hasThumbnailFile = thumbnailFile != null

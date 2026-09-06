@@ -41,7 +41,7 @@ internal fun DownloadPager(
     onSaveClick: (Long) -> Unit,
     onShareClick: (Long) -> Unit,
     onRetryClick: (Long) -> Unit,
-    onRefreshMetadataClick: (Long) -> Unit,
+    onPageVisible: (Long) -> Unit,
     onUrlClick: (String) -> Unit,
     onCopyText: (String, String) -> Unit,
     pagePadding: PaddingValues,
@@ -150,8 +150,8 @@ internal fun DownloadPager(
                         onRetryClick = {
                             onRetryClick(download.id)
                         },
-                        onRefreshMetadataClick = {
-                            onRefreshMetadataClick(download.id)
+                        onPageVisible = {
+                            onPageVisible(download.id)
                         },
                         onUrlClick = onUrlClick,
                         onCopyText = onCopyText,

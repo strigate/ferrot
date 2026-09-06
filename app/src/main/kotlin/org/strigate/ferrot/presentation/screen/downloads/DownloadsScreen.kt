@@ -11,10 +11,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -163,15 +160,12 @@ internal fun DownloadsScreenContent(
     val searchFocusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     var searchActive by rememberSaveable { mutableStateOf(false) }
-    var selectedIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    var dismissingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    var archivingIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    var snackbarUndoDeleteIds by rememberSaveable { mutableStateOf(setOf<Long>()) }
-    val downloadsData = (uiState as? DownloadsUiState.Data)?.data
+    val selection = rememberSaveable(saver = DownloadsSelectionState.Saver) {
+        DownloadsSelectionState()
+    }
 
+    val downloadsData = (uiState as? DownloadsUiState.Data)?.data
     val bulkSelectedLabel = stringResource(R.string.bulk_selected)
-    val snackbarSingleDeleteMessage = stringResource(R.string.snackbar_delete_single_delete)
-    val snackbarBulkDeleteMessage = stringResource(R.string.snackbar_bulk_delete_bulk_delete)
 
     BackHandler(enabled = searchActive) {
         searchActive = false
@@ -190,26 +184,25 @@ internal fun DownloadsScreenContent(
     val allIds = downloads.map(DownloadItemUiData::id).toSet()
     val hasDownloads = allIds.isNotEmpty()
     val allSelected = areAllItemsSelected(
-        selectedIds = selectedIds,
+        selectedIds = selection.selectedIds,
         availableIds = allIds,
     )
-    val selectionMode = selectedIds.isNotEmpty()
+    val selectionMode = selection.selectedIds.isNotEmpty()
     val pendingDeleteIds = downloadsData?.pendingDeleteIds.orEmpty()
-    val hasPendingDeletes = pendingDeleteIds.isNotEmpty()
     val retryFailedDownloadIds = downloadsData?.retryFailedDownloadIds.orEmpty()
     val hasFailedDownloads = retryFailedDownloadIds.isNotEmpty()
     val hasActiveDownloads = remember(downloads) {
         downloads.any { it.status.isActive }
     }
-    val selectedBytes = remember(downloads, selectedIds) {
+    val selectedBytes = remember(downloads, selection.selectedIds) {
         downloads
             .asSequence()
-            .filter { it.id in selectedIds }
+            .filter { it.id in selection.selectedIds }
             .sumOf { it.bytesDownloaded }
     }
-    val selectionCountTitle = remember(selectedIds, bulkSelectedLabel) {
+    val selectionCountTitle = remember(selection.selectedIds, bulkSelectedLabel) {
         buildString {
-            append(selectedIds.size)
+            append(selection.selectedIds.size)
             append(' ')
             append(bulkSelectedLabel)
         }
@@ -217,11 +210,10 @@ internal fun DownloadsScreenContent(
     val selectionSizeTitle = remember(selectedBytes) {
         UiFormatter.formatBytes(selectedBytes)
     }
-    val shouldMarkSelectionSeen = remember(downloads, selectedIds) {
-        downloads.any { it.id in selectedIds && !it.seen }
+    val shouldMarkSelectionSeen = remember(downloads, selection.selectedIds) {
+        downloads.any { it.id in selection.selectedIds && !it.seen }
     }
 
-    val snackbarUndoActionLabel = stringResource(R.string.snackbar_delete_undo)
     val onScrollToTop: () -> Unit = {
         coroutineScope.launch {
             lazyGridState.animateScrollToItem(0)
@@ -236,23 +228,14 @@ internal fun DownloadsScreenContent(
     }
 
     BackHandler(enabled = selectionMode) {
-        selectedIds = emptySet()
+        selection.selectedIds = emptySet()
     }
     LaunchedEffect(downloadsData != null, allIds) {
-        selectedIds = pruneSelectedItemIds(
-            selectedIds = selectedIds,
-            availableIds = allIds.takeIf { downloadsData != null },
-        )
+        selection.prune(allIds.takeIf { downloadsData != null })
     }
     PendingDeleteSnackbarEffect(
         pendingDeleteIds = pendingDeleteIds,
-        hasPendingDeletes = hasPendingDeletes,
-        snackbarUndoDeleteIds = snackbarUndoDeleteIds,
-        onSnackbarUndoDeleteIdsChange = { snackbarUndoDeleteIds = it },
         snackbarHostState = snackbarHostState,
-        snackbarSingleDeleteMessage = snackbarSingleDeleteMessage,
-        snackbarBulkDeleteMessage = snackbarBulkDeleteMessage,
-        snackbarUndoActionLabel = snackbarUndoActionLabel,
         onUndoPendingDelete = { ids ->
             onMarkDownloadsPendingDelete(ids, false)
         },
@@ -269,32 +252,20 @@ internal fun DownloadsScreenContent(
                     selectionSizeTitle = selectionSizeTitle,
                     shouldMarkSelectionSeen = shouldMarkSelectionSeen,
                     isArchived = isArchived,
-                    onClearSelection = { selectedIds = emptySet() },
+                    onClearSelection = { selection.selectedIds = emptySet() },
                     onToggleAll = {
-                        selectedIds = if (allSelected) emptySet() else allIds
+                        selection.selectedIds = if (allSelected) emptySet() else allIds
                     },
-                    onToggleSeen = { onToggleDownloadsSeen(selectedIds) },
+                    onToggleSeen = { onToggleDownloadsSeen(selection.selectedIds) },
                     onArchive = {
-                        val selectedItemIds = splitSelectedItemIds(
-                            selectedIds = selectedIds,
-                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
-                        )
-                        archivingIds += selectedItemIds.visible
-                        if (selectedItemIds.offscreen.isNotEmpty()) {
-                            onUpdateDownloadsArchived(selectedItemIds.offscreen, !isArchived)
+                        selection.archiveSelected(lazyGridState.layoutInfo.visibleItemsInfo.map { it.key }) { ids ->
+                            onUpdateDownloadsArchived(ids, !isArchived)
                         }
-                        selectedIds = emptySet()
                     },
                     onDelete = {
-                        val selectedItemIds = splitSelectedItemIds(
-                            selectedIds = selectedIds,
-                            visibleItemKeys = lazyGridState.layoutInfo.visibleItemsInfo.map { it.key },
-                        )
-                        dismissingIds += selectedItemIds.visible
-                        if (selectedItemIds.offscreen.isNotEmpty()) {
-                            onMarkDownloadsPendingDelete(selectedItemIds.offscreen, true)
+                        selection.deleteSelected(lazyGridState.layoutInfo.visibleItemsInfo.map { it.key }) { ids ->
+                            onMarkDownloadsPendingDelete(ids, true)
                         }
-                        selectedIds = emptySet()
                     },
                 )
             } else {
@@ -312,7 +283,7 @@ internal fun DownloadsScreenContent(
                     onNavigateBack = onNavigateBack,
                     onNavigateToArchived = onNavigateToArchived,
                     onNavigateToSettings = onNavigateToSettings,
-                    onSelectAll = { selectedIds = allIds },
+                    onSelectAll = { selection.selectedIds = allIds },
                     onScrollToTop = onScrollToTop,
                     onRetryFailedAndScrollToTop = onRetryFailedAndScrollToTop,
                     onStopAllDownloads = onStopAllDownloads,
@@ -361,9 +332,9 @@ internal fun DownloadsScreenContent(
                             }
                             DownloadsContent(
                                 items = downloads,
-                                selectedIds = selectedIds,
-                                dismissingIds = dismissingIds,
-                                archivingIds = archivingIds,
+                                selectedIds = selection.selectedIds,
+                                dismissingIds = selection.dismissingIds,
+                                archivingIds = selection.archivingIds,
                                 pendingDeleteIds = pendingDeleteIds,
                                 archived = isArchived,
                                 leftSwipeAction = leftSwipeAction,
@@ -388,14 +359,14 @@ internal fun DownloadsScreenContent(
                                     }
                                 },
                                 onSelectionChange = {
-                                    selectedIds = it
+                                    selection.selectedIds = it
                                 },
                                 onBulkDismissAnimationFinished = { itemId ->
-                                    dismissingIds = dismissingIds - itemId
+                                    selection.finishDismiss(itemId)
                                     onMarkDownloadsPendingDelete(setOf(itemId), true)
                                 },
                                 onBulkArchiveAnimationFinished = { itemId ->
-                                    archivingIds = archivingIds - itemId
+                                    selection.finishArchive(itemId)
                                     onUpdateDownloadsArchived(setOf(itemId), !isArchived)
                                 },
                                 onToggleSeen = { itemId ->
@@ -416,57 +387,6 @@ internal fun DownloadsScreenContent(
 }
 
 @Composable
-private fun PendingDeleteSnackbarEffect(
-    pendingDeleteIds: Set<Long>,
-    hasPendingDeletes: Boolean,
-    snackbarUndoDeleteIds: Set<Long>,
-    onSnackbarUndoDeleteIdsChange: (Set<Long>) -> Unit,
-    snackbarHostState: SnackbarHostState,
-    snackbarSingleDeleteMessage: String,
-    snackbarBulkDeleteMessage: String,
-    snackbarUndoActionLabel: String,
-    onUndoPendingDelete: (Set<Long>) -> Unit,
-    onConfirmPendingDelete: () -> Unit,
-) {
-    val latestSnackbarUndoDeleteIds by rememberUpdatedState(snackbarUndoDeleteIds)
-
-    LaunchedEffect(pendingDeleteIds) {
-        onSnackbarUndoDeleteIdsChange(
-            if (pendingDeleteIds.isEmpty()) {
-                emptySet()
-            } else {
-                snackbarUndoDeleteIds + pendingDeleteIds
-            }
-        )
-    }
-    LaunchedEffect(hasPendingDeletes) {
-        if (!hasPendingDeletes) {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            return@LaunchedEffect
-        }
-        val snackbarDeleteIds = snackbarUndoDeleteIds.ifEmpty { pendingDeleteIds.toSet() }
-        val snackbarPendingDeleteMessage = getPendingDeleteSnackbarMessage(
-            snackbarDeleteIds = snackbarDeleteIds,
-            snackbarSingleDeleteMessage = snackbarSingleDeleteMessage,
-            snackbarBulkDeleteMessage = snackbarBulkDeleteMessage,
-        )
-        val snackbarResult = snackbarHostState.showSnackbar(
-            message = snackbarPendingDeleteMessage,
-            actionLabel = snackbarUndoActionLabel,
-            duration = SnackbarDuration.Indefinite,
-            withDismissAction = true,
-        )
-        if (snackbarResult == SnackbarResult.ActionPerformed) {
-            onUndoPendingDelete(latestSnackbarUndoDeleteIds.ifEmpty { snackbarDeleteIds })
-            return@LaunchedEffect
-        }
-        if (snackbarDeleteIds.isNotEmpty()) {
-            onConfirmPendingDelete()
-        }
-    }
-}
-
-@Composable
 private fun DownloadsError(
     modifier: Modifier = Modifier,
 ) {
@@ -476,56 +396,3 @@ private fun DownloadsError(
         text = stringResource(R.string.error_failed_to_load_downloads),
     )
 }
-
-private fun getPendingDeleteSnackbarMessage(
-    snackbarDeleteIds: Set<Long>,
-    snackbarSingleDeleteMessage: String,
-    snackbarBulkDeleteMessage: String,
-): String {
-    val deletedCount = snackbarDeleteIds.size
-    return if (deletedCount > 1) {
-        "$deletedCount $snackbarBulkDeleteMessage"
-    } else {
-        snackbarSingleDeleteMessage
-    }
-}
-
-internal fun splitSelectedItemIds(
-    selectedIds: Set<Long>,
-    visibleItemKeys: List<Any>,
-): SelectedItemIds {
-    if (selectedIds.isEmpty() || visibleItemKeys.isEmpty()) {
-        return SelectedItemIds(
-            visible = emptySet(),
-            offscreen = selectedIds,
-        )
-    }
-    val visibleIds = visibleItemKeys
-        .filterIsInstance<Long>()
-        .toSet()
-    val visibleSelectedIds = selectedIds.intersect(visibleIds)
-
-    return SelectedItemIds(
-        visible = visibleSelectedIds,
-        offscreen = selectedIds - visibleSelectedIds,
-    )
-}
-
-internal fun areAllItemsSelected(
-    selectedIds: Set<Long>,
-    availableIds: Set<Long>,
-): Boolean {
-    return availableIds.isNotEmpty() && availableIds.all(selectedIds::contains)
-}
-
-internal fun pruneSelectedItemIds(
-    selectedIds: Set<Long>,
-    availableIds: Set<Long>?,
-): Set<Long> {
-    return availableIds?.let(selectedIds::intersect) ?: selectedIds
-}
-
-internal data class SelectedItemIds(
-    val visible: Set<Long>,
-    val offscreen: Set<Long>,
-)
