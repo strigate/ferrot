@@ -21,20 +21,27 @@ object Constants {
     }
 
     object Settings {
-        const val KEY_WIFI_ONLY_DOWNLOADS_ENABLED = "download_wifi_only"
-        const val DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED = true
+        const val KEY_WIFI_ONLY_DOWNLOADS_ENABLED =
+            "download_wifi_only"
         const val KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED =
             "auto_duplicate_download_deletion"
+        const val KEY_COOKIES_ENABLED =
+            "use_cookies"
+        const val KEY_LEFT_SWIPE_ACTION =
+            "left_swipe_action"
+        const val KEY_RIGHT_SWIPE_ACTION =
+            "right_swipe_action"
+        const val KEY_AUTOMATIC_APP_UPDATES_ENABLED =
+            "auto_updates"
+        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED =
+            "auto_dependency_updates"
+
+        const val DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED = true
         const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED = true
-        const val KEY_COOKIES_ENABLED = "use_cookies"
         const val DEFAULT_VALUE_COOKIES_ENABLED = false
-        const val KEY_LEFT_SWIPE_ACTION = "left_swipe_action"
         val DEFAULT_VALUE_LEFT_SWIPE_ACTION = DownloadSwipeAction.DELETE
-        const val KEY_RIGHT_SWIPE_ACTION = "right_swipe_action"
         val DEFAULT_VALUE_RIGHT_SWIPE_ACTION = DownloadSwipeAction.ARCHIVE
-        const val KEY_AUTOMATIC_APP_UPDATES_ENABLED = "auto_updates"
         const val DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED = true
-        const val KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED = "auto_dependency_updates"
         const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED = true
     }
 
@@ -118,6 +125,8 @@ object Constants {
     }
 
     object State {
+        const val KEY_FIRST_RUN_MILLIS =
+            "first_run_millis"
         const val KEY_BOOT_TIME_MILLIS =
             "boot_time_millis"
         const val KEY_DOWNLOADS_GRID_LAYOUT_ENABLED =

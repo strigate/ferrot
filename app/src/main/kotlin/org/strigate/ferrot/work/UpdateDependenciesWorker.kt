@@ -8,6 +8,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -117,6 +118,25 @@ class UpdateDependenciesWorker(
         fun enqueueOneTimeReplace(
             context: Context,
         ) {
+            enqueueOneTime(
+                context = context,
+                existingWorkPolicy = ExistingWorkPolicy.REPLACE,
+            )
+        }
+
+        fun enqueueOneTimeKeep(
+            context: Context,
+        ): Operation {
+            return enqueueOneTime(
+                context = context,
+                existingWorkPolicy = ExistingWorkPolicy.KEEP,
+            )
+        }
+
+        private fun enqueueOneTime(
+            context: Context,
+            existingWorkPolicy: ExistingWorkPolicy,
+        ): Operation {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -127,9 +147,9 @@ class UpdateDependenciesWorker(
                 .setExpeditedIfAllowed()
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
+            return WorkManager.getInstance(context).enqueueUniqueWork(
                 ONETIME_UPDATE_DEPENDENCIES,
-                ExistingWorkPolicy.REPLACE,
+                existingWorkPolicy,
                 oneTimeWorkRequest,
             )
         }
