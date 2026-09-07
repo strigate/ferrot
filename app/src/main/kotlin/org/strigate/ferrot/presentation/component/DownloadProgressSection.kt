@@ -57,10 +57,11 @@ fun DownloadProgressSection(
                 forcePrimary = forcePrimaryBar,
             )
             Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
+        } else {
+            Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
         }
         Box(
-            modifier = Modifier
-                .heightIn(min = refineryDimens.spacingLarge),
+            modifier = Modifier.heightIn(min = refineryDimens.spacingLarge),
         ) {
             StatusSizeEtaRow(
                 status = status,
@@ -137,8 +138,7 @@ private fun InfoLine(
     ) {
         if (!leftText.isNullOrBlank()) {
             Text(
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isError) {
                     MaterialTheme.colorScheme.error

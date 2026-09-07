@@ -12,10 +12,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.FirstRunState
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
 import org.strigate.ferrot.domain.usecase.combined.ConfigureBackgroundWorkUseCase
+import org.strigate.ferrot.domain.usecase.dependencyupdate.RequestInitialDependencyUpdateCheckUseCase
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -34,6 +36,12 @@ class Ferrot : Application(), Configuration.Provider {
     @Inject
     lateinit var configureBackgroundWorkUseCase: ConfigureBackgroundWorkUseCase
 
+    @Inject
+    lateinit var firstRunState: FirstRunState
+
+    @Inject
+    lateinit var requestInitialDependencyUpdateCheckUseCase: RequestInitialDependencyUpdateCheckUseCase
+
     override val workManagerConfiguration: Configuration
         get() {
             return Configuration.Builder()
@@ -49,6 +57,14 @@ class Ferrot : Application(), Configuration.Provider {
         analyticsLogger.setConsent(!BuildConfig.DEBUG)
 
         applicationScope.launch {
+            runCatching {
+                if (firstRunState.isFirstRun()) {
+                    requestInitialDependencyUpdateCheckUseCase()
+                    firstRunState.markInitialized()
+                }
+            }.onFailure {
+                Log.w(LOG_TAG, "Failed to run first-run updates", it)
+            }
             runCatching {
                 configureWork()
                 Log.i(LOG_TAG, "Configured background work")

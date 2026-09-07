@@ -18,10 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Cookie
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -29,11 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import org.strigate.ferrot.R
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.presentation.Screen
+import org.strigate.ferrot.presentation.component.BackTopAppBar
 import org.strigate.ferrot.presentation.component.ConfirmDialog
 import org.strigate.ferrot.presentation.component.state.ErrorState
 import org.strigate.ferrot.presentation.component.state.LoadingState
@@ -58,7 +56,6 @@ import org.strigate.ferrot.presentation.viewmodel.CookiesViewModel
 import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
-import org.strigate.refinery.theme.RefineryTopAppBarDefaults
 
 @Composable
 fun CookiesScreen(
@@ -68,7 +65,7 @@ fun CookiesScreen(
 ) {
     val context = LocalContext.current
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -104,7 +101,6 @@ fun CookiesScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CookiesScreenContent(
     uiState: CookiesUiState,
@@ -114,8 +110,6 @@ internal fun CookiesScreenContent(
     onDeleteCookieSet: (CookieSetUiData) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val refineryDimens = LocalRefineryDimens.current
-
     var cookieSetPendingDelete by remember { mutableStateOf<CookieSetUiData?>(null) }
 
     cookieSetPendingDelete?.let { cookieSet ->
@@ -141,27 +135,16 @@ internal fun CookiesScreenContent(
         )
     }
     Scaffold(
+        modifier = modifier,
         topBar = {
-            TopAppBar(
-                colors = RefineryTopAppBarDefaults.colors(),
-                navigationIcon = {
-                    IconButton(
-                        onClick = onBackClick,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.content_description_back),
-                        )
-                    }
-                },
-                title = {
-                    Text(text = stringResource(R.string.screen_title_cookies))
-                },
+            BackTopAppBar(
+                title = stringResource(R.string.screen_title_cookies),
+                onBackClick = onBackClick,
             )
         },
         content = { contentPadding ->
             Surface(
-                modifier = modifier
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding),
                 color = MaterialTheme.colorScheme.background,
@@ -175,50 +158,12 @@ internal fun CookiesScreenContent(
                     }
 
                     is CookiesUiState.Data -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = refineryDimens.spacingMediumAlt)
-                                .verticalScroll(rememberScrollState()),
-                        ) {
-                            StaticSettingsSection(
-                                icon = Icons.Outlined.Cookie,
-                                title = stringResource(R.string.cookies_section_add),
-                            ) {
-                                TextSetting(
-                                    text = stringResource(R.string.cookies_title_get_cookies),
-                                    description = stringResource(R.string.cookies_description_get_cookies),
-                                    onClick = onNavigateToGetCookies,
-                                )
-                                TextSetting(
-                                    text = stringResource(R.string.cookies_title_import_file),
-                                    description = stringResource(R.string.cookies_description_import_file),
-                                    onClick = onImportFile,
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
-                            StaticSettingsSection(
-                                icon = Icons.Outlined.Cookie,
-                                title = stringResource(R.string.cookies_section_saved),
-                            ) {
-                                if (state.cookieSets.isEmpty()) {
-                                    TextSetting(
-                                        text = stringResource(R.string.cookies_empty_title),
-                                        description = stringResource(R.string.cookies_empty_description),
-                                        enabled = false,
-                                    )
-                                } else {
-                                    state.cookieSets.forEach { cookieSet ->
-                                        CookieSetSetting(
-                                            cookieSet = cookieSet,
-                                            description = cookieSetDescription(cookieSet),
-                                            onDelete = { cookieSetPendingDelete = cookieSet },
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
-                        }
+                        CookiesContent(
+                            cookieSets = state.cookieSets,
+                            onNavigateToGetCookies = onNavigateToGetCookies,
+                            onImportFile = onImportFile,
+                            onRequestDelete = { cookieSetPendingDelete = it },
+                        )
                     }
 
                     is CookiesUiState.Error -> CookiesError()
@@ -324,4 +269,59 @@ private fun clearWebViewData() {
         cookieManager.flush()
     }
     WebStorage.getInstance().deleteAllData()
+}
+
+@Composable
+private fun CookiesContent(
+    cookieSets: List<CookieSetUiData>,
+    onNavigateToGetCookies: () -> Unit,
+    onImportFile: () -> Unit,
+    onRequestDelete: (CookieSetUiData) -> Unit,
+) {
+    val refineryDimens = LocalRefineryDimens.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = refineryDimens.spacingMediumAlt)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        StaticSettingsSection(
+            icon = Icons.Outlined.Cookie,
+            title = stringResource(R.string.cookies_section_add),
+        ) {
+            TextSetting(
+                text = stringResource(R.string.cookies_title_get_cookies),
+                description = stringResource(R.string.cookies_description_get_cookies),
+                onClick = onNavigateToGetCookies,
+            )
+            TextSetting(
+                text = stringResource(R.string.cookies_title_import_file),
+                description = stringResource(R.string.cookies_description_import_file),
+                onClick = onImportFile,
+            )
+        }
+        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        StaticSettingsSection(
+            icon = Icons.Outlined.Cookie,
+            title = stringResource(R.string.cookies_section_saved),
+        ) {
+            if (cookieSets.isEmpty()) {
+                TextSetting(
+                    text = stringResource(R.string.cookies_empty_title),
+                    description = stringResource(R.string.cookies_empty_description),
+                    enabled = false,
+                )
+            } else {
+                cookieSets.forEach { cookieSet ->
+                    CookieSetSetting(
+                        cookieSet = cookieSet,
+                        description = cookieSetDescription(cookieSet),
+                        onDelete = { onRequestDelete(cookieSet) },
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
+    }
 }

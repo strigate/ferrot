@@ -114,24 +114,20 @@
         <activity
             android:name=".app.ShareReceiveActivity"
             android:exported="true"
-            android:label="@string/activity_label_download"
-            android:launchMode="singleInstance">
+            android:label="@string/activity_label_download">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/uri-list" />
             </intent-filter>
         </activity>
 
         <activity
             android:name=".presentation.MainActivity"
             android:exported="true"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.Ferrot">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,4 +1,4 @@
-package org.strigate.ferrot.presentation.screen
+package org.strigate.ferrot.presentation.screen.downloads
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -7,23 +7,61 @@ import org.junit.Test
 
 class DownloadsScreenScrollBehaviorTest {
     @Test
-    fun getBulkDeleteVisibleIds_returnsOnlySelectedIdsThatAreCurrentlyVisible() {
-        val visibleSelectedIds = getBulkDeleteVisibleIds(
+    fun splitSelectedItemIds_separatesVisibleAndOffscreenSelectedIds() {
+        val selectedItemIds = splitSelectedItemIds(
             selectedIds = setOf(1L, 2L, 3L, 4L),
             visibleItemKeys = listOf(9L, 3L, "header", 1L),
         )
 
-        assertEquals(setOf(1L, 3L), visibleSelectedIds)
+        assertEquals(setOf(1L, 3L), selectedItemIds.visible)
+        assertEquals(setOf(2L, 4L), selectedItemIds.offscreen)
     }
 
     @Test
-    fun getBulkDeleteVisibleIds_returnsEmptySet_whenNothingSelectedIsVisible() {
-        val visibleSelectedIds = getBulkDeleteVisibleIds(
+    fun splitSelectedItemIds_keepsEverySelectedIdOffscreen_whenNothingIsVisible() {
+        val selectedItemIds = splitSelectedItemIds(
             selectedIds = setOf(1L, 2L),
             visibleItemKeys = listOf(9L, 8L),
         )
 
-        assertTrue(visibleSelectedIds.isEmpty())
+        assertTrue(selectedItemIds.visible.isEmpty())
+        assertEquals(setOf(1L, 2L), selectedItemIds.offscreen)
+    }
+
+    @Test
+    fun areAllItemsSelected_requiresEveryAvailableIdToBeSelected() {
+        assertTrue(
+            areAllItemsSelected(
+                selectedIds = setOf(1L, 2L, 3L),
+                availableIds = setOf(1L, 2L, 3L),
+            )
+        )
+        assertFalse(
+            areAllItemsSelected(
+                selectedIds = setOf(1L, 4L),
+                availableIds = setOf(1L, 2L),
+            )
+        )
+    }
+
+    @Test
+    fun pruneSelectedItemIds_removesIdsThatAreNoLongerAvailable() {
+        val prunedIds = pruneSelectedItemIds(
+            selectedIds = setOf(1L, 2L, 3L),
+            availableIds = setOf(2L, 3L, 4L),
+        )
+
+        assertEquals(setOf(2L, 3L), prunedIds)
+    }
+
+    @Test
+    fun pruneSelectedItemIds_keepsIdsWhileDownloadsDataIsUnavailable() {
+        val prunedIds = pruneSelectedItemIds(
+            selectedIds = setOf(1L, 2L),
+            availableIds = null,
+        )
+
+        assertEquals(setOf(1L, 2L), prunedIds)
     }
 
     @Test

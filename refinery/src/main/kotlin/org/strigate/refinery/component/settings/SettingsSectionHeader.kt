@@ -27,8 +27,7 @@ internal fun SettingsSectionHeader(
     ) {
         if (icon != null) {
             Icon(
-                modifier = Modifier
-                    .size(refineryDimens.iconXSmallAlt),
+                modifier = Modifier.size(refineryDimens.iconXSmallAlt),
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -39,8 +38,7 @@ internal fun SettingsSectionHeader(
         }
         if (title != null) {
             Text(
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 text = title,

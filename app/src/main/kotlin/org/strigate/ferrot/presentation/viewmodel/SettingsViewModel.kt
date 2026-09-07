@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,7 +47,7 @@ class SettingsViewModel @Inject constructor(
             cookiesEnabled,
             leftSwipeAction,
             rightSwipeAction ->
-            SettingsUiState.Data(
+            val uiState: SettingsUiState = SettingsUiState.Data(
                 SettingsUiData(
                     wifiOnlyDownloadsEnabled = wifiOnlyDownloadsEnabled,
                     automaticDuplicateDownloadDeletionEnabled = automaticDuplicateDownloadDeletionEnabled,
@@ -55,7 +56,8 @@ class SettingsViewModel @Inject constructor(
                     rightSwipeAction = rightSwipeAction.toUiData(),
                 )
             )
-        }
+            uiState
+        }.catch { emit(SettingsUiState.Error) }
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.SETTINGS)

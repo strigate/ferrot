@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.1.0 - 2026-09-07
+### Added
+- Optional grid layout for active and archived downloads
+
+### Changed
+- Reorganized download, downloads, and cookie capture screens into focused components
+- Separated first-run dependency checks from application initialization
+- Updated Android Gradle Plugin, Gradle, Coil, Firebase BOM, and Byte Buddy
+
+### Fixed
+- Hardened shared link handling for malformed and unsupported intents
+- Preserved the selected download when pager items are reordered
+- Showed progress while downloads are being deleted
+- Hardened loading and error state handling across app screens
+
 ## 2.0.0 - 2026-08-15
 ### Added
 - Theme outline colors for more consistent component styling

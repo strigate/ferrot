@@ -36,8 +36,7 @@ fun ErrorState(
             verticalArrangement = Arrangement.Center,
         ) {
             Icon(
-                modifier = Modifier
-                    .size(refineryDimens.iconXLarge),
+                modifier = Modifier.size(refineryDimens.iconXLarge),
                 tint = MaterialTheme.colorScheme.error,
                 imageVector = Icons.Outlined.ErrorOutline,
                 contentDescription = null,
@@ -45,8 +44,7 @@ fun ErrorState(
             text?.let {
                 Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
                 Column(
-                    modifier = Modifier
-                        .widthIn(max = dimens.contentMaxWidth),
+                    modifier = Modifier.widthIn(max = dimens.contentMaxWidth),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
