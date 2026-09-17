@@ -22,9 +22,9 @@ class ConfigureBackgroundWorkUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() {
         val settings = combine(
-            settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase(),
+            flow = settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase(),
+            flow2 = settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase(),
+            flow3 = settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase(),
         ) { automaticAppUpdatesEnabled, automaticDependencyUpdatesEnabled, automaticDuplicateDownloadDeletionEnabled ->
             BackgroundWorkSettings(
                 automaticAppUpdatesEnabled = automaticAppUpdatesEnabled,
