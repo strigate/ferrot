@@ -46,11 +46,12 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWorkerTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     private var logMock: MockedStatic<Log>? = null
 
@@ -147,6 +148,14 @@ class DownloadWorkerTest {
             etaSeconds = null,
         )
         verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.FAILED)
+    }
+
+    @Test
+    fun doWork_failsWithoutLookup_whenAttemptsAreExhausted() = runTest(testDispatcher) {
+        val result = createWorker(downloadId = 42L, runAttemptCount = 21).doWork()
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+        verify(getDownloadByIdUseCase, never()).invoke(42L)
     }
 
     @After
