@@ -22,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
@@ -30,6 +32,8 @@ fun TextNavigateSetting(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     description: String? = null,
+    extraTopPadding: Dp = 0.dp,
+    extraBottomPadding: Dp = 0.dp,
     onClick: () -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
@@ -42,8 +46,10 @@ fun TextNavigateSetting(
                 onClick = onClick,
             )
             .padding(
-                horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMedium + refineryDimens.spacingXXSmall,
+                start = refineryDimens.spacingMedium,
+                top = refineryDimens.spacingMedium + refineryDimens.spacingXXSmall + extraTopPadding,
+                end = refineryDimens.spacingMedium,
+                bottom = refineryDimens.spacingMedium + refineryDimens.spacingXXSmall + extraBottomPadding,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

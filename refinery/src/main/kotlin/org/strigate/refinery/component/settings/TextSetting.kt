@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
@@ -24,6 +26,7 @@ fun TextSetting(
     modifier: Modifier = Modifier,
     description: String? = null,
     enabled: Boolean = true,
+    extraBottomPadding: Dp = 0.dp,
     onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -58,8 +61,10 @@ fun TextSetting(
             .fillMaxWidth()
             .then(clickableModifier)
             .padding(
-                horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMedium,
+                start = refineryDimens.spacingMedium,
+                top = refineryDimens.spacingMedium,
+                end = refineryDimens.spacingMedium,
+                bottom = refineryDimens.spacingMedium + extraBottomPadding,
             ),
     ) {
         Row(
