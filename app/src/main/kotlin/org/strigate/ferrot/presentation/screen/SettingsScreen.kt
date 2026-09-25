@@ -37,8 +37,8 @@ import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.presentation.viewmodel.SettingsViewModel
 import org.strigate.refinery.component.settings.DropdownSetting
 import org.strigate.refinery.component.settings.IconAlignedSettingsSectionDivider
+import org.strigate.refinery.component.settings.SettingsSection
 import org.strigate.refinery.component.settings.SettingsSectionDivider
-import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.SwitchSetting
 import org.strigate.refinery.component.settings.TextNavigateSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -158,7 +158,7 @@ private fun SettingsContent(
             .padding(horizontal = refineryDimens.spacingMediumAlt)
             .verticalScroll(rememberScrollState()),
     ) {
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Tune,
             title = stringResource(id = R.string.settings_section_general),
         ) {
@@ -171,13 +171,14 @@ private fun SettingsContent(
             SettingsSectionDivider()
             SwitchSetting(
                 text = stringResource(id = R.string.settings_title_automatic_duplicate_deletion),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = stringResource(id = R.string.settings_description_automatic_duplicate_deletion),
                 checked = data.automaticDuplicateDownloadDeletionEnabled,
                 onCheckedChange = onSetAutomaticDuplicateDownloadDeletionEnabled,
             )
         }
-        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
-        StaticSettingsSection(
+        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        SettingsSection(
             icon = Icons.Outlined.Cookie,
             title = stringResource(id = R.string.settings_section_cookies),
         ) {
@@ -190,28 +191,31 @@ private fun SettingsContent(
             SettingsSectionDivider()
             TextNavigateSetting(
                 text = stringResource(R.string.settings_navigate_title_manage_cookies),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = stringResource(R.string.settings_description_manage_cookies),
             ) {
                 onNavigateToCookies()
             }
         }
-        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
         SwipeActionSettings(
             leftSwipeAction = data.leftSwipeAction,
             rightSwipeAction = data.rightSwipeAction,
             onSetLeftSwipeAction = onSetLeftSwipeAction,
             onSetRightSwipeAction = onSetRightSwipeAction,
         )
-        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
-        StaticSettingsSection {
+        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        SettingsSection {
             TextNavigateSetting(
                 icon = Icons.Outlined.SystemUpdate,
+                extraTopPadding = refineryDimens.spacingXSmall,
                 text = stringResource(R.string.settings_navigate_title_updates),
                 onClick = onNavigateToUpdates,
             )
             IconAlignedSettingsSectionDivider()
             TextNavigateSetting(
                 icon = Icons.Outlined.Info,
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 text = stringResource(R.string.settings_navigate_title_about),
                 onClick = onNavigateToAbout,
             )
@@ -227,7 +231,8 @@ private fun SwipeActionSettings(
     onSetLeftSwipeAction: (DownloadSwipeActionUiData) -> Unit,
     onSetRightSwipeAction: (DownloadSwipeActionUiData) -> Unit,
 ) {
-    StaticSettingsSection(
+    val refineryDimens = LocalRefineryDimens.current
+    SettingsSection(
         icon = Icons.Outlined.SwapHoriz,
         title = stringResource(id = R.string.settings_section_swipe_actions),
     ) {
@@ -242,6 +247,7 @@ private fun SwipeActionSettings(
         SettingsSectionDivider()
         DropdownSetting(
             text = stringResource(R.string.settings_title_swipe_right),
+            extraBottomPadding = refineryDimens.spacingXSmall,
             description = stringResource(R.string.settings_description_swipe_right),
             selectedOption = rightSwipeAction,
             options = DownloadSwipeActionUiData.entries,

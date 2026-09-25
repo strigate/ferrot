@@ -2,9 +2,7 @@ package org.strigate.refinery.component.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
-fun StaticSettingsSection(
+fun SettingsSection(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     title: String? = null,
@@ -45,18 +43,17 @@ fun StaticSettingsSection(
                             start = refineryDimens.spacingMedium,
                             top = refineryDimens.spacingMedium,
                             end = refineryDimens.spacingMedium,
+                            bottom = refineryDimens.spacingXSmallAlt,
                         ),
                     icon = icon,
                     title = title,
                 )
             }
-            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
             ) {
                 content()
             }
-            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
         }
     }
 }
