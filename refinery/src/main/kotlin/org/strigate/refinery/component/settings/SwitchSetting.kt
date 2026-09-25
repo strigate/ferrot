@@ -40,7 +40,7 @@ fun SwitchSetting(
             }
             .padding(
                 horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMediumAlt,
+                vertical = refineryDimens.spacingMedium,
             ),
     ) {
         Row(

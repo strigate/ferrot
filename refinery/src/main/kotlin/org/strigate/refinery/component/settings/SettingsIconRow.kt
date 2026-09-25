@@ -29,7 +29,10 @@ fun SettingsIconRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = refineryDimens.spacingSmallAlt),
+            .padding(
+                horizontal = refineryDimens.spacingSmallAlt,
+                vertical = refineryDimens.spacingSmall,
+            ),
         horizontalArrangement = Arrangement.spacedBy(refineryDimens.zero),
     ) {
         CompositionLocalProvider(

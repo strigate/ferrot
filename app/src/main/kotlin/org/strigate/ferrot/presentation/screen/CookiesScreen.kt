@@ -53,6 +53,7 @@ import org.strigate.ferrot.presentation.model.CookieSetSourceUiData
 import org.strigate.ferrot.presentation.model.CookieSetUiData
 import org.strigate.ferrot.presentation.state.CookiesUiState
 import org.strigate.ferrot.presentation.viewmodel.CookiesViewModel
+import org.strigate.refinery.component.settings.SettingsSectionDivider
 import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -136,6 +137,7 @@ internal fun CookiesScreenContent(
     }
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BackTopAppBar(
                 title = stringResource(R.string.screen_title_cookies),
@@ -187,7 +189,7 @@ private fun CookieSetSetting(
             .fillMaxWidth()
             .padding(
                 horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMediumAlt,
+                vertical = refineryDimens.spacingMedium,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -295,13 +297,14 @@ private fun CookiesContent(
                 description = stringResource(R.string.cookies_description_get_cookies),
                 onClick = onNavigateToGetCookies,
             )
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.cookies_title_import_file),
                 description = stringResource(R.string.cookies_description_import_file),
                 onClick = onImportFile,
             )
         }
-        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
         StaticSettingsSection(
             icon = Icons.Outlined.Cookie,
             title = stringResource(R.string.cookies_section_saved),
@@ -313,7 +316,10 @@ private fun CookiesContent(
                     enabled = false,
                 )
             } else {
-                cookieSets.forEach { cookieSet ->
+                cookieSets.forEachIndexed { index, cookieSet ->
+                    if (index > 0) {
+                        SettingsSectionDivider()
+                    }
                     CookieSetSetting(
                         cookieSet = cookieSet,
                         description = cookieSetDescription(cookieSet),

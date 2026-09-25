@@ -41,11 +41,11 @@ fun <T> DropdownSetting(
     onOptionSelected: (T) -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
+    val chipColor = MaterialTheme.colorScheme.surfaceContainer
+    val chipTextColor = MaterialTheme.colorScheme.onSurface
 
     var expanded by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
-    val chipColor = MaterialTheme.colorScheme.surface
-    val chipTextColor = MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier = modifier.fillMaxWidth(),
@@ -62,7 +62,7 @@ fun <T> DropdownSetting(
                 )
                 .padding(
                     horizontal = refineryDimens.spacingMedium,
-                    vertical = refineryDimens.spacingMediumAlt,
+                    vertical = refineryDimens.spacingMedium,
                 ),
         ) {
             Row(
