@@ -36,15 +36,15 @@ fun ColorPickerSetting(
     onClick: (() -> Unit)? = null,
 ) {
     val refineryDimens = LocalRefineryDimens.current
-    val chipColor = MaterialTheme.colorScheme.surface
+    val chipColor = MaterialTheme.colorScheme.surfaceContainer
     val chipTextColor = MaterialTheme.colorScheme.onSurface
+
     val clickableModifier = if (onClick != null) {
-        Modifier
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
-                onClick = onClick,
-            )
+        Modifier.combinedClickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(),
+            onClick = onClick,
+        )
     } else {
         Modifier
     }
@@ -58,7 +58,7 @@ fun ColorPickerSetting(
                 .then(clickableModifier)
                 .padding(
                     horizontal = refineryDimens.spacingMedium,
-                    vertical = refineryDimens.spacingMediumAlt,
+                    vertical = refineryDimens.spacingMedium,
                 ),
         ) {
             Row(

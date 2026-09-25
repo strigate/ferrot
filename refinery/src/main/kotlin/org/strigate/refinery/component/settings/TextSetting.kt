@@ -59,7 +59,7 @@ fun TextSetting(
             .then(clickableModifier)
             .padding(
                 horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMediumAlt,
+                vertical = refineryDimens.spacingMedium,
             ),
     ) {
         Row(

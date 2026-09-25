@@ -37,6 +37,7 @@ import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
 import org.strigate.refinery.component.settings.SettingsIconRow
 import org.strigate.refinery.component.settings.SettingsIconRowItem
+import org.strigate.refinery.component.settings.SettingsSectionDivider
 import org.strigate.refinery.component.settings.StaticSettingsSection
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -99,6 +100,7 @@ internal fun AboutScreenContent(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BackTopAppBar(
                 title = stringResource(R.string.screen_title_about),
@@ -151,7 +153,7 @@ private fun AboutContent(
                 onBuildClick()
             }
         }
-        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
         StaticSettingsSection(
             icon = Icons.Outlined.Link,
             title = stringResource(R.string.settings_section_links),
@@ -169,6 +171,7 @@ private fun AboutContent(
             ) {
                 onUrlClick(urlWebsite)
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_github),
                 description = stringResource(R.string.settings_description_github),
@@ -178,6 +181,7 @@ private fun AboutContent(
             ) {
                 onUrlClick(urlGitHub)
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_privacy),
                 description = stringResource(R.string.settings_description_privacy),
@@ -187,6 +191,7 @@ private fun AboutContent(
             ) {
                 onUrlClick(urlPrivacy)
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_license),
                 description = stringResource(R.string.settings_description_license),
@@ -197,7 +202,7 @@ private fun AboutContent(
                 onUrlClick(urlLicense)
             }
         }
-        Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
+        Spacer(modifier = Modifier.height(refineryDimens.spacingMedium))
         StaticSettingsSection {
             val urlGitHubStrigate = stringResource(R.string.url_github_strigate)
             val urlX = stringResource(R.string.url_x)

@@ -1,5 +1,6 @@
 package org.strigate.refinery.component.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,29 +27,36 @@ fun StaticSettingsSection(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.large,
+        border = BorderStroke(
+            width = refineryDimens.dividerThin,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+        ),
         tonalElevation = refineryDimens.tonalElevationHigh,
-        shadowElevation = refineryDimens.shadowElevationLow,
+        shadowElevation = refineryDimens.zero,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = refineryDimens.spacingMedium),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             if (title != null || icon != null) {
                 SettingsSectionHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = refineryDimens.spacingMedium),
+                        .padding(
+                            start = refineryDimens.spacingMedium,
+                            top = refineryDimens.spacingMedium,
+                            end = refineryDimens.spacingMedium,
+                        ),
                     icon = icon,
                     title = title,
                 )
-                Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
             }
+            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
             ) {
                 content()
             }
+            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
         }
     }
 }
