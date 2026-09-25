@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -86,6 +87,8 @@ internal fun SwipeableDownloadItem(
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
     modifier: Modifier = Modifier,
+    extraTopPadding: Dp = 0.dp,
+    extraBottomPadding: Dp = 0.dp,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onToggleSelection: (Long) -> Unit,
@@ -217,6 +220,8 @@ internal fun SwipeableDownloadItem(
                         item = item,
                         shape = itemShape,
                         showDivider = showDivider,
+                        extraTopPadding = extraTopPadding,
+                        extraBottomPadding = extraBottomPadding,
                         isSelected = isSelected,
                         interactionEnabled = interactionEnabled,
                         longClickEnabled = longClickEnabled,
