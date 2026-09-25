@@ -49,13 +49,14 @@ fun StaticSettingsSection(
                     icon = icon,
                     title = title,
                 )
-                Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
             }
+            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
             CompositionLocalProvider(
                 LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
             ) {
                 content()
             }
+            Spacer(modifier = Modifier.height(refineryDimens.spacingXSmall))
         }
     }
 }
