@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ internal fun DownloadsContent(
     archived: Boolean,
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
-    hasAvailableUpdateBanner: Boolean,
+    topContentPadding: Dp,
     searchQuery: String,
     gridLayoutEnabled: Boolean,
     lazyGridState: LazyGridState,
@@ -156,7 +157,7 @@ internal fun DownloadsContent(
             state = lazyGridState,
             contentPadding = PaddingValues(
                 start = dimens.spacingMediumAlt,
-                top = if (hasAvailableUpdateBanner) dimens.spacingSmall else dimens.zero,
+                top = topContentPadding,
                 end = dimens.spacingMediumAlt,
                 bottom = dimens.spacingMedium,
             ),
@@ -186,12 +187,12 @@ internal fun DownloadsContent(
                     itemShape = itemShape,
                     showDivider = !gridLayoutEnabled && index < items.lastIndex,
                     extraTopPadding = if (!gridLayoutEnabled && index == 0) {
-                        dimens.spacingXSmall
+                        dimens.spacingXXSmall
                     } else {
                         dimens.zero
                     },
                     extraBottomPadding = if (!gridLayoutEnabled && index == items.lastIndex) {
-                        dimens.spacingXSmall
+                        dimens.spacingXXSmall
                     } else {
                         dimens.zero
                     },

@@ -159,20 +159,9 @@ private fun AboutContent(
             icon = Icons.Outlined.Link,
             title = stringResource(R.string.settings_section_links),
         ) {
-            val urlWebsite = stringResource(R.string.url_website)
             val urlGitHub = stringResource(R.string.url_github)
             val urlPrivacy = stringResource(R.string.url_privacy)
             val urlLicense = stringResource(R.string.url_license)
-            TextSetting(
-                text = stringResource(R.string.settings_title_website),
-                description = stringResource(R.string.settings_description_website),
-                onLongClick = {
-                    onCopyText(urlWebsite)
-                },
-            ) {
-                onUrlClick(urlWebsite)
-            }
-            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_github),
                 description = stringResource(R.string.settings_description_github),
