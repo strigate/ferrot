@@ -39,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -63,6 +64,8 @@ internal fun DownloadListItem(
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
+    extraTopPadding: Dp = 0.dp,
+    extraBottomPadding: Dp = 0.dp,
 ) {
     val dimens = LocalDimens.current
     Surface(
@@ -83,8 +86,10 @@ internal fun DownloadListItem(
                         onLongClick = onLongClick,
                     )
                     .padding(
-                        vertical = dimens.spacingSmall,
-                        horizontal = dimens.spacingMediumAlt,
+                        start = dimens.spacingMediumAlt,
+                        top = dimens.spacingSmall + extraTopPadding,
+                        end = dimens.spacingMediumAlt,
+                        bottom = dimens.spacingSmall + extraBottomPadding,
                     ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

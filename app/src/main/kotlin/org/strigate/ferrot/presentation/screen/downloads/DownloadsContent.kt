@@ -185,6 +185,16 @@ internal fun DownloadsContent(
                     item = item,
                     itemShape = itemShape,
                     showDivider = !gridLayoutEnabled && index < items.lastIndex,
+                    extraTopPadding = if (!gridLayoutEnabled && index == 0) {
+                        dimens.spacingXSmall
+                    } else {
+                        dimens.zero
+                    },
+                    extraBottomPadding = if (!gridLayoutEnabled && index == items.lastIndex) {
+                        dimens.spacingXSmall
+                    } else {
+                        dimens.zero
+                    },
                     selectedIds = selectedIds,
                     isRestoring = item.id in restoringItemIds,
                     gridLayoutEnabled = gridLayoutEnabled,

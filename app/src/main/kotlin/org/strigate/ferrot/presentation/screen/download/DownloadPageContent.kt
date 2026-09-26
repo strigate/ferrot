@@ -107,7 +107,7 @@ internal fun DownloadPageContent(
                 .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+            Spacer(modifier = Modifier.height(dimens.spacingMedium))
             Text(
                 style = MaterialTheme.typography.bodyLarge,
                 overflow = TextOverflow.Ellipsis,
