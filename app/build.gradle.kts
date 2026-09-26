@@ -44,11 +44,10 @@ android {
         stringField("VERSION", BuildInfo.BASE_VERSION)
         stringField("VERSION_TAG", "v${BuildInfo.BASE_VERSION}")
         ndk {
-            ndkVersion = "29.0.14206865"
+            ndkVersion = "30.0.16248370"
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         applyFirebaseProperties()
     }
     signingConfigs {

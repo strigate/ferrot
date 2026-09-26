@@ -2,9 +2,12 @@ package org.strigate.ferrot.presentation.screen.downloads
 
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -25,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -45,6 +51,7 @@ import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
+import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.util.LifecycleEffect
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.DownloadsViewModel
@@ -153,6 +160,8 @@ internal fun DownloadsScreenContent(
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
+    val dimens = LocalDimens.current
+    val density = LocalDensity.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val lazyGridState = rememberLazyGridState()
@@ -319,17 +328,11 @@ internal fun DownloadsScreenContent(
 
                 is DownloadsUiState.Data -> {
                     with(state.data) {
-                        Column(
+                        val visibleUpdate = availableUpdate?.takeIf { !it.localFilePath.isNullOrBlank() }
+                        var bannerHeightPx by remember { mutableIntStateOf(0) }
+                        Box(
                             modifier = Modifier.fillMaxSize(),
                         ) {
-                            availableUpdate?.let {
-                                AvailableUpdateBanner(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    tag = it.tag,
-                                    localFilePath = it.localFilePath,
-                                    onClick = { onInstallAvailableUpdate() },
-                                )
-                            }
                             DownloadsContent(
                                 items = downloads,
                                 selectedIds = selection.selectedIds,
@@ -339,7 +342,11 @@ internal fun DownloadsScreenContent(
                                 archived = isArchived,
                                 leftSwipeAction = leftSwipeAction,
                                 rightSwipeAction = rightSwipeAction,
-                                hasAvailableUpdateBanner = availableUpdate != null,
+                                topContentPadding = if (visibleUpdate != null) {
+                                    with(density) { bannerHeightPx.toDp() } + dimens.spacingSmall
+                                } else {
+                                    dimens.zero
+                                },
                                 searchQuery = searchQuery,
                                 gridLayoutEnabled = gridLayoutEnabled,
                                 lazyGridState = lazyGridState,
@@ -376,6 +383,31 @@ internal fun DownloadsScreenContent(
                                     onMarkDownloadsPendingDelete(ids, true)
                                 },
                             )
+                            visibleUpdate?.let { update ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onSizeChanged { bannerHeightPx = it.height },
+                                ) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(dimens.radiusLarge)
+                                            .background(MaterialTheme.colorScheme.background),
+                                    )
+                                    AvailableUpdateBanner(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                start = dimens.spacingMediumAlt,
+                                                end = dimens.spacingMediumAlt,
+                                            ),
+                                        tag = update.tag,
+                                        localFilePath = update.localFilePath,
+                                        onClick = { onInstallAvailableUpdate() },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
