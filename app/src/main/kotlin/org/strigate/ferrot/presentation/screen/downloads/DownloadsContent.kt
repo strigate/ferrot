@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,7 +67,7 @@ internal fun DownloadsContent(
     archived: Boolean,
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
-    hasAvailableUpdateBanner: Boolean,
+    topContentPadding: Dp,
     searchQuery: String,
     gridLayoutEnabled: Boolean,
     lazyGridState: LazyGridState,
@@ -155,24 +156,46 @@ internal fun DownloadsContent(
             },
             state = lazyGridState,
             contentPadding = PaddingValues(
-                start = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
-                top = if (hasAvailableUpdateBanner) dimens.spacingXSmall else dimens.zero,
-                end = if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
-                bottom = dimens.spacingXSmall,
+                start = dimens.spacingMediumAlt,
+                top = topContentPadding,
+                end = dimens.spacingMediumAlt,
+                bottom = dimens.spacingMedium,
             ),
             horizontalArrangement = Arrangement.spacedBy(
                 dimens.spacingSmall,
             ),
             verticalArrangement = Arrangement.spacedBy(
-                if (gridLayoutEnabled) dimens.spacingSmall else dimens.spacingXXSmall,
+                if (gridLayoutEnabled) dimens.spacingSmall else dimens.zero,
             ),
         ) {
-            items(
+            itemsIndexed(
                 items = items,
-                key = { it.id },
-            ) { item ->
+                key = { _, item -> item.id },
+            ) { index, item ->
+                val itemShape = if (gridLayoutEnabled) {
+                    MaterialTheme.shapes.medium
+                } else {
+                    RoundedCornerShape(
+                        topStart = if (index == 0) dimens.radiusLarge else dimens.zero,
+                        topEnd = if (index == 0) dimens.radiusLarge else dimens.zero,
+                        bottomStart = if (index == items.lastIndex) dimens.radiusLarge else dimens.zero,
+                        bottomEnd = if (index == items.lastIndex) dimens.radiusLarge else dimens.zero,
+                    )
+                }
                 SwipeableDownloadItem(
                     item = item,
+                    itemShape = itemShape,
+                    showDivider = !gridLayoutEnabled && index < items.lastIndex,
+                    extraTopPadding = if (!gridLayoutEnabled && index == 0) {
+                        dimens.spacingXXSmall
+                    } else {
+                        dimens.zero
+                    },
+                    extraBottomPadding = if (!gridLayoutEnabled && index == items.lastIndex) {
+                        dimens.spacingXXSmall
+                    } else {
+                        dimens.zero
+                    },
                     selectedIds = selectedIds,
                     isRestoring = item.id in restoringItemIds,
                     gridLayoutEnabled = gridLayoutEnabled,

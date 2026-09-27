@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -53,7 +55,8 @@ import org.strigate.ferrot.presentation.model.CookieSetSourceUiData
 import org.strigate.ferrot.presentation.model.CookieSetUiData
 import org.strigate.ferrot.presentation.state.CookiesUiState
 import org.strigate.ferrot.presentation.viewmodel.CookiesViewModel
-import org.strigate.refinery.component.settings.StaticSettingsSection
+import org.strigate.refinery.component.settings.SettingsSection
+import org.strigate.refinery.component.settings.SettingsSectionDivider
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 
@@ -136,6 +139,7 @@ internal fun CookiesScreenContent(
     }
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BackTopAppBar(
                 title = stringResource(R.string.screen_title_cookies),
@@ -179,6 +183,7 @@ private fun CookieSetSetting(
     description: String,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    extraBottomPadding: Dp = 0.dp,
 ) {
     val refineryDimens = LocalRefineryDimens.current
 
@@ -186,8 +191,10 @@ private fun CookieSetSetting(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                horizontal = refineryDimens.spacingMedium,
-                vertical = refineryDimens.spacingMediumAlt,
+                start = refineryDimens.spacingMedium,
+                top = refineryDimens.spacingMedium,
+                end = refineryDimens.spacingMedium,
+                bottom = refineryDimens.spacingMedium + extraBottomPadding,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -286,7 +293,7 @@ private fun CookiesContent(
             .padding(horizontal = refineryDimens.spacingMediumAlt)
             .verticalScroll(rememberScrollState()),
     ) {
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Cookie,
             title = stringResource(R.string.cookies_section_add),
         ) {
@@ -295,27 +302,38 @@ private fun CookiesContent(
                 description = stringResource(R.string.cookies_description_get_cookies),
                 onClick = onNavigateToGetCookies,
             )
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.cookies_title_import_file),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = stringResource(R.string.cookies_description_import_file),
                 onClick = onImportFile,
             )
         }
         Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Cookie,
             title = stringResource(R.string.cookies_section_saved),
         ) {
             if (cookieSets.isEmpty()) {
                 TextSetting(
                     text = stringResource(R.string.cookies_empty_title),
+                    extraBottomPadding = refineryDimens.spacingXSmall,
                     description = stringResource(R.string.cookies_empty_description),
                     enabled = false,
                 )
             } else {
-                cookieSets.forEach { cookieSet ->
+                cookieSets.forEachIndexed { index, cookieSet ->
+                    if (index > 0) {
+                        SettingsSectionDivider()
+                    }
                     CookieSetSetting(
                         cookieSet = cookieSet,
+                        extraBottomPadding = if (index == cookieSets.lastIndex) {
+                            refineryDimens.spacingXSmall
+                        } else {
+                            refineryDimens.zero
+                        },
                         description = cookieSetDescription(cookieSet),
                         onDelete = { onRequestDelete(cookieSet) },
                     )

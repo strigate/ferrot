@@ -107,7 +107,7 @@ internal fun DownloadPageContent(
                 .padding(horizontal = dimens.spacingMediumAlt),
             verticalArrangement = Arrangement.Top,
         ) {
-            Spacer(modifier = Modifier.height(dimens.spacingMediumAlt))
+            Spacer(modifier = Modifier.height(dimens.spacingMedium))
             Text(
                 style = MaterialTheme.typography.bodyLarge,
                 overflow = TextOverflow.Ellipsis,
@@ -275,7 +275,7 @@ private fun MediaSwitcherSegmentedButtonRow(
                 activeContainerColor = MaterialTheme.colorScheme.primary,
                 activeContentColor = MaterialTheme.colorScheme.onPrimary,
                 activeBorderColor = Color.Transparent,
-                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 inactiveBorderColor = Color.Transparent,
             ),
@@ -294,7 +294,7 @@ private fun MediaSwitcherSegmentedButtonRow(
                 activeContainerColor = MaterialTheme.colorScheme.primary,
                 activeContentColor = MaterialTheme.colorScheme.onPrimary,
                 activeBorderColor = Color.Transparent,
-                inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                inactiveContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 inactiveBorderColor = Color.Transparent,
             ),

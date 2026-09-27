@@ -122,9 +122,8 @@ internal fun DownloadPager(
                     .fillMaxSize()
                     .padding(bottom = dimens.spacingSmall),
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 tonalElevation = dimens.tonalElevationLow,
-                shadowElevation = dimens.shadowElevationLow,
             ) {
                 pageData?.let { download ->
                     DownloadPageContent(

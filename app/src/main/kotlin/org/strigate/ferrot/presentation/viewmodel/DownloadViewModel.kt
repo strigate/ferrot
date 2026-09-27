@@ -91,8 +91,8 @@ class DownloadViewModel @Inject constructor(
 
     private val _selectedMediaById = MutableStateFlow<Map<Long, DownloadMediaType>>(emptyMap())
     val selectedMedia: StateFlow<DownloadMediaType> = combine(
-        selectedId,
-        _selectedMediaById,
+        flow = selectedId,
+        flow2 = _selectedMediaById,
     ) { id, map ->
         id?.let { map[it] } ?: DownloadMediaType.VIDEO
     }.stateIn(
@@ -186,11 +186,11 @@ class DownloadViewModel @Inject constructor(
             var thumbnailAvailable: Boolean? = null
 
             combine(
-                downloadFlow,
-                videoFlow,
-                audioFlow,
-                metadataFlow,
-                progressFlow,
+                flow = downloadFlow,
+                flow2 = videoFlow,
+                flow3 = audioFlow,
+                flow4 = metadataFlow,
+                flow5 = progressFlow,
             ) { base, video, audio, metadataEmission, progress ->
                 Triple(
                     base?.toPageUiData(

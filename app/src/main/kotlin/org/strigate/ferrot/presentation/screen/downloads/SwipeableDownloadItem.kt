@@ -42,12 +42,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -72,6 +74,8 @@ private val GRID_SWIPE_VELOCITY_THRESHOLD = 125.dp
 @Composable
 internal fun SwipeableDownloadItem(
     item: DownloadItemUiData,
+    itemShape: Shape,
+    showDivider: Boolean,
     selectedIds: Set<Long>,
     isPendingDismiss: Boolean,
     isInteractionBlocked: Boolean,
@@ -83,6 +87,8 @@ internal fun SwipeableDownloadItem(
     leftSwipeAction: DownloadSwipeActionUiData,
     rightSwipeAction: DownloadSwipeActionUiData,
     modifier: Modifier = Modifier,
+    extraTopPadding: Dp = 0.dp,
+    extraBottomPadding: Dp = 0.dp,
     onItemClick: (DownloadItemUiData) -> Unit,
     onPauseResume: (DownloadItemUiData) -> Unit,
     onToggleSelection: (Long) -> Unit,
@@ -212,6 +218,10 @@ internal fun SwipeableDownloadItem(
                 } else {
                     DownloadListItem(
                         item = item,
+                        shape = itemShape,
+                        showDivider = showDivider,
+                        extraTopPadding = extraTopPadding,
+                        extraBottomPadding = extraBottomPadding,
                         isSelected = isSelected,
                         interactionEnabled = interactionEnabled,
                         longClickEnabled = longClickEnabled,
@@ -271,6 +281,7 @@ internal fun SwipeableDownloadItem(
                     },
                     backgroundContent = {
                         SwipeActionBackground(
+                            shape = itemShape,
                             archived = archived,
                             seen = seen,
                             leftSwipeAction = leftSwipeAction,
@@ -488,6 +499,7 @@ private fun GridSwipeToDismiss(
     ) {
         SwipeActionBackground(
             modifier = Modifier.matchParentSize(),
+            shape = MaterialTheme.shapes.medium,
             archived = archived,
             seen = seen,
             leftSwipeAction = leftSwipeAction,
@@ -504,6 +516,7 @@ private fun GridSwipeToDismiss(
 
 @Composable
 private fun SwipeActionBackground(
+    shape: Shape,
     archived: Boolean,
     seen: Boolean,
     leftSwipeAction: DownloadSwipeActionUiData,
@@ -534,7 +547,7 @@ private fun SwipeActionBackground(
     Surface(
         modifier = modifier,
         color = containerColor,
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

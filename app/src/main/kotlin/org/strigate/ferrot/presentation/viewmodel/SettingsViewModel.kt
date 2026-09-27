@@ -37,11 +37,11 @@ class SettingsViewModel @Inject constructor(
 
     private fun getUiState(): Flow<SettingsUiState> {
         return combine(
-            settingsUseCase.getWifiOnlyDownloadsEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getCookiesEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase(),
-            settingsUseCase.getRightSwipeActionSettingAsFlowUseCase(),
+            flow = settingsUseCase.getWifiOnlyDownloadsEnabledSettingAsFlowUseCase(),
+            flow2 = settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase(),
+            flow3 = settingsUseCase.getCookiesEnabledSettingAsFlowUseCase(),
+            flow4 = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase(),
+            flow5 = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase(),
         ) { wifiOnlyDownloadsEnabled,
             automaticDuplicateDownloadDeletionEnabled,
             cookiesEnabled,

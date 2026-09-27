@@ -27,7 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 @Composable
@@ -38,14 +40,15 @@ fun <T> DropdownSetting(
     optionText: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     description: String? = null,
+    extraBottomPadding: Dp = 0.dp,
     onOptionSelected: (T) -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
+    val chipColor = MaterialTheme.colorScheme.surfaceContainer
+    val chipTextColor = MaterialTheme.colorScheme.onSurface
 
     var expanded by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
-    val chipColor = MaterialTheme.colorScheme.surface
-    val chipTextColor = MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier = modifier.fillMaxWidth(),
@@ -61,8 +64,10 @@ fun <T> DropdownSetting(
                     },
                 )
                 .padding(
-                    horizontal = refineryDimens.spacingMedium,
-                    vertical = refineryDimens.spacingMediumAlt,
+                    start = refineryDimens.spacingMedium,
+                    top = refineryDimens.spacingMedium,
+                    end = refineryDimens.spacingMedium,
+                    bottom = refineryDimens.spacingMedium + extraBottomPadding,
                 ),
         ) {
             Row(

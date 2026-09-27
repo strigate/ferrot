@@ -33,7 +33,8 @@ import org.strigate.ferrot.presentation.model.UpdatesUiData
 import org.strigate.ferrot.presentation.state.UpdatesUiState
 import org.strigate.ferrot.presentation.util.UiFormatter
 import org.strigate.ferrot.presentation.viewmodel.UpdatesViewModel
-import org.strigate.refinery.component.settings.StaticSettingsSection
+import org.strigate.refinery.component.settings.SettingsSection
+import org.strigate.refinery.component.settings.SettingsSectionDivider
 import org.strigate.refinery.component.settings.SwitchSetting
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
@@ -83,6 +84,7 @@ internal fun UpdatesScreenContent(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BackTopAppBar(
                 title = stringResource(R.string.screen_title_updates),
@@ -149,7 +151,7 @@ private fun UpdatesContent(
             .padding(horizontal = refineryDimens.spacingMediumAlt)
             .verticalScroll(rememberScrollState()),
     ) {
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.SystemUpdate,
             title = stringResource(R.string.settings_section_app),
         ) {
@@ -159,14 +161,17 @@ private fun UpdatesContent(
                 checked = data.settings.automaticAppUpdatesEnabled,
                 onCheckedChange = onSetAutomaticAppUpdatesEnabled,
             )
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_check_now),
                 description = stringResource(R.string.settings_description_check_for_app_updates),
             ) {
                 onCheckForAvailableUpdate()
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_last_checked),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = UiFormatter.formatLastCheckedTime(
                     context,
                     data.info.lastAvailableUpdateCheckMillis,
@@ -174,7 +179,7 @@ private fun UpdatesContent(
             )
         }
         Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Extension,
             title = stringResource(R.string.settings_section_dependencies),
         ) {
@@ -184,14 +189,17 @@ private fun UpdatesContent(
                 checked = data.settings.automaticDependencyUpdatesEnabled,
                 onCheckedChange = onSetAutomaticDependencyUpdatesEnabled,
             )
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_check_now),
                 description = stringResource(R.string.settings_description_check_dependencies_now),
             ) {
                 onCheckForDependencyUpdates()
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_last_checked),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = UiFormatter.formatLastCheckedTime(
                     context,
                     data.info.lastDependencyUpdateCheckMillis,

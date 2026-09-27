@@ -79,15 +79,15 @@ class DownloadsViewModel @Inject constructor(
         val leftSwipeActionFlow = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase()
         val rightSwipeActionFlow = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase()
         val layoutAndSwipeActionsFlow = combine(
-            archivedFlow.flatMapLatest { archived ->
+            flow = archivedFlow.flatMapLatest { archived ->
                 if (archived) {
                     stateUseCase.getArchivedDownloadsGridLayoutEnabledUseCase()
                 } else {
                     stateUseCase.getDownloadsGridLayoutEnabledUseCase()
                 }
             },
-            leftSwipeActionFlow,
-            rightSwipeActionFlow,
+            flow2 = leftSwipeActionFlow,
+            flow3 = rightSwipeActionFlow,
         ) { gridLayoutEnabled, leftSwipeAction, rightSwipeAction ->
             Triple(
                 gridLayoutEnabled,
@@ -97,11 +97,11 @@ class DownloadsViewModel @Inject constructor(
         }
 
         return combine(
-            archivedFlow,
-            downloadsWithMetadataFlow,
-            availableUpdateFlow,
-            searchTextFlow,
-            layoutAndSwipeActionsFlow,
+            flow = archivedFlow,
+            flow2 = downloadsWithMetadataFlow,
+            flow3 = availableUpdateFlow,
+            flow4 = searchTextFlow,
+            flow5 = layoutAndSwipeActionsFlow,
         ) { archived, downloadsWithMetadata, availableUpdate, query, layoutAndSwipeActions ->
             val (gridLayoutEnabled, leftSwipeAction, rightSwipeAction) = layoutAndSwipeActions
             val pendingDeleteIds = downloadsWithMetadata

@@ -29,7 +29,7 @@ fun DownloadProgressBar(
                 .fillMaxWidth()
                 .height(refineryDimens.spacingXSmall),
             color = barColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            trackColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     } else {
         val target = (progress ?: 0f).coerceIn(0f, 1f)
@@ -46,7 +46,7 @@ fun DownloadProgressBar(
                 .fillMaxWidth()
                 .height(refineryDimens.spacingXSmall),
             color = barColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            trackColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     }
 }

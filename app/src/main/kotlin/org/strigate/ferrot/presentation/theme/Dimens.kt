@@ -46,7 +46,7 @@ data class Dimens(
     val overlayButton: Dp = 56.dp,
     val overlayIcon: Dp = 48.dp,
 
-    val downloadListThumbnailSize: Dp = 60.dp,
+    val downloadListThumbnailSize: Dp = 64.dp,
     val downloadListOverlayButtonSize: Dp = 24.dp,
 
     val thumbnailHeight: Dp = 240.dp,

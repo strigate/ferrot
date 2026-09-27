@@ -46,14 +46,15 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadAvailableUpdateWorkerTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
-
-    private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     private var logMock: MockedStatic<Log>? = null
 
@@ -86,6 +87,7 @@ class DownloadAvailableUpdateWorkerTest {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
         TestUrlHandler.responseJson = "{}"
+
         `when`(appContext.getString(R.string.github_latest_release))
             .thenReturn("test://latest-release")
         `when`(availableUpdateUseCase.getAvailableUpdateAsFlowUseCase)
@@ -101,9 +103,8 @@ class DownloadAvailableUpdateWorkerTest {
     }
 
     @Test
-    fun doWork_clearsSavedUpdateAndMarksCheckSuccessful_whenLatestReleaseIsDraft() =
-        runTest(testDispatcher) {
-            TestUrlHandler.responseJson = """
+    fun doWork_clearsUpdateForDraftRelease() = runTest(testDispatcher) {
+        TestUrlHandler.responseJson = """
             {
               "tag_name": "v9.9.9",
               "draft": true,
@@ -111,23 +112,19 @@ class DownloadAvailableUpdateWorkerTest {
               "assets": []
             }
         """.trimIndent()
-            `when`(getAvailableUpdateAsFlowUseCase.invoke())
-                .thenReturn(flowOf(AvailableUpdate(tag = "v9.9.8", localFilePath = null)))
+        `when`(getAvailableUpdateAsFlowUseCase.invoke())
+            .thenReturn(flowOf(AvailableUpdate(tag = "v9.9.8", localFilePath = null)))
 
-            val result = createWorker().doWork()
+        val result = createWorker().doWork()
 
-            assertTrue(
-                "Expected success, was ${result.javaClass.name}: $result",
-                result is ListenableWorker.Result.Success,
-            )
-            verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
-            verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
-        }
+        assertTrue(result is ListenableWorker.Result.Success)
+        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+    }
 
     @Test
-    fun doWork_clearsSavedUpdateAndMarksCheckSuccessful_whenNoApkAssetExists() =
-        runTest(testDispatcher) {
-            TestUrlHandler.responseJson = """
+    fun doWork_clearsUpdateWithoutApkAsset() = runTest(testDispatcher) {
+        TestUrlHandler.responseJson = """
             {
               "tag_name": "v9.9.9",
               "draft": false,
@@ -138,15 +135,23 @@ class DownloadAvailableUpdateWorkerTest {
             }
         """.trimIndent()
 
-            val result = createWorker().doWork()
+        val result = createWorker().doWork()
 
-            assertTrue(
-                "Expected success, was ${result.javaClass.name}: $result",
-                result is ListenableWorker.Result.Success,
-            )
-            verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
-            verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
-        }
+        assertTrue(result is ListenableWorker.Result.Success)
+        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+    }
+
+    @Test
+    fun doWork_retriesAndClearsUpdateForMalformedResponse() = runTest(testDispatcher) {
+        TestUrlHandler.responseJson = "not-json"
+
+        val result = createWorker().doWork()
+
+        assertTrue(result is ListenableWorker.Result.Retry)
+        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+    }
 
     @After
     fun tearDown() {
@@ -174,21 +179,17 @@ class DownloadAvailableUpdateWorkerTest {
             .thenReturn(inputData)
         `when`(workerParameters.runAttemptCount)
             .thenReturn(runAttemptCount)
+
         return workerParameters
     }
 
     private class TestConnection(url: URL) : HttpURLConnection(url) {
         override fun connect() = Unit
-
         override fun disconnect() = Unit
-
         override fun usingProxy(): Boolean = false
-
         override fun getResponseCode(): Int = HTTP_OK
-
-        override fun getInputStream(): InputStream = ByteArrayInputStream(
-            TestUrlHandler.responseJson.toByteArray()
-        )
+        override fun getInputStream(): InputStream =
+            ByteArrayInputStream(TestUrlHandler.responseJson.toByteArray())
     }
 
     private object TestUrlHandler : URLStreamHandler() {

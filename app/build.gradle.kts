@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "2.1.0"
-    const val VERSION_CODE = 37
+    const val BASE_VERSION = "2.2.0"
+    const val VERSION_CODE = 38
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val ARTIFACT_BASE_NAME = "ferrot"
 }
@@ -44,11 +44,10 @@ android {
         stringField("VERSION", BuildInfo.BASE_VERSION)
         stringField("VERSION_TAG", "v${BuildInfo.BASE_VERSION}")
         ndk {
-            ndkVersion = "29.0.14206865"
+            ndkVersion = "30.0.16248370"
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
         applyFirebaseProperties()
     }
     signingConfigs {

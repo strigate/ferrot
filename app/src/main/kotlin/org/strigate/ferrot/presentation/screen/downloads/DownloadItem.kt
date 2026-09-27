@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -52,6 +55,8 @@ import java.io.File
 @Composable
 internal fun DownloadListItem(
     item: DownloadItemUiData,
+    shape: Shape,
+    showDivider: Boolean,
     isSelected: Boolean,
     interactionEnabled: Boolean,
     longClickEnabled: Boolean,
@@ -59,49 +64,66 @@ internal fun DownloadListItem(
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
+    extraTopPadding: Dp = 0.dp,
+    extraBottomPadding: Dp = 0.dp,
 ) {
     val dimens = LocalDimens.current
     Surface(
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
         color = itemContainerColor(
             isSelected = isSelected,
-            unselectedColor = MaterialTheme.colorScheme.background,
+            unselectedColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .downloadItemClick(
-                    interactionEnabled = interactionEnabled,
-                    longClickEnabled = longClickEnabled,
-                    onClick = onClick,
-                    onLongClick = onLongClick,
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .downloadItemClick(
+                        interactionEnabled = interactionEnabled,
+                        longClickEnabled = longClickEnabled,
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    )
+                    .padding(
+                        start = dimens.spacingMediumAlt,
+                        top = dimens.spacingSmall + extraTopPadding,
+                        end = dimens.spacingMediumAlt,
+                        bottom = dimens.spacingSmall + extraBottomPadding,
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DownloadPrimaryActionButton(
+                    modifier = Modifier.size(dimens.downloadListThumbnailSize),
+                    thumbnailFilePath = item.thumbnailFilePath,
+                    status = item.status,
+                    enabled = interactionEnabled,
+                    onPauseResume = onPauseResume,
+                    onOpen = onOpen,
                 )
-                .padding(
-                    vertical = dimens.spacingSmall,
-                    horizontal = dimens.spacingMedium,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DownloadPrimaryActionButton(
-                modifier = Modifier.size(dimens.downloadListThumbnailSize),
-                thumbnailFilePath = item.thumbnailFilePath,
-                status = item.status,
-                enabled = interactionEnabled,
-                onPauseResume = onPauseResume,
-                onOpen = onOpen,
-            )
-            Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
-            val progressSpacing = if (item.status in inlineProgressStatuses) {
-                dimens.spacingMediumAlt
-            } else {
-                dimens.spacingXXSmall
+                Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
+                val progressSpacing = if (item.status in inlineProgressStatuses) {
+                    dimens.spacingSmall
+                } else {
+                    dimens.spacingXXSmall
+                }
+                DownloadItemDetails(
+                    item = item,
+                    modifier = Modifier.weight(1f),
+                    progressSpacing = progressSpacing,
+                )
             }
-            DownloadItemDetails(
-                item = item,
-                modifier = Modifier.weight(1f),
-                progressSpacing = progressSpacing,
-            )
+            if (showDivider) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(
+                        start = dimens.spacingMediumAlt +
+                                dimens.downloadListThumbnailSize +
+                                dimens.spacingMediumAlt,
+                        end = dimens.spacingMediumAlt,
+                    ),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+            }
         }
     }
 }
@@ -123,7 +145,7 @@ internal fun DownloadGridItem(
         shape = MaterialTheme.shapes.medium,
         color = itemContainerColor(
             isSelected = isSelected,
-            unselectedColor = MaterialTheme.colorScheme.surfaceContainer,
+            unselectedColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
         tonalElevation = dimens.tonalElevationLow,
     ) {

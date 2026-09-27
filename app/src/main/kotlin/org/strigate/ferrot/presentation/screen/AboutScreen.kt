@@ -37,7 +37,8 @@ import org.strigate.ferrot.presentation.event.AboutEvent
 import org.strigate.ferrot.presentation.viewmodel.AboutViewModel
 import org.strigate.refinery.component.settings.SettingsIconRow
 import org.strigate.refinery.component.settings.SettingsIconRowItem
-import org.strigate.refinery.component.settings.StaticSettingsSection
+import org.strigate.refinery.component.settings.SettingsSection
+import org.strigate.refinery.component.settings.SettingsSectionDivider
 import org.strigate.refinery.component.settings.TextSetting
 import org.strigate.refinery.theme.LocalRefineryDimens
 
@@ -99,6 +100,7 @@ internal fun AboutScreenContent(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BackTopAppBar(
                 title = stringResource(R.string.screen_title_about),
@@ -137,12 +139,13 @@ private fun AboutContent(
             .padding(horizontal = refineryDimens.spacingMediumAlt)
             .verticalScroll(rememberScrollState()),
     ) {
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Info,
             title = stringResource(R.string.settings_section_app_info),
         ) {
             TextSetting(
                 text = stringResource(R.string.settings_title_build),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = BuildConfig.VERSION_NAME,
                 onLongClick = {
                     onCopyText(BuildConfig.VERSION_NAME)
@@ -152,23 +155,13 @@ private fun AboutContent(
             }
         }
         Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
-        StaticSettingsSection(
+        SettingsSection(
             icon = Icons.Outlined.Link,
             title = stringResource(R.string.settings_section_links),
         ) {
-            val urlWebsite = stringResource(R.string.url_website)
             val urlGitHub = stringResource(R.string.url_github)
             val urlPrivacy = stringResource(R.string.url_privacy)
             val urlLicense = stringResource(R.string.url_license)
-            TextSetting(
-                text = stringResource(R.string.settings_title_website),
-                description = stringResource(R.string.settings_description_website),
-                onLongClick = {
-                    onCopyText(urlWebsite)
-                },
-            ) {
-                onUrlClick(urlWebsite)
-            }
             TextSetting(
                 text = stringResource(R.string.settings_title_github),
                 description = stringResource(R.string.settings_description_github),
@@ -178,6 +171,7 @@ private fun AboutContent(
             ) {
                 onUrlClick(urlGitHub)
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_privacy),
                 description = stringResource(R.string.settings_description_privacy),
@@ -187,8 +181,10 @@ private fun AboutContent(
             ) {
                 onUrlClick(urlPrivacy)
             }
+            SettingsSectionDivider()
             TextSetting(
                 text = stringResource(R.string.settings_title_license),
+                extraBottomPadding = refineryDimens.spacingXSmall,
                 description = stringResource(R.string.settings_description_license),
                 onLongClick = {
                     onCopyText(urlLicense)
@@ -198,7 +194,7 @@ private fun AboutContent(
             }
         }
         Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
-        StaticSettingsSection {
+        SettingsSection {
             val urlGitHubStrigate = stringResource(R.string.url_github_strigate)
             val urlX = stringResource(R.string.url_x)
             SettingsIconRow(

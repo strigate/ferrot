@@ -49,10 +49,10 @@ class UpdatesViewModel @Inject constructor(
 
     private fun getUiState(): Flow<UpdatesUiState> {
         return combine(
-            settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase(),
-            settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase(),
-            stateUseCase.getLastAvailableUpdateCheckMillisUseCase(),
-            stateUseCase.getLastDependencyUpdateCheckMillisUseCase(),
+            flow = settingsUseCase.getAutomaticAppUpdatesEnabledSettingAsFlowUseCase(),
+            flow2 = settingsUseCase.getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase(),
+            flow3 = stateUseCase.getLastAvailableUpdateCheckMillisUseCase(),
+            flow4 = stateUseCase.getLastDependencyUpdateCheckMillisUseCase(),
         ) { automaticAppUpdatesEnabled,
             automaticDependencyUpdatesEnabled,
             lastAvailableUpdateCheckMillis,

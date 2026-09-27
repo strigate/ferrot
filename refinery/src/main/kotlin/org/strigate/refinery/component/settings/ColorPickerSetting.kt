@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import org.strigate.refinery.theme.LocalRefineryDimens
 
 import java.util.Locale
@@ -33,18 +35,19 @@ fun ColorPickerSetting(
     color: Color,
     modifier: Modifier = Modifier,
     description: String? = null,
+    extraBottomPadding: Dp = 0.dp,
     onClick: (() -> Unit)? = null,
 ) {
     val refineryDimens = LocalRefineryDimens.current
-    val chipColor = MaterialTheme.colorScheme.surface
+    val chipColor = MaterialTheme.colorScheme.surfaceContainer
     val chipTextColor = MaterialTheme.colorScheme.onSurface
+
     val clickableModifier = if (onClick != null) {
-        Modifier
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
-                onClick = onClick,
-            )
+        Modifier.combinedClickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(),
+            onClick = onClick,
+        )
     } else {
         Modifier
     }
@@ -57,8 +60,10 @@ fun ColorPickerSetting(
                 .fillMaxWidth()
                 .then(clickableModifier)
                 .padding(
-                    horizontal = refineryDimens.spacingMedium,
-                    vertical = refineryDimens.spacingMediumAlt,
+                    start = refineryDimens.spacingMedium,
+                    top = refineryDimens.spacingMedium,
+                    end = refineryDimens.spacingMedium,
+                    bottom = refineryDimens.spacingMedium + extraBottomPadding,
                 ),
         ) {
             Row(
