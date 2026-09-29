@@ -1,6 +1,7 @@
 package org.strigate.ferrot.presentation.screen.downloads
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,7 +64,7 @@ internal fun DownloadListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onPauseResume: () -> Unit,
-    onOpen: () -> Unit,
+    onSelect: () -> Unit,
     extraTopPadding: Dp = 0.dp,
     extraBottomPadding: Dp = 0.dp,
 ) {
@@ -98,8 +99,10 @@ internal fun DownloadListItem(
                     thumbnailFilePath = item.thumbnailFilePath,
                     status = item.status,
                     enabled = interactionEnabled,
+                    isSelected = isSelected,
                     onPauseResume = onPauseResume,
-                    onOpen = onOpen,
+                    onOpen = onClick,
+                    onSelect = onSelect,
                 )
                 Spacer(modifier = Modifier.width(dimens.spacingMediumAlt))
                 val progressSpacing = if (item.status in inlineProgressStatuses) {
@@ -186,10 +189,13 @@ private fun DownloadPrimaryActionButton(
     enabled: Boolean,
     onPauseResume: () -> Unit,
     onOpen: () -> Unit,
+    isSelected: Boolean = false,
+    onSelect: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val refineryDimens = LocalRefineryDimens.current
     val dimens = LocalDimens.current
+    val selectOnThumbnailTap = status == DownloadStatusUiData.COMPLETED && onSelect != null
 
     val actionConfig = when (status) {
         DownloadStatusUiData.QUEUED,
@@ -209,11 +215,22 @@ private fun DownloadPrimaryActionButton(
             onClick = onPauseResume,
         )
 
-        DownloadStatusUiData.COMPLETED -> ActionConfig(
-            icon = Icons.Filled.DownloadDone,
-            contentDescription = stringResource(R.string.content_description_open_download),
-            onClick = onOpen,
-        )
+        DownloadStatusUiData.COMPLETED -> if (onSelect != null) {
+            ActionConfig(
+                icon = Icons.Filled.DownloadDone,
+                contentDescription = stringResource(
+                    if (isSelected) R.string.content_description_deselect_download
+                    else R.string.content_description_select_download,
+                ),
+                onClick = onSelect,
+            )
+        } else {
+            ActionConfig(
+                icon = Icons.Filled.DownloadDone,
+                contentDescription = stringResource(R.string.content_description_open_download),
+                onClick = onOpen,
+            )
+        }
     }
 
     val overlayScrim = Color.Black.copy(alpha = 0.15f)
@@ -226,6 +243,17 @@ private fun DownloadPrimaryActionButton(
             .sizeIn(
                 minWidth = dimens.downloadListThumbnailSize,
                 minHeight = dimens.downloadListThumbnailSize,
+            )
+            .then(
+                if (selectOnThumbnailTap) {
+                    Modifier.clickable(
+                        enabled = enabled,
+                        onClickLabel = actionConfig.contentDescription,
+                        onClick = actionConfig.onClick,
+                    )
+                } else {
+                    Modifier
+                },
             ),
         shape = MaterialTheme.shapes.medium,
         tonalElevation = refineryDimens.tonalElevationHigh,
@@ -258,15 +286,23 @@ private fun DownloadPrimaryActionButton(
                     .background(overlayScrim),
                 contentAlignment = Alignment.Center,
             ) {
-                IconButton(
-                    enabled = enabled,
-                    onClick = actionConfig.onClick,
-                ) {
+                if (selectOnThumbnailTap) {
                     Icon(
                         tint = Color.White,
                         imageVector = actionConfig.icon,
-                        contentDescription = actionConfig.contentDescription,
+                        contentDescription = null,
                     )
+                } else {
+                    IconButton(
+                        enabled = enabled,
+                        onClick = actionConfig.onClick,
+                    ) {
+                        Icon(
+                            tint = Color.White,
+                            imageVector = actionConfig.icon,
+                            contentDescription = actionConfig.contentDescription,
+                        )
+                    }
                 }
             }
         }

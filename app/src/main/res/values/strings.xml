@@ -207,6 +207,8 @@
     <string name="content_description_stop_download">Stop download</string>
     <string name="content_description_resume_download">Resume download</string>
     <string name="content_description_open_download">Open download</string>
+    <string name="content_description_select_download">Select download</string>
+    <string name="content_description_deselect_download">Deselect download</string>
     <string name="content_description_save_to_device">Save to device</string>
     <string name="content_description_select_all">Select all</string>
     <string name="content_description_mark_seen">Mark as seen</string>

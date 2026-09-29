@@ -232,7 +232,9 @@ internal fun SwipeableDownloadItem(
                         onPauseResume = {
                             onPauseResume(item)
                         },
-                        onOpen = onOpen,
+                        onSelect = {
+                            onToggleSelection(item.id)
+                        },
                     )
                 }
             }
