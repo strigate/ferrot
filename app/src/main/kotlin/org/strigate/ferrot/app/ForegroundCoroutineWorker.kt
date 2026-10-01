@@ -55,7 +55,7 @@ abstract class ForegroundCoroutineWorker(
         )
     }
 
-    protected fun updateForeground(
+    protected suspend fun updateForeground(
         notificationText: String,
         progress: Int? = null,
         indeterminate: Boolean = false,
@@ -66,7 +66,7 @@ abstract class ForegroundCoroutineWorker(
         if (extras != null) {
             currentExtras = extras
         }
-        setForegroundAsync(
+        setForeground(
             buildForegroundInfo(
                 id = currentNotificationId,
                 notificationText = notificationText,
