@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import org.strigate.ferrot.test.MainDispatcherRule
+import org.junit.rules.TemporaryFolder
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
@@ -23,12 +23,15 @@ import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_WIFI_ONLY_DOWNLO
 import org.strigate.ferrot.app.Constants.Settings.KEY_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.KEY_RIGHT_SWIPE_ACTION
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
-import java.nio.file.Files
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsRepositoryImplTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
 
@@ -92,11 +95,12 @@ class SettingsRepositoryImplTest {
 
     @Test
     fun swipeGetters_useSideDefaults_forInvalidValue() = runTest(testDispatcher) {
-        val tempFile =
-            Files.createTempFile("settings-repository-invalid-swipe-test", ".preferences_pb")
+        val tempFile = temporaryFolder.newFile(
+            "settings-repository-invalid-swipe-test.preferences_pb",
+        )
         val dataStore = PreferenceDataStoreFactory.create(
             scope = backgroundScope,
-            produceFile = { tempFile.toFile() },
+            produceFile = { tempFile },
         )
         val repository = SettingsRepositoryImpl(dataStore)
 
@@ -116,10 +120,10 @@ class SettingsRepositoryImplTest {
     }
 
     private fun createRepository(scope: CoroutineScope): SettingsRepositoryImpl {
-        val tempFile = Files.createTempFile("settings-repository-test", ".preferences_pb")
+        val tempFile = temporaryFolder.newFile("settings-repository-test.preferences_pb")
         val dataStore = PreferenceDataStoreFactory.create(
             scope = scope,
-            produceFile = { tempFile.toFile() },
+            produceFile = { tempFile },
         )
 
         return SettingsRepositoryImpl(dataStore)

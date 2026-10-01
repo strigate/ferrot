@@ -27,11 +27,12 @@ import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConfigureBackgroundWorkUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var settingsUseCase: SettingsUseCase
@@ -73,6 +74,7 @@ class ConfigureBackgroundWorkUseCaseTest {
         val automaticAppUpdatesEnabledFlow = MutableStateFlow(true)
         val automaticDependencyUpdatesEnabledFlow = MutableStateFlow(false)
         val automaticDuplicateDownloadDeletionEnabledFlow = MutableStateFlow(true)
+
         createUseCase(
             automaticAppUpdatesEnabledFlow = automaticAppUpdatesEnabledFlow,
             automaticDependencyUpdatesEnabledFlow = automaticDependencyUpdatesEnabledFlow,

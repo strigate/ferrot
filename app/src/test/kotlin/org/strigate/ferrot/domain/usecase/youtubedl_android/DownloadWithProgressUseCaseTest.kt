@@ -14,23 +14,28 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
-import java.nio.file.Files
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWithProgressUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private lateinit var fakeClient: FakeYoutubeDlClient
 
     @Mock
@@ -44,7 +49,7 @@ class DownloadWithProgressUseCaseTest {
 
     @Test
     fun invoke_buildsVideoRequest_andReportsOutputPath() = runTest(testDispatcher) {
-        val outputPathFile = Files.createTempFile("download-with-progress", ".txt").toFile()
+        val outputPathFile = temporaryFolder.newFile("download-with-progress.txt")
         var reportedOutputPath: String? = null
         fakeClient.onExecute = { request, _, _, _ ->
             outputPathFile.writeText("/storage/emulated/0/Movies/video.mp4\n")
@@ -75,6 +80,7 @@ class DownloadWithProgressUseCaseTest {
         assertEquals("aria2c", fakeClient.capturedRequest?.getOption("--external-downloader"))
         verify(youtubeDlRuntimeInitializer)
             .initializeIfNeeded()
+
         assertEquals(listOf("process-1"), fakeClient.destroyedProcessIds)
     }
 

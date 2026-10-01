@@ -13,11 +13,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.domain.model.Download
@@ -56,7 +56,8 @@ class DeletePendingDownloadDelayedWorkerTest {
     @Test
     fun doWork_succeedsWithoutLookupForInvalidId() = runTest {
         assertTrue(doWork(createWorker(-1L)) is ListenableWorker.Result.Success)
-        verify(getDownload, never()).invoke(-1L)
+        verify(getDownload, never())
+            .invoke(-1L)
     }
 
     @Test
@@ -73,8 +74,10 @@ class DeletePendingDownloadDelayedWorkerTest {
             )
 
         assertTrue(doWork(createWorker(8L)) is ListenableWorker.Result.Success)
-        verify(stopDownload, never()).invoke(8L)
-        verify(deleteDownload, never()).invoke(8L)
+        verify(stopDownload, never())
+            .invoke(8L)
+        verify(deleteDownload, never())
+            .invoke(8L)
     }
 
     @After

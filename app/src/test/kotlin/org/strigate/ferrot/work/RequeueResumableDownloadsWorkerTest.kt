@@ -14,11 +14,11 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.usecase.combined.GetResumableDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
@@ -59,7 +59,8 @@ class RequeueResumableDownloadsWorkerTest {
         )
 
         assertTrue(doWork(worker) is ListenableWorker.Result.Success)
-        verify(startDownload, never()).invoke(anyLong())
+        verify(startDownload, never())
+            .invoke(anyLong())
     }
 
     @After

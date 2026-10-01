@@ -8,8 +8,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadWithMetadata
@@ -36,10 +37,9 @@ class GetDownloadsWithMetadataAsFlowUseCaseTest {
         val result = createUseCase().invoke().first()
 
         assertEquals(expectedDownloads, result)
-        assertEquals(
-            listOf("getDownloadsWithMetadataAsFlow"),
-            recordedInvocationNames(),
-        )
+        verify(downloadWithMetadataRepository)
+            .getDownloadsWithMetadataAsFlow()
+        verifyNoMoreInteractions(downloadWithMetadataRepository)
     }
 
     @Test
@@ -52,10 +52,9 @@ class GetDownloadsWithMetadataAsFlowUseCaseTest {
         val result = createUseCase().invoke(archived = true).first()
 
         assertEquals(expectedDownloads, result)
-        assertEquals(
-            listOf("getArchivedDownloadsWithMetadataAsFlow"),
-            recordedInvocationNames(),
-        )
+        verify(downloadWithMetadataRepository)
+            .getArchivedDownloadsWithMetadataAsFlow()
+        verifyNoMoreInteractions(downloadWithMetadataRepository)
     }
 
     @After
@@ -66,12 +65,6 @@ class GetDownloadsWithMetadataAsFlowUseCaseTest {
     private fun createUseCase() = GetDownloadsWithMetadataAsFlowUseCase(
         downloadWithMetadataRepository = downloadWithMetadataRepository,
     )
-
-    private fun recordedInvocationNames(): List<String> {
-        return mockingDetails(downloadWithMetadataRepository)
-            .invocations
-            .map { it.method.name }
-    }
 
     private fun sampleDownloadWithMetadata(
         id: Long,

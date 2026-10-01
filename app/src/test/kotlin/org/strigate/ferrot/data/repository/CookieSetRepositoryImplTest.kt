@@ -9,9 +9,9 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.data.local.dao.CookieSetDao
 import org.strigate.ferrot.data.local.entity.CookieSetDomainEntity
@@ -24,10 +24,10 @@ import org.strigate.ferrot.domain.model.CookieSetSource
 class CookieSetRepositoryImplTest {
     private lateinit var autoCloseable: AutoCloseable
 
+    private lateinit var repository: CookieSetRepositoryImpl
+
     @Mock
     private lateinit var dao: CookieSetDao
-
-    private lateinit var repository: CookieSetRepositoryImpl
 
     @Before
     fun setUp() {
@@ -55,6 +55,7 @@ class CookieSetRepositoryImplTest {
             updatedAtMillis = 2L,
             lastUsedAtMillis = null,
         )
+
         `when`(dao.insertCookieSet(cookieSetEntity))
             .thenReturn(9L)
 
@@ -63,18 +64,20 @@ class CookieSetRepositoryImplTest {
             listOf(CookieSetDomain(cookieSetId = 9L, domain = "example.com", createdAtMillis = 3L))
         )
 
-        verify(dao).insertCookieSet(cookieSetEntity)
-        verify(dao).insertDomains(
-            listOf(
-                CookieSetDomainEntity(
-                    id = 0L,
-                    cookieSetId = 9L,
-                    domain = "example.com",
-                    includeSubdomains = true,
-                    createdAtMillis = 3L,
-                )
+        verify(dao)
+            .insertCookieSet(cookieSetEntity)
+        verify(dao)
+            .insertDomains(
+                listOf(
+                    CookieSetDomainEntity(
+                        id = 0L,
+                        cookieSetId = 9L,
+                        domain = "example.com",
+                        includeSubdomains = true,
+                        createdAtMillis = 3L,
+                    ),
+                ),
             )
-        )
     }
 
     @Test
@@ -82,13 +85,17 @@ class CookieSetRepositoryImplTest {
         repository.saveDomains(emptyList())
 
         assertEquals(emptyList<Long>(), repository.getCookieSetIdsByDomains(emptyList()))
-        verify(dao, never()).insertDomains(emptyList())
-        verify(dao, never()).getCookieSetIdsByDomains(emptyList())
+
+        verify(dao, never())
+            .insertDomains(emptyList())
+        verify(dao, never())
+            .getCookieSetIdsByDomains(emptyList())
     }
 
     @Test
     fun readsMapDaoEntitiesAndNulls() = runTest {
         val entity = sampleEntity()
+
         `when`(dao.getAllWithDomainsAsFlow())
             .thenReturn(flowOf(listOf(entity)))
         `when`(dao.getAllWithDomains())

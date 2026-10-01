@@ -16,25 +16,27 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StartDownloadUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -99,21 +101,20 @@ class StartDownloadUseCaseTest {
     }
 
     @Test
-    fun invoke_setsWaitingForWifi_whenWifiOnlyDownloadsEnabledAndNotOnWifi() =
-        runTest(testDispatcher) {
-            stubWifiOnlyDownloadsEnabled(enabled = true)
-            stubNetwork(hasInternet = true, onWifi = false)
+    fun invoke_waitsForWifi_whenRequiredAndUnavailable() = runTest(testDispatcher) {
+        stubWifiOnlyDownloadsEnabled(enabled = true)
+        stubNetwork(hasInternet = true, onWifi = false)
 
-            createUseCase().invoke(12L)
+        createUseCase().invoke(12L)
 
-            verify(updateDownloadStatusUseCase)
-                .invoke(
-                    downloadId = 12L,
-                    status = DownloadStatus.WAITING_FOR_WIFI,
-                )
-            verify(downloadWorkScheduler)
-                .enqueueOneTimeReplace(12L, true)
-        }
+        verify(updateDownloadStatusUseCase)
+            .invoke(
+                downloadId = 12L,
+                status = DownloadStatus.WAITING_FOR_WIFI,
+            )
+        verify(downloadWorkScheduler)
+            .enqueueOneTimeReplace(12L, true)
+    }
 
     @Test
     fun invoke_setsQueued_whenDownloadCanStart() = runTest(testDispatcher) {

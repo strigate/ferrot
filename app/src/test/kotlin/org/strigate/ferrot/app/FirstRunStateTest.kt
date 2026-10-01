@@ -10,13 +10,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.strigate.ferrot.test.MainDispatcherRule
-import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FirstRunStateTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
 
@@ -41,12 +44,10 @@ class FirstRunStateTest {
     }
 
     private fun createState(scope: CoroutineScope): FirstRunState {
-        val tempFile = Files.createTempFile("first-run-state-test", ".preferences_pb").apply {
-            toFile().deleteOnExit()
-        }
+        val tempFile = temporaryFolder.newFile("first-run-state-test.preferences_pb")
         val dataStore = PreferenceDataStoreFactory.create(
             scope = scope,
-            produceFile = { tempFile.toFile() },
+            produceFile = { tempFile },
         )
         return FirstRunState(dataStore)
     }

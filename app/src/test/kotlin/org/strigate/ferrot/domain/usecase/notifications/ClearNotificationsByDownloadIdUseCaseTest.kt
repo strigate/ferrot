@@ -13,23 +13,24 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.Constants.Action.ACTION_NAVIGATE_DOWNLOAD
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_ACTION
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClearNotificationsByDownloadIdUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var appContext: Context
@@ -57,9 +58,11 @@ class ClearNotificationsByDownloadIdUseCaseTest {
             .thenReturn("download-tag")
 
         doReturn(ACTION_NAVIGATE_DOWNLOAD)
-            .`when`(extras).getString(EXTRA_ACTION)
+            .`when`(extras)
+            .getString(EXTRA_ACTION)
         doReturn("77")
-            .`when`(extras).getString(EXTRA_DOWNLOAD_ID)
+            .`when`(extras)
+            .getString(EXTRA_DOWNLOAD_ID)
 
         val notification = object : Notification() {
             override fun getChannelId(): String = CHANNEL_ID_DOWNLOADED
@@ -67,7 +70,8 @@ class ClearNotificationsByDownloadIdUseCaseTest {
             this.extras = this@ClearNotificationsByDownloadIdUseCaseTest.extras
         }
         doReturn(notification)
-            .`when`(statusBarNotification).notification
+            .`when`(statusBarNotification)
+            .notification
     }
 
     @Test

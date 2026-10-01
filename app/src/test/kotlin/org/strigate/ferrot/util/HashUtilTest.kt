@@ -2,11 +2,15 @@ package org.strigate.ferrot.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
-import java.nio.file.Files
+import org.junit.rules.TemporaryFolder
 import java.util.Locale
 
 class HashUtilTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Test
     fun sha256_returnsNull_whenPathDoesNotPointToAFile() {
         assertNull(sha256("/definitely/missing/file.txt"))
@@ -14,8 +18,8 @@ class HashUtilTest {
 
     @Test
     fun sha256_returnsExpectedDigest_forKnownFileContents() {
-        val file = Files.createTempFile("hash-util-test", ".txt")
-        Files.write(file, "hello world".toByteArray())
+        val file = temporaryFolder.newFile("hash-util-test.txt")
+        file.writeText("hello world")
 
         val result = sha256(file.toString())
         assertEquals(
@@ -26,8 +30,8 @@ class HashUtilTest {
 
     @Test
     fun sha256_usesStableAsciiHex_evenWhenDefaultLocaleChanges() {
-        val file = Files.createTempFile("hash-util-locale-test", ".txt")
-        Files.write(file, "hello world".toByteArray())
+        val file = temporaryFolder.newFile("hash-util-locale-test.txt")
+        file.writeText("hello world")
         val originalLocale = Locale.getDefault()
 
         try {

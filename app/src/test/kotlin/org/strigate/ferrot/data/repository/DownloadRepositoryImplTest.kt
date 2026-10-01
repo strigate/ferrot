@@ -14,24 +14,25 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.entity.DownloadEntity
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.entity.DownloadStatus as EntityStatus
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadRepositoryImplTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadDao: DownloadDao
@@ -48,9 +49,10 @@ class DownloadRepositoryImplTest {
         doAnswer { invocation ->
             insertedEntity = invocation.getArgument(0)
             12L
-        }.`when`(downloadDao).insert(anyObject())
-        val repository = DownloadRepositoryImpl(downloadDao)
+        }.`when`(downloadDao)
+            .insert(anyObject())
 
+        val repository = DownloadRepositoryImpl(downloadDao)
         val result = repository.save(download)
 
         assertEquals(12L, result)

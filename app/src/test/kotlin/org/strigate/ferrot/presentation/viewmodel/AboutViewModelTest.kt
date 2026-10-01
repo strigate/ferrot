@@ -1,8 +1,11 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,18 +18,21 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.presentation.event.AboutEvent
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AboutViewModelTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
+    private val viewModels = mutableListOf<AboutViewModel>()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -38,7 +44,7 @@ class AboutViewModelTest {
 
     @Test
     fun logShown_logsAboutScreen() {
-        val viewModel = AboutViewModel(analyticsLogger)
+        val viewModel = createViewModel()
 
         viewModel.logShown()
 
@@ -48,7 +54,7 @@ class AboutViewModelTest {
 
     @Test
     fun onUrlClicked_emitsOpenUrlEvent() = runTest(testDispatcher) {
-        val viewModel = AboutViewModel(analyticsLogger)
+        val viewModel = createViewModel()
         val event = async { viewModel.event.first() }
 
         viewModel.onUrlClicked("https://example.com")
@@ -59,7 +65,7 @@ class AboutViewModelTest {
 
     @Test
     fun onBuildClicked_emitsOpenAppInfoEvent() = runTest(testDispatcher) {
-        val viewModel = AboutViewModel(analyticsLogger)
+        val viewModel = createViewModel()
         val event = async { viewModel.event.first() }
 
         viewModel.onBuildClicked()
@@ -69,7 +75,10 @@ class AboutViewModelTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(testDispatcher) {
+        viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
         autoCloseable.close()
     }
+
+    private fun createViewModel() = AboutViewModel(analyticsLogger).also { viewModels += it }
 }

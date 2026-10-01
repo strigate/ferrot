@@ -27,16 +27,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
         val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
-        val useCase = CreateCookieSetFromWebViewUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-            cookieHeaderFileBuilder = CookieHeaderFileBuilder(),
-            cookieFileStore = cookieFileStore,
-            deleteCookieSetUseCase = DeleteCookieSetUseCase(
-                cookieSetRepository = repository,
-                cookieFileStore = cookieFileStore,
-            ),
-        )
+        val useCase = createUseCase(repository, cookieFileStore)
 
         try {
             val result = useCase(
@@ -62,16 +53,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
         val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
-        val useCase = CreateCookieSetFromWebViewUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-            cookieHeaderFileBuilder = CookieHeaderFileBuilder(),
-            cookieFileStore = cookieFileStore,
-            deleteCookieSetUseCase = DeleteCookieSetUseCase(
-                cookieSetRepository = repository,
-                cookieFileStore = cookieFileStore,
-            ),
-        )
+        val useCase = createUseCase(repository, cookieFileStore)
 
         try {
             val result = useCase(
@@ -108,16 +90,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             )
         )
         val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
-        val useCase = CreateCookieSetFromWebViewUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-            cookieHeaderFileBuilder = CookieHeaderFileBuilder(),
-            cookieFileStore = cookieFileStore,
-            deleteCookieSetUseCase = DeleteCookieSetUseCase(
-                cookieSetRepository = repository,
-                cookieFileStore = cookieFileStore,
-            ),
-        )
+        val useCase = createUseCase(repository, cookieFileStore)
 
         try {
             val result = useCase(
@@ -134,6 +107,20 @@ class CreateCookieSetFromWebViewUseCaseTest {
             rootDir.deleteRecursively()
         }
     }
+
+    private fun createUseCase(
+        repository: CookieSetRepository,
+        cookieFileStore: CookieFileStore,
+    ) = CreateCookieSetFromWebViewUseCase(
+        cookieSetRepository = repository,
+        webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
+        cookieHeaderFileBuilder = CookieHeaderFileBuilder(),
+        cookieFileStore = cookieFileStore,
+        deleteCookieSetUseCase = DeleteCookieSetUseCase(
+            cookieSetRepository = repository,
+            cookieFileStore = cookieFileStore,
+        ),
+    )
 
     private class SavingCookieSetRepository : CookieSetRepository {
         private val cookieSets = mutableMapOf<Long, CookieSet>()

@@ -6,12 +6,15 @@ import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
+import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.CookieSetPathProvider
 import org.strigate.ferrot.cookies.CookieSetDomainParser
@@ -24,6 +27,22 @@ import java.io.File
 import java.nio.file.Files
 
 class CreateCookieSetFromFileUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
+    @Mock
+    private lateinit var uri: Uri
+
+    @Mock
+    private lateinit var contentResolver: ContentResolver
+
+    @Mock
+    private lateinit var appContext: Context
+
+    @Before
+    fun setUp() {
+        autoCloseable = MockitoAnnotations.openMocks(this)
+    }
+
     @Test
     fun invoke_returnsNullAndDeletesCookieSet_whenFileCannotBeOpened() = runTest {
         val rootDir = Files.createTempDirectory("cookie-file-import").toFile()
@@ -31,12 +50,14 @@ class CreateCookieSetFromFileUseCaseTest {
         val repository = SavingCookieSetRepository()
         val pathProvider = TempCookieSetPathProvider(rootDir)
         val cookieFileStore = CookieFileStore(pathProvider)
-        val uri = mock(Uri::class.java)
-        val contentResolver = mock(ContentResolver::class.java)
-        val appContext = mock(Context::class.java)
-        `when`(appContext.cacheDir).thenReturn(cacheDir)
-        `when`(appContext.contentResolver).thenReturn(contentResolver)
-        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        `when`(appContext.cacheDir)
+            .thenReturn(cacheDir)
+        `when`(appContext.contentResolver)
+            .thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri))
+            .thenReturn(null)
+
         val useCase = createUseCase(
             appContext = appContext,
             repository = repository,
@@ -67,13 +88,14 @@ class CreateCookieSetFromFileUseCaseTest {
         val repository = SavingCookieSetRepository()
         val pathProvider = TempCookieSetPathProvider(rootDir)
         val cookieFileStore = CookieFileStore(pathProvider)
-        val uri = mock(Uri::class.java)
-        val contentResolver = mock(ContentResolver::class.java)
-        val appContext = mock(Context::class.java)
-        `when`(appContext.cacheDir).thenReturn(cacheDir)
-        `when`(appContext.contentResolver).thenReturn(contentResolver)
+
+        `when`(appContext.cacheDir)
+            .thenReturn(cacheDir)
+        `when`(appContext.contentResolver)
+            .thenReturn(contentResolver)
         `when`(contentResolver.openInputStream(uri))
             .thenReturn(ByteArrayInputStream("not a netscape cookie file".toByteArray()))
+
         val useCase = createUseCase(
             appContext = appContext,
             repository = repository,
@@ -95,6 +117,11 @@ class CreateCookieSetFromFileUseCaseTest {
         } finally {
             rootDir.deleteRecursively()
         }
+    }
+
+    @After
+    fun tearDown() {
+        autoCloseable.close()
     }
 
     private fun createUseCase(

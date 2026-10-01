@@ -1,10 +1,14 @@
 package org.strigate.ferrot.cookies
 
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
-import java.nio.file.Files
+import org.junit.rules.TemporaryFolder
 
 class CookieSetDomainParserTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val parser = CookieSetDomainParser()
 
     @Test
@@ -25,7 +29,7 @@ class CookieSetDomainParserTest {
 
     @Test
     fun parseNetscapeDomains_readsNormalAndHttpOnlyCookieDomains() {
-        val file = Files.createTempFile("cookies", ".txt").toFile().apply {
+        val file = temporaryFolder.newFile("cookies.txt").apply {
             writeText(
                 """
                 # Netscape HTTP Cookie File
@@ -50,7 +54,7 @@ class CookieSetDomainParserTest {
 
     @Test
     fun parseNetscapeDomains_mergesDuplicateDomainsWithSubdomainsEnabled() {
-        val file = Files.createTempFile("cookies", ".txt").toFile().apply {
+        val file = temporaryFolder.newFile("cookies.txt").apply {
             writeText(
                 """
                 # Netscape HTTP Cookie File
