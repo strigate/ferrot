@@ -25,8 +25,6 @@ enum class DownloadNotificationActionType {
 
 fun downloadNotificationTag(downloadId: Long): String = "download:$downloadId"
 
-fun activeDownloadNotificationTag(downloadId: Long): String = "active-download:$downloadId"
-
 fun downloadNotificationExtras(downloadId: Long): Map<String, String> = mapOf(
     EXTRA_ACTION to ACTION_NAVIGATE_DOWNLOAD,
     EXTRA_DOWNLOAD_ID to downloadId.toString(),

@@ -288,7 +288,7 @@ class DownloadAvailableUpdateWorker(
             var downloadedBytes = 0L
             var lastPublishedAtMillis = 0L
 
-            fun publishProgress(force: Boolean) {
+            suspend fun publishProgress(force: Boolean) {
                 val now = System.currentTimeMillis()
                 val progressPercent = if (totalBytes != null && totalBytes > 0L) {
                     ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)

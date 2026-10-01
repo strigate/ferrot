@@ -1,7 +1,6 @@
 package org.strigate.ferrot.work
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.BackoffPolicy
@@ -10,13 +9,14 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
@@ -78,6 +78,7 @@ class DownloadWorker(
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
     private var _downloadId: Long = -1L
+    private var downloadForegroundEnabled = false
 
     private var lastForegroundProgress: Int = -1
     private val qualityProfile: QualityProfile = QualityProfile.MAX
@@ -86,7 +87,7 @@ class DownloadWorker(
         _downloadId = inputData.getLong(KEY_ID, -1L)
 
         val downloadId = _downloadId
-        val tag = "Download[$downloadId]:"
+        val tag = "Download[$downloadId][work=$id, attempt=$runAttemptCount]:"
         Log.d(LOG_TAG, "$tag Start")
 
         if (runAttemptCount > 20 || downloadId <= 0L) {
@@ -97,19 +98,33 @@ class DownloadWorker(
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
             ?: return handleDownloadFailedResult()
 
-        val notificationExtras = downloadNotificationExtras(download.id)
-        enableDownloadForeground(
-            downloadId = downloadId,
-            notificationText = appContext.getString(R.string.notification_text_downloading),
-            indeterminate = true,
-            contentText = download.url,
-            extras = notificationExtras,
-        )
+        val canStart = when (download.status) {
+            DownloadStatus.QUEUED,
+            DownloadStatus.WAITING_FOR_NETWORK,
+            DownloadStatus.WAITING_FOR_WIFI,
+            DownloadStatus.FAILED,
+            DownloadStatus.METADATA,
+            DownloadStatus.DOWNLOADING -> true
 
+            else -> false
+        }
+        if (!canStart) {
+            Log.w(LOG_TAG, "$tag Cannot start from status=${download.status}")
+            return Result.failure()
+        }
+
+        val notificationExtras = downloadNotificationExtras(download.id)
         var wasDownloadDeleted = false
         return coroutineScope mainScope@{
             var workerCookieFile: File? = null
             try {
+                downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
+                enableDownloadForeground(
+                    notificationText = appContext.getString(R.string.notification_text_downloading),
+                    indeterminate = true,
+                    contentText = download.url,
+                    extras = notificationExtras,
+                )
                 workerCookieFile = prepareCookieFile(
                     url = download.url,
                     downloadId = downloadId,
@@ -125,20 +140,6 @@ class DownloadWorker(
                     throw CancellationException()
                 }
 
-                val canStart = when (download.status) {
-                    DownloadStatus.QUEUED,
-                    DownloadStatus.WAITING_FOR_NETWORK,
-                    DownloadStatus.WAITING_FOR_WIFI,
-                    DownloadStatus.FAILED,
-                    DownloadStatus.METADATA,
-                    DownloadStatus.DOWNLOADING -> true
-
-                    else -> false
-                }
-                if (!canStart) {
-                    Log.w(LOG_TAG, "$tag Cannot start from status=${download.status}")
-                    return@mainScope Result.failure()
-                }
                 analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_STARTED)
 
                 resetProgressAndCleanup()
@@ -150,19 +151,23 @@ class DownloadWorker(
 
                 val uidDir = downloadPathProvider.uidDir(download.uid)
                 if (!uidDir.exists() && !uidDir.mkdirs()) {
-                    return@mainScope Result.failure()
+                    throw IllegalStateException("Could not create download directory")
                 }
 
                 Log.d(LOG_TAG, "$tag Metadata: fetching")
-                downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
                 val videoInfo = withContext(Dispatchers.IO) {
                     runCatching {
                         youtubeDlAndroidUseCase.getVideoInfoUseCase(
                             url = download.url,
                             cookieFilePath = cookieFilePath,
                         )
+                    }.onFailure {
+                        if (it is CancellationException) throw it
+                        currentCoroutineContext().ensureActive()
                     }.getOrNull()
                 }
+                currentCoroutineContext().ensureActive()
+
                 val metadataMessage = if (videoInfo != null) {
                     "$tag Metadata: fetched"
                 } else {
@@ -217,6 +222,8 @@ class DownloadWorker(
                             }
                             Log.d(LOG_TAG, thumbnailMessage)
                         }.onFailure {
+                            if (it is CancellationException) throw it
+                            currentCoroutineContext().ensureActive()
                             Log.w(LOG_TAG, "$tag Thumbnail: failed", it)
                         }
                     }
@@ -375,10 +382,19 @@ class DownloadWorker(
                         )
                     )
                 } catch (throwable: Throwable) {
+                    if (throwable is CancellationException) throw throwable
+                    currentCoroutineContext().ensureActive()
+
                     val message = "$tag Audio: failed, continuing with video only"
                     Log.w(LOG_TAG, message, throwable)
                 }
 
+                currentCoroutineContext().ensureActive()
+                throwIfDownloadDeleted()
+                updateTerminalForeground(
+                    notificationText = appContext.getString(R.string.download_complete),
+                    contentText = videoTitle,
+                )
                 downloadUseCase.updateDownloadErrorMessageUseCase(downloadId, null)
                 downloadUseCase.updateDownloadStatusUseCase(
                     status = DownloadStatus.COMPLETED,
@@ -426,37 +442,29 @@ class DownloadWorker(
                 Result.success()
 
             } catch (throwable: Throwable) {
-                Log.w(LOG_TAG, "$tag Failed", throwable)
-
                 suspend fun handleDownloadFailure() = handleDownloadFailure(
                     throwable = throwable,
                     notificationText = download.url,
                     notificationExtras = notificationExtras,
                 )
-
-                val isCancellation = throwable is CancellationException ||
-                        throwable is YoutubeDL.CanceledException
-
-                if (!isCancellation) {
-                    return@mainScope handleDownloadFailure()
-                }
                 if (wasDownloadDeleted) {
-                    return@mainScope handleDeletedDownloadResult()
-                }
-                if (Build.VERSION.SDK_INT < 31) {
-                    return@mainScope handleDownloadFailure()
-                }
-
-                Log.w(LOG_TAG, "$tag Cancelled: stopReason=$stopReason")
-                return@mainScope when (stopReason) {
-                    WorkInfo.STOP_REASON_CANCELLED_BY_APP,
-                    WorkInfo.STOP_REASON_USER -> {
-                        Log.w(LOG_TAG, "$tag Cancelled by app or user")
-                        handleDownloadStoppedResult()
+                    return@mainScope withContext(NonCancellable) {
+                        handleDeletedDownloadResult()
                     }
-
-                    else -> handleDownloadFailure()
                 }
+                if (throwable is CancellationException) {
+                    Log.d(LOG_TAG, "$tag Cancelled; preserving download state")
+                    throw throwable
+                }
+                currentCoroutineContext().ensureActive()
+                if (isStopped) {
+                    throw CancellationException("Download worker stopped", throwable)
+                }
+                if (throwable is YoutubeDL.CanceledException) {
+                    return@mainScope handleDownloadStoppedResult()
+                }
+                Log.w(LOG_TAG, "$tag Failed", throwable)
+                return@mainScope handleDownloadFailure()
             } finally {
                 withContext(NonCancellable) {
                     cookieFileStore.delete(workerCookieFile)
@@ -489,14 +497,17 @@ class DownloadWorker(
         if (downloadId <= 0L) {
             return Result.failure()
         }
-        withContext(NonCancellable) {
-            runCatching {
-                downloadUseCase.updateDownloadErrorMessageUseCase(
-                    errorMessage = throwable.parseErrorMessage(),
-                    downloadId = downloadId,
-                )
-            }
+        runCatching {
+            downloadUseCase.updateDownloadErrorMessageUseCase(
+                errorMessage = throwable.parseErrorMessage(),
+                downloadId = downloadId,
+            )
+        }.onFailure {
+            if (it is CancellationException) throw it
+            currentCoroutineContext().ensureActive()
         }
+
+        val result = handleDownloadFailedResult()
         val downloadFailed = appContext.getString(R.string.download_failed)
         appContext.toast(downloadFailed, true)
         notificationService.notifyDownloaded(
@@ -506,29 +517,19 @@ class DownloadWorker(
             tag = downloadNotificationTag(downloadId),
             actions = buildFailedNotificationActions(downloadId),
         )
-        return handleDownloadFailedResult()
+        return result
     }
 
     private suspend fun handleDownloadStoppedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            withContext(NonCancellable) {
-                val status = runCatching {
-                    downloadUseCase.getDownloadByIdUseCase(downloadId)?.status
-                }.getOrNull()
+            val status = downloadUseCase.getDownloadByIdUseCase(downloadId)?.status
+            val shouldPreserve = status == DownloadStatus.WAITING_FOR_WIFI
+                    || status == DownloadStatus.WAITING_FOR_NETWORK
 
-                val shouldPreserve = status == DownloadStatus.WAITING_FOR_WIFI ||
-                        status == DownloadStatus.WAITING_FOR_NETWORK
-
-                if (!shouldPreserve && status != DownloadStatus.COMPLETED && status != DownloadStatus.FAILED) {
-                    resetProgressAndCleanup()
-                    runCatching {
-                        downloadUseCase.updateDownloadStatusUseCase(
-                            downloadId,
-                            DownloadStatus.STOPPED,
-                        )
-                    }
-                }
+            if (!shouldPreserve && status != DownloadStatus.COMPLETED && status != DownloadStatus.FAILED) {
+                resetProgressAndCleanup()
+                downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.STOPPED)
             }
         }
         return Result.failure()
@@ -537,16 +538,12 @@ class DownloadWorker(
     private suspend fun handleDownloadFailedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            withContext(NonCancellable) {
-                resetProgressAndCleanup()
-                runCatching {
-                    analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_FAILED)
-                    downloadUseCase.updateDownloadStatusUseCase(
-                        downloadId,
-                        DownloadStatus.FAILED,
-                    )
-                }
+            if (downloadForegroundEnabled) {
+                updateTerminalForeground(appContext.getString(R.string.download_failed))
             }
+            resetProgressAndCleanup()
+            downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.FAILED)
+            analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_FAILED)
         }
         return Result.failure()
     }
@@ -562,8 +559,27 @@ class DownloadWorker(
         return Result.success()
     }
 
+    private suspend fun updateTerminalForeground(
+        notificationText: String,
+        contentText: String? = null,
+    ) {
+        if (!downloadForegroundEnabled) return
+        try {
+            updateForeground(
+                notificationText = notificationText,
+                contentText = contentText,
+                extras = downloadNotificationExtras(_downloadId),
+            )
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            currentCoroutineContext().ensureActive()
+            if (isStopped) {
+                throw CancellationException("Download worker stopped", throwable)
+            }
+        }
+    }
+
     private suspend fun enableDownloadForeground(
-        downloadId: Long,
         notificationText: String,
         progress: Int? = null,
         indeterminate: Boolean = false,
@@ -571,7 +587,6 @@ class DownloadWorker(
         extras: Map<String, String>? = null,
     ) {
         enableForeground(
-            notificationId = downloadId.toInt(),
             notificationText = notificationText,
             progress = progress,
             indeterminate = indeterminate,
@@ -579,9 +594,10 @@ class DownloadWorker(
             extras = extras,
             actions = buildActiveNotificationActions(),
         )
+        downloadForegroundEnabled = true
     }
 
-    private fun updateDownloadForeground(
+    private suspend fun updateDownloadForeground(
         notificationText: String,
         progress: Int? = null,
         indeterminate: Boolean = false,
@@ -656,18 +672,24 @@ class DownloadWorker(
     private suspend fun resetProgressAndCleanup() {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            withContext(NonCancellable) {
-                runCatching {
-                    downloadUseCase.deleteDownloadFilesUseCase(downloadId)
-                }
-                runCatching {
-                    downloadProgressUseCase.updateDownloadProgressUseCase(
-                        id = downloadId,
-                        progressPercent = 0f,
-                        bytesDownloaded = 0L,
-                        etaSeconds = null,
-                    )
-                }
+            currentCoroutineContext().ensureActive()
+            runCatching {
+                downloadUseCase.deleteDownloadFilesUseCase(downloadId)
+            }.onFailure {
+                if (it is CancellationException) throw it
+                currentCoroutineContext().ensureActive()
+            }
+            currentCoroutineContext().ensureActive()
+            runCatching {
+                downloadProgressUseCase.updateDownloadProgressUseCase(
+                    id = downloadId,
+                    progressPercent = 0f,
+                    bytesDownloaded = 0L,
+                    etaSeconds = null,
+                )
+            }.onFailure {
+                if (it is CancellationException) throw it
+                currentCoroutineContext().ensureActive()
             }
         }
     }
