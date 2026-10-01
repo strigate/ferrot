@@ -5,11 +5,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.Data
 import androidx.work.ListenableWorker
-import androidx.work.impl.WorkManagerImpl
 import androidx.work.WorkerParameters
+import androidx.work.impl.WorkManagerImpl
 import com.yausername.youtubedl_android.YoutubeDL
-import java.io.File
-import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
@@ -19,8 +17,8 @@ import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,12 +28,10 @@ import org.mockito.MockedStatic
 import org.mockito.Mockito.CALLS_REAL_METHODS
 import org.mockito.Mockito.RETURNS_DEFAULTS
 import org.mockito.Mockito.`when`
-import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.doAnswer
-import org.mockito.Mockito.inOrder
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
-import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
@@ -48,7 +44,6 @@ import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType
 import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
-import org.strigate.ferrot.app.actions.downloadNotificationExtras
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
@@ -79,6 +74,8 @@ import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownload
 import org.strigate.ferrot.domain.usecase.youtubedl_android.DownloadWithProgressUseCase
 import org.strigate.ferrot.domain.usecase.youtubedl_android.GetVideoInfoUseCase
 import org.strigate.ferrot.test.MainDispatcherRule
+import java.io.File
+import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWorkerTest {
@@ -148,10 +145,35 @@ class DownloadWorkerTest {
     @Mock
     private lateinit var updateDownloadProgressUseCase: UpdateDownloadProgressUseCase
 
+    @Mock
+    private lateinit var resolveCookieSetForUrlUseCase: ResolveCookieSetForUrlUseCase
+
+    @Mock
+    private lateinit var updateDownloadErrorMessageUseCase: UpdateDownloadErrorMessageUseCase
+
+    @Mock
+    private lateinit var updateDownloadStartedAtUseCase: UpdateDownloadStartedAtUseCase
+
+    @Mock
+    private lateinit var updateDownloadCompletedAtUseCase: UpdateDownloadCompletedAtUseCase
+
+    @Mock
+    private lateinit var getVideoInfoUseCase: GetVideoInfoUseCase
+
+    @Mock
+    private lateinit var getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase: GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var notificationAction: NotificationCompat.Action
+
+    @Mock
+    private lateinit var workManager: WorkManagerImpl
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
+
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
         `when`(downloadUseCase.updateDownloadStatusUseCase)
@@ -160,33 +182,50 @@ class DownloadWorkerTest {
             .thenReturn(deleteDownloadFilesUseCase)
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
+        `when`(cookieSetUseCase.resolveCookieSetForUrlUseCase)
+            .thenReturn(resolveCookieSetForUrlUseCase)
+        `when`(downloadUseCase.updateDownloadErrorMessageUseCase)
+            .thenReturn(updateDownloadErrorMessageUseCase)
+        `when`(downloadUseCase.updateDownloadStartedAtUseCase)
+            .thenReturn(updateDownloadStartedAtUseCase)
+        `when`(downloadUseCase.updateDownloadCompletedAtUseCase)
+            .thenReturn(updateDownloadCompletedAtUseCase)
+        `when`(youtubeDlAndroidUseCase.getVideoInfoUseCase)
+            .thenReturn(getVideoInfoUseCase)
+        `when`(settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase)
+            .thenReturn(getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase)
     }
 
     @Test
-    fun doWork_failsWithoutTouchingState_whenDownloadIdIsInvalid() = runTest(testDispatcher) {
+    fun doWork_preservesState_whenIdIsInvalid() = runTest(testDispatcher) {
         val result = createWorker(downloadId = -1L).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(getDownloadByIdUseCase, never()).invoke(-1L)
-        verify(updateDownloadStatusUseCase, never()).invoke(-1L, DownloadStatus.FAILED)
+        verify(getDownloadByIdUseCase, never())
+            .invoke(-1L)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(-1L, DownloadStatus.FAILED)
     }
 
     @Test
-    fun doWork_marksDownloadFailed_whenDownloadRecordIsMissing() = runTest(testDispatcher) {
+    fun doWork_marksFailed_whenDownloadIsMissing() = runTest(testDispatcher) {
         `when`(getDownloadByIdUseCase.invoke(42L))
             .thenReturn(null)
 
         val result = createWorker(downloadId = 42L).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(deleteDownloadFilesUseCase).invoke(42L)
-        verify(updateDownloadProgressUseCase).invoke(
-            id = 42L,
-            progressPercent = 0f,
-            bytesDownloaded = 0L,
-            etaSeconds = null,
-        )
-        verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.FAILED)
+        verify(deleteDownloadFilesUseCase)
+            .invoke(42L)
+        verify(updateDownloadProgressUseCase)
+            .invoke(
+                id = 42L,
+                progressPercent = 0f,
+                bytesDownloaded = 0L,
+                etaSeconds = null,
+            )
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @Test
@@ -194,7 +233,8 @@ class DownloadWorkerTest {
         val result = createWorker(downloadId = 42L, runAttemptCount = 21).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(getDownloadByIdUseCase, never()).invoke(42L)
+        verify(getDownloadByIdUseCase, never())
+            .invoke(42L)
     }
 
     @Test
@@ -206,26 +246,27 @@ class DownloadWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Failure)
         verifyNoInteractions(cookieFileStore, notificationService, updateDownloadStatusUseCase)
-        verify(appContext, never()).getString(R.string.notification_text_downloading)
+        verify(appContext, never())
+            .getString(R.string.notification_text_downloading)
     }
 
     @Test
     fun doWork_preservesStateAndFiles_whenStartupIsCancelled() = runTest(testDispatcher) {
         val cancellation = CancellationException("System interrupted download")
+
         `when`(getDownloadByIdUseCase.invoke(42L))
             .thenReturn(download(DownloadStatus.DOWNLOADING))
         `when`(updateDownloadStatusUseCase.invoke(42L, DownloadStatus.METADATA))
             .thenThrow(cancellation)
 
-        try {
-            createWorker(downloadId = 42L).doWork()
-            fail("Expected cancellation")
-        } catch (exception: CancellationException) {
-            assertEquals(cancellation.message, exception.message)
-        }
+        val exception = assertCancelled { createWorker(downloadId = 42L).doWork() }
 
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.FAILED)
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.STOPPED)
+        assertEquals(cancellation.message, exception.message)
+
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.STOPPED)
         verifyNoInteractions(
             deleteDownloadFilesUseCase,
             updateDownloadProgressUseCase,
@@ -239,17 +280,14 @@ class DownloadWorkerTest {
             .thenReturn(download(DownloadStatus.DOWNLOADING))
         `when`(updateDownloadStatusUseCase.invoke(42L, DownloadStatus.METADATA))
             .thenThrow(IllegalStateException("Process interrupted"))
+
         val worker = spy(createWorker(downloadId = 42L))
         doReturn(true).`when`(worker).isStopped
 
-        try {
-            worker.doWork()
-            fail("Expected cancellation")
-        } catch (_: CancellationException) {
-            // A stopped attempt must leave shared state to WorkManager's next attempt.
-        }
+        assertCancelled { worker.doWork() }
 
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
         verifyNoInteractions(
             deleteDownloadFilesUseCase,
             updateDownloadProgressUseCase,
@@ -258,63 +296,37 @@ class DownloadWorkerTest {
     }
 
     @Test
-    fun doWork_setsActiveStateBeforeForeground_andPreservesFilesOnCancellation() =
-        runTest(testDispatcher) {
-            val download = download(DownloadStatus.FAILED)
-            `when`(getDownloadByIdUseCase.invoke(42L))
-                .thenReturn(download)
-            `when`(appContext.getString(R.string.notification_text_downloading))
-                .thenReturn("downloading")
-            val resolveCookies = mock(ResolveCookieSetForUrlUseCase::class.java)
-            `when`(cookieSetUseCase.resolveCookieSetForUrlUseCase)
-                .thenReturn(resolveCookies)
-            `when`(resolveCookies.invoke(download.url))
-                .thenThrow(CancellationException("Work replaced during cookie preparation"))
-            val worker = spy(createWorker(downloadId = 42L))
-            val action = mock(NotificationCompat.Action::class.java)
-            val notificationExtras = downloadNotificationExtras(42L)
-            val actionsClass =
-                Class.forName("org.strigate.ferrot.app.actions.DownloadNotificationActionsKt")
-            mockStatic(actionsClass, CALLS_REAL_METHODS).use { actions ->
-                actions.`when`<NotificationCompat.Action> {
-                    buildDownloadNotificationAction(
-                        appContext,
-                        42L,
-                        DownloadNotificationActionType.STOP
-                    )
-                }.thenReturn(action)
-                doReturn(Unit).`when`(worker).enableForeground(
-                    notificationText = "downloading",
-                    indeterminate = true,
-                    contentText = download.url,
-                    extras = notificationExtras,
-                    actions = listOf(action),
-                )
+    fun doWork_activatesDownloadBeforeForeground() = runTest(testDispatcher) {
+        val download = download(DownloadStatus.FAILED)
+        val events = mutableListOf<String>()
 
-                try {
-                    worker.doWork()
-                    fail("Expected cancellation")
-                } catch (_: CancellationException) {
-                    // The cancelled attempt must not mark the resumed download failed again.
-                }
-                val order = inOrder(updateDownloadStatusUseCase, worker)
-                order.verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.METADATA)
-                order.verify(worker).enableForeground(
-                    notificationText = "downloading",
-                    indeterminate = true,
-                    contentText = download.url,
-                    extras = notificationExtras,
-                    actions = listOf(action),
-                )
-            }
-            verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.FAILED)
-            verifyNoInteractions(
-                deleteDownloadFilesUseCase,
-                updateDownloadProgressUseCase,
-                notificationService
-            )
-            verify(cookieFileStore).delete(null)
-        }
+        `when`(getDownloadByIdUseCase.invoke(download.id))
+            .thenReturn(download)
+        `when`(appContext.getString(R.string.notification_text_downloading))
+            .thenReturn("downloading")
+        `when`(resolveCookieSetForUrlUseCase.invoke(download.url))
+            .thenThrow(CancellationException("Work replaced during cookie preparation"))
+        doAnswer {
+            events += "active state"
+            true
+        }.`when`(updateDownloadStatusUseCase)
+            .invoke(download.id, DownloadStatus.METADATA)
+
+        val worker = createForegroundWorker(onForegroundEnabled = { events += "foreground" })
+
+        assertCancelled { runForegroundWorker(worker) }
+
+        assertEquals(listOf("active state", "foreground"), events)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(download.id, DownloadStatus.FAILED)
+        verifyNoInteractions(
+            deleteDownloadFilesUseCase,
+            updateDownloadProgressUseCase,
+            notificationService,
+        )
+        verify(cookieFileStore)
+            .delete(null)
+    }
 
     @Test
     fun doWork_recordsFailure_whenFileCleanupThrows() = runTest(testDispatcher) {
@@ -326,7 +338,8 @@ class DownloadWorkerTest {
         val result = createWorker(downloadId = 42L).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @Test
@@ -340,13 +353,13 @@ class DownloadWorkerTest {
                 bytesDownloaded = 0L,
                 etaSeconds = null,
             ),
-        )
-            .thenThrow(IllegalStateException("Progress unavailable"))
+        ).thenThrow(IllegalStateException("Progress unavailable"))
 
         val result = createWorker(downloadId = 42L).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @Test
@@ -356,40 +369,105 @@ class DownloadWorkerTest {
         `when`(deleteDownloadFilesUseCase.invoke(42L))
             .thenThrow(CancellationException("Work replaced"))
 
-        try {
-            createWorker(downloadId = 42L).doWork()
-            fail("Expected cancellation")
-        } catch (_: CancellationException) {
-            // Cleanup must remain cancellable even though ordinary cleanup errors are tolerated.
-        }
+        assertCancelled { createWorker(downloadId = 42L).doWork() }
 
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
         verifyNoInteractions(updateDownloadProgressUseCase)
     }
 
     @Test
     fun doWork_completesWithVideoAndAudio() = runTest(testDispatcher) {
-        verifyMediaDownload(audioFailure = null)
+        val media = prepareMediaDownload()
+
+        val result = runForegroundWorker(media.worker)
+
+        assertTrue(result is ListenableWorker.Result.Success)
+        assertEquals(listOf("foreground complete", "recorded complete"), media.events.takeLast(2))
+        assertVideoSaved(media)
+        assertEquals(media.audioFile.absolutePath, media.savedAudio.single().filePath)
+        assertTrue(media.audioFile.exists())
+
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.COMPLETED)
+        verify(deleteDownloadFilesUseCase)
+            .invoke(42L)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @Test
     fun doWork_keepsVideo_whenAudioProcessFails() = runTest(testDispatcher) {
-        verifyMediaDownload(audioFailure = YoutubeDL.CanceledException())
+        val media = prepareMediaDownload(audioFailure = YoutubeDL.CanceledException())
+
+        val result = runForegroundWorker(media.worker)
+
+        assertTrue(result is ListenableWorker.Result.Success)
+        assertVideoSaved(media)
+        assertTrue(media.savedAudio.isEmpty())
+        assertFalse(media.audioFile.exists())
+
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.COMPLETED)
+        verify(deleteDownloadFilesUseCase)
+            .invoke(42L)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.STOPPED)
     }
 
     @Test
     fun doWork_doesNotComplete_whenAudioCoroutineIsCancelled() = runTest(testDispatcher) {
-        verifyMediaDownload(audioFailure = CancellationException("System interrupted audio"))
+        val media =
+            prepareMediaDownload(audioFailure = CancellationException("System interrupted audio"))
+
+        assertCancelled { runForegroundWorker(media.worker) }
+
+        assertVideoSaved(media)
+        assertTrue(media.savedAudio.isEmpty())
+        assertTrue("foreground complete" !in media.events)
+
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.COMPLETED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.STOPPED)
+        verify(deleteDownloadFilesUseCase)
+            .invoke(42L)
     }
 
     @Test
     fun doWork_updatesFailedForegroundBeforeRecordingFailure() = runTest(testDispatcher) {
-        verifyFailedForeground(terminalUpdateFails = false)
+        val events = mutableListOf<String>()
+        val worker = prepareFailedDownload(events)
+
+        val result = runForegroundWorker(worker)
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+        assertEquals(
+            listOf("foreground downloading", "foreground failed", "recorded failed"),
+            events
+        )
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @Test
-    fun doWork_recordsFailure_whenTerminalForegroundUpdateFails() = runTest(testDispatcher) {
-        verifyFailedForeground(terminalUpdateFails = true)
+    fun doWork_recordsFailure_whenForegroundUpdateFails() = runTest(testDispatcher) {
+        val events = mutableListOf<String>()
+        val worker = prepareFailedDownload(events, terminalUpdateFails = true)
+
+        val result = runForegroundWorker(worker)
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+        assertEquals(
+            listOf("foreground downloading", "foreground failed", "recorded failed"),
+            events
+        )
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
     }
 
     @After
@@ -398,89 +476,62 @@ class DownloadWorkerTest {
         autoCloseable.close()
     }
 
-    private suspend fun verifyFailedForeground(terminalUpdateFails: Boolean) {
+    private suspend fun prepareFailedDownload(
+        events: MutableList<String>,
+        terminalUpdateFails: Boolean = false,
+    ): DownloadWorker {
         val download = download(DownloadStatus.QUEUED)
-        val events = mutableListOf<String>()
-        `when`(getDownloadByIdUseCase.invoke(42L)).thenReturn(download)
-        `when`(appContext.getString(R.string.notification_text_downloading)).thenReturn("downloading")
-        `when`(appContext.getString(R.string.download_failed)).thenReturn("failed")
-        val resolveCookies = mock(ResolveCookieSetForUrlUseCase::class.java)
-        `when`(cookieSetUseCase.resolveCookieSetForUrlUseCase).thenReturn(resolveCookies)
-        `when`(resolveCookies.invoke(download.url)).thenThrow(IllegalStateException("Cookie preparation failed"))
-        val updateError = mock(UpdateDownloadErrorMessageUseCase::class.java)
-        `when`(downloadUseCase.updateDownloadErrorMessageUseCase).thenReturn(updateError)
+
+        `when`(getDownloadByIdUseCase.invoke(download.id))
+            .thenReturn(download)
+        `when`(appContext.getString(R.string.notification_text_downloading))
+            .thenReturn("downloading")
+        `when`(appContext.getString(R.string.download_failed))
+            .thenReturn("failed")
+        `when`(resolveCookieSetForUrlUseCase.invoke(download.url))
+            .thenThrow(IllegalStateException("Cookie preparation failed"))
         doAnswer {
             events += "recorded failed"
             true
-        }.`when`(updateDownloadStatusUseCase).invoke(42L, DownloadStatus.FAILED)
-        val worker = mock(
-            DownloadWorker::class.java,
-            withSettings().spiedInstance(createWorker(42L)).defaultAnswer { invocation ->
-                when (invocation.method.name) {
-                    "enableForeground" -> {
-                        events += "foreground downloading"
-                        Unit
-                    }
+        }.`when`(updateDownloadStatusUseCase)
+            .invoke(download.id, DownloadStatus.FAILED)
 
-                    "updateForeground" -> {
-                        events += "foreground ${invocation.getArgument<String>(0)}"
-                        if (terminalUpdateFails) throw IllegalStateException("Service unavailable")
-                        Unit
-                    }
-
-                    else -> invocation.callRealMethod()
-                }
+        return createForegroundWorker(
+            onForegroundEnabled = { events += "foreground downloading" },
+            onForegroundUpdated = { title ->
+                events += "foreground $title"
+                if (terminalUpdateFails) throw IllegalStateException("Service unavailable")
             },
-        )
-        val action = mock(NotificationCompat.Action::class.java)
-        val actionsClass =
-            Class.forName("org.strigate.ferrot.app.actions.DownloadNotificationActionsKt")
-        mockStatic(actionsClass, CALLS_REAL_METHODS).use { actions ->
-            for (actionType in listOf(
-                DownloadNotificationActionType.STOP,
-                DownloadNotificationActionType.RETRY,
-                DownloadNotificationActionType.DELETE,
-            )) {
-                actions.`when`<NotificationCompat.Action> {
-                    buildDownloadNotificationAction(appContext, 42L, actionType)
-                }.thenReturn(action)
-            }
-            mockStatic(Class.forName("org.strigate.ferrot.extensions.ContextKt")).use {
-                assertTrue(worker.doWork() is ListenableWorker.Result.Failure)
-            }
-        }
-        assertEquals(
-            listOf("foreground downloading", "foreground failed", "recorded failed"),
-            events,
         )
     }
 
-    private suspend fun verifyMediaDownload(audioFailure: Throwable?) {
+    private suspend fun prepareMediaDownload(audioFailure: Throwable? = null): MediaDownload {
         val download = download(DownloadStatus.QUEUED).copy(archived = true)
         val directory = temporaryFolder.newFolder()
-        val videoFile = File(directory, "video.mp4").apply { writeText("video content") }
-        val audioFile = File(directory, "audio.m4a").apply { writeText("audio content") }
-        `when`(getDownloadByIdUseCase.invoke(42L)).thenReturn(download)
-        `when`(appContext.getString(R.string.notification_text_downloading)).thenReturn("downloading")
-        `when`(appContext.getString(R.string.download_complete)).thenReturn("complete")
-        `when`(downloadPathProvider.uidDir(download.uid)).thenReturn(directory)
-        val resolveCookies = mock(ResolveCookieSetForUrlUseCase::class.java)
-        `when`(cookieSetUseCase.resolveCookieSetForUrlUseCase).thenReturn(resolveCookies)
-        val updateError = mock(UpdateDownloadErrorMessageUseCase::class.java)
-        `when`(downloadUseCase.updateDownloadErrorMessageUseCase).thenReturn(updateError)
-        val updateStarted = mock(UpdateDownloadStartedAtUseCase::class.java)
-        `when`(downloadUseCase.updateDownloadStartedAtUseCase).thenReturn(updateStarted)
-        val updateCompleted = mock(UpdateDownloadCompletedAtUseCase::class.java)
-        `when`(downloadUseCase.updateDownloadCompletedAtUseCase).thenReturn(updateCompleted)
-        val getVideoInfo = mock(GetVideoInfoUseCase::class.java)
-        `when`(youtubeDlAndroidUseCase.getVideoInfoUseCase).thenReturn(getVideoInfo)
-        `when`(
-            getVideoInfo.invoke(
-                download.url,
-                null
-            )
-        ).thenThrow(IllegalStateException("Metadata unavailable"))
+        val videoFile = File(directory, "video.mp4")
+        val audioFile = File(directory, "audio.m4a")
         val savedVideos = mutableListOf<DownloadVideo>()
+        val savedAudio = mutableListOf<DownloadAudio>()
+        val events = mutableListOf<String>()
+
+        `when`(getDownloadByIdUseCase.invoke(download.id))
+            .thenReturn(download)
+        `when`(appContext.getString(R.string.notification_text_downloading))
+            .thenReturn("downloading")
+        `when`(appContext.getString(R.string.download_complete))
+            .thenReturn("complete")
+        `when`(downloadPathProvider.uidDir(download.uid))
+            .thenReturn(directory)
+        `when`(getVideoInfoUseCase.invoke(download.url, null))
+            .thenThrow(IllegalStateException("Metadata unavailable"))
+        `when`(getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(flowOf(false))
+        doAnswer {
+            events += "recorded complete"
+            true
+        }.`when`(updateDownloadStatusUseCase)
+            .invoke(download.id, DownloadStatus.COMPLETED)
+
         val saveVideo = mock(SaveDownloadVideoUseCase::class.java) { invocation ->
             if (invocation.method.name == "invoke") {
                 savedVideos += invocation.getArgument<DownloadVideo>(0)
@@ -489,8 +540,8 @@ class DownloadWorkerTest {
                 RETURNS_DEFAULTS.answer(invocation)
             }
         }
-        `when`(downloadVideoUseCase.saveDownloadVideoUseCase).thenReturn(saveVideo)
-        val savedAudio = mutableListOf<DownloadAudio>()
+        `when`(downloadVideoUseCase.saveDownloadVideoUseCase)
+            .thenReturn(saveVideo)
         val saveAudio = mock(SaveDownloadAudioUseCase::class.java) { invocation ->
             if (invocation.method.name == "invoke") {
                 savedAudio += invocation.getArgument<DownloadAudio>(0)
@@ -499,87 +550,101 @@ class DownloadWorkerTest {
                 RETURNS_DEFAULTS.answer(invocation)
             }
         }
-        `when`(downloadAudioUseCase.saveDownloadAudioUseCase).thenReturn(saveAudio)
-        val getDeleteDuplicates =
-            mock(GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase::class.java)
-        `when`(settingsUseCase.getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase)
-            .thenReturn(getDeleteDuplicates)
-        `when`(getDeleteDuplicates.invoke()).thenReturn(flowOf(false))
-        val downloadMedia = mock(DownloadWithProgressUseCase::class.java) { invocation ->
-            if (invocation.method.name != "invoke") {
-                RETURNS_DEFAULTS.answer(invocation)
-            } else {
-                val mediaType = invocation.getArgument<DownloadMediaType>(5)
-                val reportOutput = invocation.getArgument<((String) -> Unit)?>(7)
-                flow<DownloadWithProgressUseCase.DownloadTick> {
-                    if (mediaType == DownloadMediaType.AUDIO && audioFailure != null) throw audioFailure
-                    reportOutput?.invoke(
-                        if (mediaType == DownloadMediaType.VIDEO) videoFile.absolutePath else audioFile.absolutePath,
-                    )
-                }
+        `when`(downloadAudioUseCase.saveDownloadAudioUseCase)
+            .thenReturn(saveAudio)
+        `when`(youtubeDlAndroidUseCase.downloadWithProgressUseCase)
+            .thenReturn(createMediaDownloadFlow(videoFile, audioFile, audioFailure))
+
+        return MediaDownload(
+            worker = createForegroundWorker(onForegroundUpdated = { title -> events += "foreground $title" }),
+            videoFile = videoFile,
+            audioFile = audioFile,
+            savedVideos = savedVideos,
+            savedAudio = savedAudio,
+            events = events,
+        )
+    }
+
+    private fun createMediaDownloadFlow(
+        videoFile: File,
+        audioFile: File,
+        audioFailure: Throwable?,
+    ): DownloadWithProgressUseCase = mock(DownloadWithProgressUseCase::class.java) { invocation ->
+        if (invocation.method.name != "invoke") {
+            RETURNS_DEFAULTS.answer(invocation)
+        } else {
+            val mediaType = invocation.getArgument<DownloadMediaType>(5)
+            val reportOutput = invocation.getArgument<((String) -> Unit)?>(7)
+            flow<DownloadWithProgressUseCase.DownloadTick> {
+                if (mediaType == DownloadMediaType.AUDIO && audioFailure != null) throw audioFailure
+                val outputFile = if (mediaType == DownloadMediaType.VIDEO) videoFile else audioFile
+                outputFile.writeText("downloaded media content")
+                reportOutput?.invoke(outputFile.absolutePath)
             }
         }
-        `when`(youtubeDlAndroidUseCase.downloadWithProgressUseCase).thenReturn(downloadMedia)
-        // Intercept framework notification calls while exercising the real download orchestration.
-        val terminalTitles = mutableListOf<String>()
-        val worker = mock(
-            DownloadWorker::class.java,
-            withSettings().spiedInstance(createWorker(42L)).defaultAnswer { invocation ->
-                when (invocation.method.name) {
-                    "enableForeground" -> Unit
-                    "updateForeground" -> {
-                        terminalTitles += invocation.getArgument<String>(0)
-                        Unit
-                    }
+    }
 
-                    else -> invocation.callRealMethod()
-                }
-            },
-        )
-        val action = mock(NotificationCompat.Action::class.java)
+    private fun createForegroundWorker(
+        onForegroundEnabled: () -> Unit = {},
+        onForegroundUpdated: (String) -> Unit = {},
+    ): DownloadWorker = mock(
+        DownloadWorker::class.java,
+        withSettings().spiedInstance(createWorker(42L)).defaultAnswer { invocation ->
+            when (invocation.method.name) {
+                "enableForeground" -> onForegroundEnabled()
+                "updateForeground" -> onForegroundUpdated(invocation.getArgument(0))
+                else -> invocation.callRealMethod()
+            }
+        },
+    )
+
+    private suspend fun runForegroundWorker(worker: DownloadWorker): ListenableWorker.Result {
         val actionsClass =
             Class.forName("org.strigate.ferrot.app.actions.DownloadNotificationActionsKt")
-        val workManager = mock(WorkManagerImpl::class.java)
-        mockStatic(actionsClass, CALLS_REAL_METHODS).use { actions ->
-            actions.`when`<NotificationCompat.Action> {
-                buildDownloadNotificationAction(
-                    appContext,
-                    42L,
-                    DownloadNotificationActionType.STOP
-                )
-            }.thenReturn(action)
+        return mockStatic(actionsClass, CALLS_REAL_METHODS).use { actions ->
+            for (actionType in listOf(
+                DownloadNotificationActionType.STOP,
+                DownloadNotificationActionType.RETRY,
+                DownloadNotificationActionType.DELETE,
+            )) {
+                actions.`when`<NotificationCompat.Action> {
+                    buildDownloadNotificationAction(appContext, 42L, actionType)
+                }.thenReturn(notificationAction)
+            }
             mockStatic(WorkManagerImpl::class.java).use { workManagerStatic ->
                 workManagerStatic.`when`<WorkManagerImpl> {
                     WorkManagerImpl.getInstance(appContext)
-                }.thenReturn(workManager)
-                if (audioFailure is CancellationException) {
-                    try {
-                        worker.doWork()
-                        fail("Expected cancellation")
-                    } catch (_: CancellationException) {
-                        // Interrupted audio must not complete or destroy the already saved video.
-                    }
-                } else {
-                    assertTrue(worker.doWork() is ListenableWorker.Result.Success)
+                }
+                    .thenReturn(workManager)
+                mockStatic(Class.forName("org.strigate.ferrot.extensions.ContextKt")).use {
+                    worker.doWork()
                 }
             }
         }
-        val completionUpdates = mockingDetails(updateDownloadStatusUseCase)
-            .invocations
-            .count { it.method.name == "invoke" && it.arguments[1] == DownloadStatus.COMPLETED }
-        assertEquals(if (audioFailure is CancellationException) 0 else 1, completionUpdates)
-        assertEquals(audioFailure !is CancellationException, "complete" in terminalTitles)
-        assertEquals(videoFile.absolutePath, savedVideos.single().filePath)
-        assertTrue(videoFile.exists())
-        if (audioFailure != null) {
-            assertTrue(savedAudio.isEmpty())
-        } else {
-            assertEquals(audioFile.absolutePath, savedAudio.single().filePath)
-        }
-        verify(deleteDownloadFilesUseCase).invoke(42L)
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.FAILED)
-        verify(updateDownloadStatusUseCase, never()).invoke(42L, DownloadStatus.STOPPED)
     }
+
+    private suspend fun assertCancelled(block: suspend () -> Any?): CancellationException {
+        try {
+            block()
+        } catch (exception: CancellationException) {
+            return exception
+        }
+        throw AssertionError("Expected cancellation")
+    }
+
+    private fun assertVideoSaved(media: MediaDownload) {
+        assertEquals(media.videoFile.absolutePath, media.savedVideos.single().filePath)
+        assertTrue(media.videoFile.exists())
+    }
+
+    private data class MediaDownload(
+        val worker: DownloadWorker,
+        val videoFile: File,
+        val audioFile: File,
+        val savedVideos: List<DownloadVideo>,
+        val savedAudio: List<DownloadAudio>,
+        val events: List<String>,
+    )
 
     private fun download(status: DownloadStatus) = Download(
         id = 42L,
