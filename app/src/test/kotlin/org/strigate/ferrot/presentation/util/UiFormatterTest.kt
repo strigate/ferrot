@@ -11,9 +11,10 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyLong
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.mockStatic
+import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mockStatic
+import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -21,16 +22,22 @@ import java.time.ZoneId
 import java.util.Locale
 
 class UiFormatterTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     private lateinit var originalLocale: Locale
+
     private lateinit var originalZoneId: ZoneId
+
+    @Mock
+    private lateinit var context: Context
 
     @Before
     fun setUp() {
+        autoCloseable = MockitoAnnotations.openMocks(this)
         originalLocale = Locale.getDefault()
         originalZoneId = ZoneId.systemDefault()
         Locale.setDefault(Locale.US)
     }
-
 
     @Test
     fun formatBytes_handlesZeroAndScaledValues() {
@@ -60,7 +67,6 @@ class UiFormatterTest {
 
     @Test
     fun formatLastCheckedTime_returnsNever_whenMillisIsNotPositive() {
-        val context = mock(Context::class.java)
         `when`(context.getString(R.string.never))
             .thenReturn("Never")
 
@@ -69,7 +75,6 @@ class UiFormatterTest {
 
     @Test
     fun formatLastCheckedTime_combinesRelativeAndExactFormats() {
-        val context = mock(Context::class.java)
         val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
         val timeFormat = SimpleDateFormat("hh:mm a", Locale.US)
         val millis = 1234L
@@ -99,7 +104,6 @@ class UiFormatterTest {
     @Test
     fun formatCompletedAtTime_returnsTimeOnly_forTodayIn24HourFormat() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
-        val context = mock(Context::class.java)
         val millis = LocalDate.now(ZoneId.of("UTC"))
             .atStartOfDay(ZoneId.of("UTC"))
             .plusHours(13)
@@ -126,7 +130,6 @@ class UiFormatterTest {
     @Test
     fun formatCompletedAtTime_includesDate_forNonTodayIn12HourFormat() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
-        val context = mock(Context::class.java)
         val millis = LocalDate.now(ZoneId.of("UTC"))
             .minusDays(1)
             .atStartOfDay(ZoneId.of("UTC"))
@@ -155,7 +158,6 @@ class UiFormatterTest {
     @Test
     fun formatCompletedAtDetail_formats24HourDetail() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
-        val context = mock(Context::class.java)
         val millis = LocalDate.of(2024, 1, 2)
             .atStartOfDay(ZoneId.of("UTC"))
             .plusHours(21)
@@ -175,7 +177,6 @@ class UiFormatterTest {
     @Test
     fun formatCompletedAtDetail_formats12HourDetail() {
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
-        val context = mock(Context::class.java)
         val millis = LocalDate.of(2024, 1, 2)
             .atStartOfDay(ZoneId.of("UTC"))
             .plusHours(21)
@@ -194,8 +195,8 @@ class UiFormatterTest {
 
     @After
     fun tearDown() {
+        autoCloseable.close()
         Locale.setDefault(originalLocale)
         java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(originalZoneId))
     }
-
 }

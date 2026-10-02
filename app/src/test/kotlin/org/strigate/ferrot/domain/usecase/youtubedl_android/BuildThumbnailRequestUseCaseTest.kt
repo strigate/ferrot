@@ -3,16 +3,20 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.nio.file.Files
 
 class BuildThumbnailRequestUseCaseTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val useCase = BuildThumbnailRequestUseCase()
 
     @Test
     fun invoke_buildsRequest_withJpgConversionByDefault() {
-        val outputDir = Files.createTempDirectory("thumb-request").toFile()
+        val outputDir = temporaryFolder.newFolder("thumb-request")
         val request = useCase(
             url = "https://example.com/video",
             outputDir = outputDir,
@@ -32,7 +36,7 @@ class BuildThumbnailRequestUseCaseTest {
 
     @Test
     fun invoke_skipsConversion_whenDisabled() {
-        val outputDir = Files.createTempDirectory("thumb-request-no-convert").toFile()
+        val outputDir = temporaryFolder.newFolder("thumb-request-no-convert")
         val request = useCase(
             url = "https://example.com/video",
             outputDir = outputDir,
@@ -45,7 +49,7 @@ class BuildThumbnailRequestUseCaseTest {
 
     @Test
     fun invoke_addsCookies_whenCookieFilePathProvided() {
-        val outputDir = Files.createTempDirectory("thumb-request-cookies").toFile()
+        val outputDir = temporaryFolder.newFolder("thumb-request-cookies")
         val request = useCase(
             url = "https://example.com/video",
             outputDir = outputDir,

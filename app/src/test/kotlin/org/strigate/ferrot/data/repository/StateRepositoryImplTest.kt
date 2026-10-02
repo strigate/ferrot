@@ -12,18 +12,21 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import org.strigate.ferrot.test.MainDispatcherRule
+import org.junit.rules.TemporaryFolder
 import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_ARCHIVED_DOWNLOADS_GRID_LAYOUT_ENABLED
 import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_BOOT_TIME_MILLIS
 import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_DOWNLOADS_GRID_LAYOUT_ENABLED
 import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_LAST_AVAILABLE_UPDATE_CHECK_MILLIS
 import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_LAST_DEPENDENCY_UPDATE_CHECK_MILLIS
-import java.nio.file.Files
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StateRepositoryImplTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
 
@@ -72,29 +75,28 @@ class StateRepositoryImplTest {
     }
 
     @Test
-    fun toggleDownloadsGridLayoutEnabled_appliesConcurrentTogglesAtomically() =
-        runTest(testDispatcher) {
-            val repository = createRepository(backgroundScope)
+    fun toggleGridLayout_appliesConcurrentTogglesAtomically() = runTest(testDispatcher) {
+        val repository = createRepository(backgroundScope)
 
-            coroutineScope {
-                repeat(2) {
-                    launch {
-                        repository.toggleDownloadsGridLayoutEnabled()
-                    }
+        coroutineScope {
+            repeat(2) {
+                launch {
+                    repository.toggleDownloadsGridLayoutEnabled()
                 }
             }
-
-            assertEquals(
-                false,
-                repository.getDownloadsGridLayoutEnabledAsFlow().first()
-            )
         }
 
+        assertEquals(
+            false,
+            repository.getDownloadsGridLayoutEnabledAsFlow().first()
+        )
+    }
+
     private fun createRepository(scope: CoroutineScope): StateRepositoryImpl {
-        val tempFile = Files.createTempFile("state-repository-test", ".preferences_pb")
+        val tempFile = temporaryFolder.newFile("state-repository-test.preferences_pb")
         val dataStore = PreferenceDataStoreFactory.create(
             scope = scope,
-            produceFile = { tempFile.toFile() },
+            produceFile = { tempFile },
         )
 
         return StateRepositoryImpl(dataStore)

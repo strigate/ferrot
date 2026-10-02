@@ -16,11 +16,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
@@ -40,11 +40,12 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteAllDuplicateDownloadsWorkerTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var appContext: Context
@@ -114,9 +115,12 @@ class DeleteAllDuplicateDownloadsWorkerTest {
 
         doWorkWithLogMock()
 
-        verify(deleteDownloadAndRelatedCombinedUseCase).invoke(1L)
-        verify(deleteDownloadAndRelatedCombinedUseCase, never()).invoke(2L)
-        verify(deleteDownloadAndRelatedCombinedUseCase, never()).invoke(3L)
+        verify(deleteDownloadAndRelatedCombinedUseCase)
+            .invoke(1L)
+        verify(deleteDownloadAndRelatedCombinedUseCase, never())
+            .invoke(2L)
+        verify(deleteDownloadAndRelatedCombinedUseCase, never())
+            .invoke(3L)
     }
 
     @Test
@@ -143,8 +147,10 @@ class DeleteAllDuplicateDownloadsWorkerTest {
 
         doWorkWithLogMock()
 
-        verify(deleteDownloadAndRelatedCombinedUseCase).invoke(4L)
-        verify(deleteDownloadAndRelatedCombinedUseCase, never()).invoke(7L)
+        verify(deleteDownloadAndRelatedCombinedUseCase)
+            .invoke(4L)
+        verify(deleteDownloadAndRelatedCombinedUseCase, never())
+            .invoke(7L)
     }
 
     @After

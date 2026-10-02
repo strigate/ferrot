@@ -40,6 +40,8 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteAllOrphanDownloadFilesWorkerTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
@@ -47,7 +49,6 @@ class DeleteAllOrphanDownloadFilesWorkerTest {
     val temporaryFolder = TemporaryFolder()
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var appContext: Context

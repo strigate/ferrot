@@ -18,11 +18,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.anyLong
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.NotificationService
@@ -118,8 +118,10 @@ class DownloadAvailableUpdateWorkerTest {
         val result = createWorker().doWork()
 
         assertTrue(result is ListenableWorker.Result.Success)
-        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
-        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+        verify(clearAvailableUpdateFilesAndDataUseCase)
+            .invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase)
+            .invoke(anyLong())
     }
 
     @Test
@@ -138,8 +140,10 @@ class DownloadAvailableUpdateWorkerTest {
         val result = createWorker().doWork()
 
         assertTrue(result is ListenableWorker.Result.Success)
-        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
-        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+        verify(clearAvailableUpdateFilesAndDataUseCase)
+            .invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase)
+            .invoke(anyLong())
     }
 
     @Test
@@ -149,8 +153,10 @@ class DownloadAvailableUpdateWorkerTest {
         val result = createWorker().doWork()
 
         assertTrue(result is ListenableWorker.Result.Retry)
-        verify(clearAvailableUpdateFilesAndDataUseCase).invoke()
-        verify(saveLastAvailableUpdateCheckMillisUseCase).invoke(anyLong())
+        verify(clearAvailableUpdateFilesAndDataUseCase)
+            .invoke()
+        verify(saveLastAvailableUpdateCheckMillisUseCase)
+            .invoke(anyLong())
     }
 
     @After

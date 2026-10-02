@@ -12,11 +12,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.InOrder
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -29,14 +28,16 @@ import org.strigate.ferrot.domain.usecase.downloadmetadata.DeleteDownloadMetadat
 import org.strigate.ferrot.domain.usecase.downloadprogress.DeleteDownloadProgressByDownloadIdUseCase
 import org.strigate.ferrot.domain.usecase.downloadvideo.DeleteDownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.notifications.ClearNotificationsByDownloadIdUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteDownloadAndRelatedCombinedUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadUseCase: DownloadUseCase
@@ -166,6 +167,11 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
             .invoke(34L)
     }
 
+    @After
+    fun tearDown() {
+        autoCloseable.close()
+    }
+
     private suspend fun stubDeletes(
         files: Boolean,
         metadata: Boolean,
@@ -213,11 +219,6 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
             .invoke(downloadId)
         inOrder.verify(deleteDownloadByIdUseCase)
             .invoke(downloadId)
-    }
-
-    @After
-    fun tearDown() {
-        autoCloseable.close()
     }
 
     private fun createUseCase() = DeleteDownloadAndRelatedCombinedUseCase(

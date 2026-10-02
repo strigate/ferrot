@@ -282,7 +282,8 @@ class DownloadWorkerTest {
             .thenThrow(IllegalStateException("Process interrupted"))
 
         val worker = spy(createWorker(downloadId = 42L))
-        doReturn(true).`when`(worker).isStopped
+        doReturn(true).`when`(worker)
+            .isStopped
 
         assertCancelled { worker.doWork() }
 
@@ -419,8 +420,9 @@ class DownloadWorkerTest {
 
     @Test
     fun doWork_doesNotComplete_whenAudioCoroutineIsCancelled() = runTest(testDispatcher) {
-        val media =
-            prepareMediaDownload(audioFailure = CancellationException("System interrupted audio"))
+        val media = prepareMediaDownload(
+            audioFailure = CancellationException("System interrupted audio"),
+        )
 
         assertCancelled { runForegroundWorker(media.worker) }
 
@@ -442,7 +444,6 @@ class DownloadWorkerTest {
     fun doWork_updatesFailedForegroundBeforeRecordingFailure() = runTest(testDispatcher) {
         val events = mutableListOf<String>()
         val worker = prepareFailedDownload(events)
-
         val result = runForegroundWorker(worker)
 
         assertTrue(result is ListenableWorker.Result.Failure)
@@ -458,7 +459,6 @@ class DownloadWorkerTest {
     fun doWork_recordsFailure_whenForegroundUpdateFails() = runTest(testDispatcher) {
         val events = mutableListOf<String>()
         val worker = prepareFailedDownload(events, terminalUpdateFails = true)
-
         val result = runForegroundWorker(worker)
 
         assertTrue(result is ListenableWorker.Result.Failure)

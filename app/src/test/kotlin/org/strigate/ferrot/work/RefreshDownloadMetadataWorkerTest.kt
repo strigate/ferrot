@@ -12,11 +12,11 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase
@@ -44,7 +44,8 @@ class RefreshDownloadMetadataWorkerTest {
         val result = createWorker(-1L).doWork()
 
         assertTrue(result is ListenableWorker.Result.Failure)
-        verify(refreshMetadata, never()).invoke(-1L)
+        verify(refreshMetadata, never())
+            .invoke(-1L)
     }
 
     @Test
@@ -53,7 +54,8 @@ class RefreshDownloadMetadataWorkerTest {
             .thenReturn(true)
 
         assertTrue(createWorker(4L).doWork() is ListenableWorker.Result.Success)
-        verify(refreshMetadata).invoke(4L)
+        verify(refreshMetadata)
+            .invoke(4L)
     }
 
     @Test

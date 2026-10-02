@@ -13,21 +13,22 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.entity.AvailableUpdateEntity
 import org.strigate.ferrot.domain.model.AvailableUpdate
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AvailableUpdateRepositoryImplTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var availableUpdateDao: AvailableUpdateDao
@@ -51,7 +52,7 @@ class AvailableUpdateRepositoryImplTest {
             )
 
         val repository = AvailableUpdateRepositoryImpl(availableUpdateDao)
-        val result = repository.getAsFlow().value()
+        val result = repository.getAsFlow().first()
 
         assertEquals(
             AvailableUpdate(
@@ -69,7 +70,7 @@ class AvailableUpdateRepositoryImplTest {
 
         val repository = AvailableUpdateRepositoryImpl(availableUpdateDao)
 
-        assertNull(repository.getAsFlow().value())
+        assertNull(repository.getAsFlow().first())
     }
 
     @Test
@@ -109,6 +110,4 @@ class AvailableUpdateRepositoryImplTest {
     fun tearDown() {
         autoCloseable.close()
     }
-
-    private suspend fun <T> kotlinx.coroutines.flow.Flow<T>.value(): T = first()
 }

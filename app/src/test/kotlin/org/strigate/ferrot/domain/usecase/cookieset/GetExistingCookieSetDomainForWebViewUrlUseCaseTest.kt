@@ -17,10 +17,7 @@ class GetExistingCookieSetDomainForWebViewUrlUseCaseTest {
     @Test
     fun invoke_returnsStrippedDomainWhenCookieSetExists() = runTest {
         val repository = DomainMatchingCookieSetRepository(existingDomains = setOf("x.com"))
-        val useCase = GetExistingCookieSetDomainForWebViewUrlUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-        )
+        val useCase = createUseCase(repository)
 
         val result = useCase("https://mobile.x.com/home")
 
@@ -31,10 +28,7 @@ class GetExistingCookieSetDomainForWebViewUrlUseCaseTest {
     fun invoke_returnsNullWhenNoCookieSetExists() = runTest {
         val repository =
             DomainMatchingCookieSetRepository(existingDomains = setOf("example.com"))
-        val useCase = GetExistingCookieSetDomainForWebViewUrlUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-        )
+        val useCase = createUseCase(repository)
 
         val result = useCase("https://x.com/home")
 
@@ -44,36 +38,35 @@ class GetExistingCookieSetDomainForWebViewUrlUseCaseTest {
     @Test
     fun invoke_returnsNullWhenUrlHasNoValidDomain() = runTest {
         val repository = DomainMatchingCookieSetRepository(existingDomains = setOf("x.com"))
-        val useCase = GetExistingCookieSetDomainForWebViewUrlUseCase(
-            cookieSetRepository = repository,
-            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
-        )
+        val useCase = createUseCase(repository)
 
         val result = useCase("not a url")
 
         assertNull(result)
     }
 
+    private fun createUseCase(repository: CookieSetRepository): GetExistingCookieSetDomainForWebViewUrlUseCase {
+        return GetExistingCookieSetDomainForWebViewUrlUseCase(
+            cookieSetRepository = repository,
+            webViewCookieDomainResolver = WebViewCookieDomainResolver(CookieSetDomainParser()),
+        )
+    }
+
     private class DomainMatchingCookieSetRepository(
         private val existingDomains: Set<String>,
     ) : CookieSetRepository {
         override suspend fun saveCookieSet(cookieSet: CookieSet): Long = error("unused")
-
         override suspend fun saveDomains(domains: List<CookieSetDomain>) = error("unused")
-
         override fun getAllWithDomainsAsFlow(): Flow<List<CookieSetWithDomains>> {
             return flowOf(emptyList())
         }
 
         override suspend fun getAllWithDomains(): List<CookieSetWithDomains> = error("unused")
-
         override suspend fun getCookieSetIdsByDomains(domains: Collection<String>): List<Long> {
             return if (domains.any { it in existingDomains }) listOf(1L) else emptyList()
         }
 
-        override suspend fun getByIdWithDomains(id: Long): CookieSetWithDomains? =
-            error("unused")
-
+        override suspend fun getByIdWithDomains(id: Long): CookieSetWithDomains? = error("unused")
         override suspend fun updateCookieFilePath(id: Long, cookieFilePath: String): Int =
             error("unused")
 

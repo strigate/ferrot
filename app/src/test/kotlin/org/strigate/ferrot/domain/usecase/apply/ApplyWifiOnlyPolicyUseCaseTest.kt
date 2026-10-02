@@ -13,11 +13,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
@@ -25,14 +24,16 @@ import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStatusUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ApplyWifiOnlyPolicyUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var appContext: Context
@@ -116,26 +117,25 @@ class ApplyWifiOnlyPolicyUseCaseTest {
     }
 
     @Test
-    fun invoke_movesWaitingForWifiToNetwork_whenWifiOnlyDownloadsDisabled() =
-        runTest(testDispatcher) {
-            val waiting = sampleDownload(45L, DownloadStatus.WAITING_FOR_WIFI)
-            val queued = sampleDownload(46L, DownloadStatus.QUEUED)
+    fun invoke_waitsForNetwork_whenWifiOnlyIsDisabled() = runTest(testDispatcher) {
+        val waiting = sampleDownload(45L, DownloadStatus.WAITING_FOR_WIFI)
+        val queued = sampleDownload(46L, DownloadStatus.QUEUED)
 
-            `when`(getAllDownloadsUseCase.invoke())
-                .thenReturn(listOf(waiting, queued))
+        `when`(getAllDownloadsUseCase.invoke())
+            .thenReturn(listOf(waiting, queued))
 
-            stubQuickNetworkProbe(isOnline = true, onWifi = false)
-            createUseCase().invoke(false)
+        stubQuickNetworkProbe(isOnline = true, onWifi = false)
+        createUseCase().invoke(false)
 
-            verify(updateDownloadErrorMessageUseCase)
-                .invoke(45L, null)
-            verify(updateDownloadStatusUseCase)
-                .invoke(45L, DownloadStatus.WAITING_FOR_NETWORK)
-            verify(updateDownloadStatusUseCase, never())
-                .invoke(46L, DownloadStatus.WAITING_FOR_NETWORK)
-            verify(downloadWorkScheduler)
-                .enqueueOneTimeReplace(45L, false)
-        }
+        verify(updateDownloadErrorMessageUseCase)
+            .invoke(45L, null)
+        verify(updateDownloadStatusUseCase)
+            .invoke(45L, DownloadStatus.WAITING_FOR_NETWORK)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(46L, DownloadStatus.WAITING_FOR_NETWORK)
+        verify(downloadWorkScheduler)
+            .enqueueOneTimeReplace(45L, false)
+    }
 
     @After
     fun tearDown() {

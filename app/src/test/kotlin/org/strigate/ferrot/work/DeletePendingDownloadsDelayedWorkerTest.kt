@@ -14,11 +14,11 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
@@ -75,7 +75,8 @@ class DeletePendingDownloadsDelayedWorkerTest {
         }
 
         assertTrue(result is ListenableWorker.Result.Success)
-        verify(deleteDownload, never()).invoke(anyLong())
+        verify(deleteDownload, never())
+            .invoke(anyLong())
     }
 
     @After
