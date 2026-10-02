@@ -1,5 +1,6 @@
 package org.strigate.ferrot.work
 
+import android.app.ForegroundServiceStartNotAllowedException
 import android.content.Context
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -33,7 +34,6 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
-import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.withSettings
@@ -174,6 +174,10 @@ class DownloadWorkerTest {
         autoCloseable = MockitoAnnotations.openMocks(this)
         logMock = mockStatic(Log::class.java)
 
+        `when`(appContext.getString(R.string.download_failed))
+            .thenReturn("failed")
+        `when`(appContext.getString(R.string.notification_text_downloading))
+            .thenReturn("downloading")
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownloadByIdUseCase)
         `when`(downloadUseCase.updateDownloadStatusUseCase)
@@ -238,6 +242,40 @@ class DownloadWorkerTest {
     }
 
     @Test
+    fun doWork_recoversFailedNotification_whenForegroundIsDenied() = runTest(testDispatcher) {
+        `when`(getDownloadByIdUseCase.invoke(42L))
+            .thenReturn(download(DownloadStatus.DOWNLOADING))
+
+        val exception = mock(ForegroundServiceStartNotAllowedException::class.java)
+        `when`(exception.message)
+            .thenReturn("startForegroundService() not allowed due to mAllowStartForeground false")
+        val events = mutableListOf<String>()
+        doAnswer {
+            events += "recorded failed"
+            true
+        }.`when`(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
+        val worker = createForegroundWorker(
+            onForegroundEnabled = { throw exception },
+            onExistingForegroundUpdated = { title -> events += title },
+            onForegroundCleared = { events += "cleared" },
+        )
+
+        val result = runForegroundWorker(worker)
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+        assertEquals(listOf("failed", "recorded failed", "cleared"), events)
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadErrorMessageUseCase)
+            .invoke(42L, exception.message)
+        verify(deleteDownloadFilesUseCase)
+            .invoke(42L)
+        verify(cookieFileStore)
+            .delete(null)
+    }
+
+    @Test
     fun doWork_doesNotPostForeground_whenDownloadIsCompleted() = runTest(testDispatcher) {
         `when`(getDownloadByIdUseCase.invoke(42L))
             .thenReturn(download(DownloadStatus.COMPLETED))
@@ -281,11 +319,13 @@ class DownloadWorkerTest {
         `when`(updateDownloadStatusUseCase.invoke(42L, DownloadStatus.METADATA))
             .thenThrow(IllegalStateException("Process interrupted"))
 
-        val worker = spy(createWorker(downloadId = 42L))
+        var foregroundCleared = false
+        val worker = createForegroundWorker(onForegroundCleared = { foregroundCleared = true })
         doReturn(true).`when`(worker)
             .isStopped
 
         assertCancelled { worker.doWork() }
+        assertFalse(foregroundCleared)
 
         verify(updateDownloadStatusUseCase, never())
             .invoke(42L, DownloadStatus.FAILED)
@@ -313,11 +353,14 @@ class DownloadWorkerTest {
         }.`when`(updateDownloadStatusUseCase)
             .invoke(download.id, DownloadStatus.METADATA)
 
-        val worker = createForegroundWorker(onForegroundEnabled = { events += "foreground" })
+        val worker = createForegroundWorker(
+            onForegroundEnabled = { events += "foreground" },
+            onForegroundCleared = { events += "cleared" },
+        )
 
         assertCancelled { runForegroundWorker(worker) }
 
-        assertEquals(listOf("active state", "foreground"), events)
+        assertEquals(listOf("active state", "foreground", "cleared"), events)
         verify(updateDownloadStatusUseCase, never())
             .invoke(download.id, DownloadStatus.FAILED)
         verifyNoInteractions(
@@ -448,7 +491,7 @@ class DownloadWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Failure)
         assertEquals(
-            listOf("foreground downloading", "foreground failed", "recorded failed"),
+            listOf("foreground downloading", "foreground failed", "recorded failed", "cleared"),
             events
         )
         verify(updateDownloadStatusUseCase)
@@ -463,7 +506,13 @@ class DownloadWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Failure)
         assertEquals(
-            listOf("foreground downloading", "foreground failed", "recorded failed"),
+            listOf(
+                "foreground downloading",
+                "foreground failed",
+                "recovered failed",
+                "recorded failed",
+                "cleared",
+            ),
             events
         )
         verify(updateDownloadStatusUseCase)
@@ -502,6 +551,8 @@ class DownloadWorkerTest {
                 events += "foreground $title"
                 if (terminalUpdateFails) throw IllegalStateException("Service unavailable")
             },
+            onExistingForegroundUpdated = { title -> events += "recovered $title" },
+            onForegroundCleared = { events += "cleared" },
         )
     }
 
@@ -587,20 +638,30 @@ class DownloadWorkerTest {
     private fun createForegroundWorker(
         onForegroundEnabled: () -> Unit = {},
         onForegroundUpdated: (String) -> Unit = {},
+        onExistingForegroundUpdated: (String) -> Unit = {},
+        onForegroundCleared: () -> Unit = {},
     ): DownloadWorker = mock(
         DownloadWorker::class.java,
         withSettings().spiedInstance(createWorker(42L)).defaultAnswer { invocation ->
             when (invocation.method.name) {
                 "enableForeground" -> onForegroundEnabled()
                 "updateForeground" -> onForegroundUpdated(invocation.getArgument(0))
+                "updateExistingForegroundNotification" -> onExistingForegroundUpdated(
+                    invocation.getArgument(
+                        0
+                    )
+                )
+
+                "clearForegroundNotification" -> onForegroundCleared()
                 else -> invocation.callRealMethod()
             }
         },
     )
 
     private suspend fun runForegroundWorker(worker: DownloadWorker): ListenableWorker.Result {
-        val actionsClass =
-            Class.forName("org.strigate.ferrot.app.actions.DownloadNotificationActionsKt")
+        val actionsClass = Class.forName(
+            "org.strigate.ferrot.app.actions.DownloadNotificationActionsKt",
+        )
         return mockStatic(actionsClass, CALLS_REAL_METHODS).use { actions ->
             for (actionType in listOf(
                 DownloadNotificationActionType.STOP,

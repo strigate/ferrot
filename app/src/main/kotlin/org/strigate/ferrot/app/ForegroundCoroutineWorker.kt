@@ -62,6 +62,7 @@ abstract class ForegroundCoroutineWorker(
         contentText: String? = null,
         extras: Map<String, String>? = null,
         actions: List<NotificationCompat.Action> = emptyList(),
+        ongoing: Boolean = true,
     ) {
         if (extras != null) {
             currentExtras = extras
@@ -75,8 +76,31 @@ abstract class ForegroundCoroutineWorker(
                 contentText = contentText,
                 extras = currentExtras,
                 actions = actions,
+                ongoing = ongoing,
             ),
         )
+    }
+
+    protected fun clearForegroundNotification() {
+        notificationManager().cancel(currentNotificationId)
+    }
+
+    protected fun updateExistingForegroundNotification(
+        notificationText: String,
+        contentText: String? = null,
+    ) {
+        val manager = notificationManager()
+        if (manager.activeNotifications.none { it.tag == null && it.id == currentNotificationId }) {
+            return
+        }
+        val info = buildForegroundInfo(
+            id = currentNotificationId,
+            notificationText = notificationText,
+            contentText = contentText,
+            extras = currentExtras,
+            ongoing = false,
+        )
+        manager.notify(currentNotificationId, info.notification)
     }
 
     private fun buildForegroundInfo(
@@ -87,6 +111,7 @@ abstract class ForegroundCoroutineWorker(
         contentText: String? = null,
         extras: Map<String, String>? = null,
         actions: List<NotificationCompat.Action> = emptyList(),
+        ongoing: Boolean = true,
     ): ForegroundInfo {
         val intent = Intent(context, MainActivity::class.java).apply {
             extras?.forEach { (key, value) ->
@@ -111,7 +136,8 @@ abstract class ForegroundCoroutineWorker(
             .setSmallIcon(R.drawable.ic_logo)
             .setChannelId(CHANNEL_ID_ACTIVE_TASKS)
             .setContentTitle(notificationText)
-            .setOngoing(true)
+            .setOngoing(ongoing)
+            .setAutoCancel(!ongoing)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
             .setShowWhen(existingNotification?.`when`?.let { it > 0L } ?: true)
