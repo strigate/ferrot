@@ -467,6 +467,9 @@ class DownloadWorker(
                 return@mainScope handleDownloadFailure()
             } finally {
                 withContext(NonCancellable) {
+                    if (!isStopped) {
+                        runCatching { clearForegroundNotification() }
+                    }
                     cookieFileStore.delete(workerCookieFile)
                 }
             }
@@ -478,6 +481,7 @@ class DownloadWorker(
             .resolveCookieSetForUrlUseCase(url)
             ?.cookieSet
             ?: return null
+
         val cookieSetId = cookieSet.id
         val tempFile = cookieFileStore.copyCookiesToTemp(
             cookieSetId = cookieSetId,
@@ -538,9 +542,7 @@ class DownloadWorker(
     private suspend fun handleDownloadFailedResult(): Result {
         val downloadId = _downloadId
         if (downloadId > 0L) {
-            if (downloadForegroundEnabled) {
-                updateTerminalForeground(appContext.getString(R.string.download_failed))
-            }
+            updateTerminalForeground(appContext.getString(R.string.download_failed))
             resetProgressAndCleanup()
             downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.FAILED)
             analyticsLogger.logEvent(AnalyticsEvents.DOWNLOAD_FAILED)
@@ -563,12 +565,16 @@ class DownloadWorker(
         notificationText: String,
         contentText: String? = null,
     ) {
-        if (!downloadForegroundEnabled) return
+        if (!downloadForegroundEnabled) {
+            runCatching { updateExistingForegroundNotification(notificationText, contentText) }
+            return
+        }
         try {
             updateForeground(
                 notificationText = notificationText,
                 contentText = contentText,
                 extras = downloadNotificationExtras(_downloadId),
+                ongoing = false,
             )
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -576,6 +582,7 @@ class DownloadWorker(
             if (isStopped) {
                 throw CancellationException("Download worker stopped", throwable)
             }
+            runCatching { updateExistingForegroundNotification(notificationText, contentText) }
         }
     }
 
