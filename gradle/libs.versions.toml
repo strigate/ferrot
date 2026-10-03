@@ -11,7 +11,8 @@ navigationCompose = "2.10.2"
 work = "2.12.0"
 dagger = "2.60.1"
 hilt = "1.4.0"
-room = "2.8.5"
+room = "3.0.3"
+sqlite = "2.7.1"
 youtubeDlAndroid = "0.18.1"
 uuidCreator = "6.1.1"
 coil = "3.6.3"
@@ -61,9 +62,10 @@ dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", ve
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hilt" }
 # Room
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room" }
+androidx-room-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room" }
+androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
+androidx-sqlite-async = { module = "androidx.sqlite:sqlite-async", version.ref = "sqlite" }
 # Youtubedl-android
 youtubedl-android-library = { module = "io.github.junkfood02.youtubedl-android:library", version.ref = "youtubeDlAndroid" }
 youtubedl-android-ffmpeg = { module = "io.github.junkfood02.youtubedl-android:ffmpeg", version.ref = "youtubeDlAndroid" }

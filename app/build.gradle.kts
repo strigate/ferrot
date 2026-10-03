@@ -311,7 +311,8 @@ dependencies {
     // Room
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.sqlite.framework)
+    implementation(libs.androidx.sqlite.async)
     // Youtubedl-Android
     implementation(libs.youtubedl.android.library)
     implementation(libs.youtubedl.android.ffmpeg)

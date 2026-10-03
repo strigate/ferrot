@@ -1,12 +1,13 @@
 package org.strigate.ferrot.data.local.migration
 
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room3.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.async.executeSQL
 
 val MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("DROP VIEW IF EXISTS `downloads_with_metadata_view`")
-        db.execSQL(
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.executeSQL("DROP VIEW IF EXISTS `downloads_with_metadata_view`")
+        connection.executeSQL(
             "CREATE VIEW `downloads_with_metadata_view` AS SELECT\n" +
                     "        download.id AS id,\n" +
                     "        download.url AS url,\n" +
