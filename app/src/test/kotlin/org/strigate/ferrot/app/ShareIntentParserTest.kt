@@ -3,13 +3,32 @@ package org.strigate.ferrot.app
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
+import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.MockitoAnnotations
 
 class ShareIntentParserTest {
+    private lateinit var autoCloseable: AutoCloseable
+
+    @Mock
+    private lateinit var intent: Intent
+
+    @Mock
+    private lateinit var extras: Bundle
+
+    @Mock
+    private lateinit var uri: Uri
+
+    @Before
+    fun setUp() {
+        autoCloseable = MockitoAnnotations.openMocks(this)
+    }
+
     @Test
     fun findFirstHttpUrl_extractsAndCleansUrlFromText() {
         val result = ShareIntentParser.findFirstHttpUrl(
@@ -61,10 +80,10 @@ class ShareIntentParserTest {
 
     @Test
     fun extractUrl_readsSingleCharSequenceText() {
-        val intent = mock(Intent::class.java)
-        val extras = mock(Bundle::class.java)
-        `when`(intent.action).thenReturn(Intent.ACTION_SEND)
-        `when`(intent.extras).thenReturn(extras)
+        `when`(intent.action)
+            .thenReturn(Intent.ACTION_SEND)
+        `when`(intent.extras)
+            .thenReturn(extras)
         `when`(extras.getCharSequence(Intent.EXTRA_TEXT))
             .thenReturn("https://example.com/video")
 
@@ -76,12 +95,14 @@ class ShareIntentParserTest {
 
     @Test
     fun extractUrl_readsSingleStreamUri() {
-        val intent = mock(Intent::class.java)
-        val uri = mock(Uri::class.java)
-        `when`(intent.action).thenReturn(Intent.ACTION_SEND)
-        `when`(uri.toString()).thenReturn("https://example.com/video")
+        `when`(intent.action)
+            .thenReturn(Intent.ACTION_SEND)
+        `when`(uri.toString())
+            .thenReturn("https://example.com/video")
+
         @Suppress("DEPRECATION")
-        `when`(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)).thenReturn(uri)
+        `when`(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+            .thenReturn(uri)
 
         assertEquals(
             "https://example.com/video",
@@ -91,9 +112,15 @@ class ShareIntentParserTest {
 
     @Test
     fun extractUrl_ignoresMultipleShareAction() {
-        val intent = mock(Intent::class.java)
-        `when`(intent.action).thenReturn(Intent.ACTION_SEND_MULTIPLE)
+        `when`(intent.action)
+            .thenReturn(Intent.ACTION_SEND_MULTIPLE)
 
         assertNull(ShareIntentParser.extractUrl(intent))
     }
+
+    @After
+    fun tearDown() {
+        autoCloseable.close()
+    }
+
 }

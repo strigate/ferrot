@@ -1,13 +1,16 @@
 package org.strigate.ferrot.presentation.viewmodel
 
 import android.net.Uri
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -18,9 +21,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -43,6 +45,11 @@ class CookiesViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    private val viewModels = mutableListOf<CookiesViewModel>()
+
+    @Mock
+    private lateinit var uri: Uri
+
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
 
@@ -61,6 +68,9 @@ class CookiesViewModelTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
+        `when`(getCookieSetsWithDomainsAsFlowUseCase())
+            .thenReturn(MutableStateFlow(emptyList()))
         `when`(cookieSetUseCase.createCookieSetFromFileUseCase)
             .thenReturn(createCookieSetFromFileUseCase)
         `when`(cookieSetUseCase.deleteCookieSetUseCase)
@@ -71,23 +81,11 @@ class CookiesViewModelTest {
 
     @Test
     fun uiState_mapsCookieSets() = runTest(mainDispatcherRule.testDispatcher) {
-        val source = MutableStateFlow(
-            listOf(
-                CookieSetWithDomains(
-                    cookieSet = CookieSet(
-                        id = 3L,
-                        name = "example",
-                        source = CookieSetSource.WEBVIEW,
-                        cookieFilePath = "/cookie.txt",
-                    ),
-                    domains = emptyList(),
-                )
-            )
-        )
+        val source = MutableStateFlow(listOf(createCookieSet()))
         `when`(getCookieSetsWithDomainsAsFlowUseCase())
             .thenReturn(source)
 
-        val viewModel = CookiesViewModel(analyticsLogger, cookieSetUseCase)
+        val viewModel = createViewModel()
         val collector = backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
@@ -100,7 +98,7 @@ class CookiesViewModelTest {
         `when`(getCookieSetsWithDomainsAsFlowUseCase())
             .thenReturn(flow { throw IllegalStateException("failed") })
 
-        val viewModel = CookiesViewModel(analyticsLogger, cookieSetUseCase)
+        val viewModel = createViewModel()
         val collector = backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
@@ -110,9 +108,8 @@ class CookiesViewModelTest {
 
     @Test
     fun importCookieFile_emitsResultEvents() = runTest(mainDispatcherRule.testDispatcher) {
-        val uri = mock(Uri::class.java)
         `when`(createCookieSetFromFileUseCase("", uri, "", true))
-            .thenReturn(mock(CookieSetWithDomains::class.java))
+            .thenReturn(createCookieSet())
 
         val viewModel = createViewModel()
         val success = async(start = CoroutineStart.UNDISPATCHED) { viewModel.event.first() }
@@ -140,25 +137,36 @@ class CookiesViewModelTest {
         viewModel.deleteCookieSet(5L)
         advanceUntilIdle()
 
-        verify(deleteCookieSetUseCase).invoke(5L)
+        verify(deleteCookieSetUseCase)
+            .invoke(5L)
+
         assertEquals(CookiesEvent.ShowToast(R.string.toast_cookie_set_deleted), event.await())
     }
 
     @Test
     fun logShown_logsScreen() {
         createViewModel().logShown()
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.COOKIES)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.COOKIES)
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(mainDispatcherRule.testDispatcher) {
+        viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
         autoCloseable.close()
     }
 
     private fun createViewModel(): CookiesViewModel {
-        `when`(getCookieSetsWithDomainsAsFlowUseCase())
-            .thenReturn(MutableStateFlow(emptyList()))
-
-        return CookiesViewModel(analyticsLogger, cookieSetUseCase)
+        return CookiesViewModel(analyticsLogger, cookieSetUseCase).also { viewModels += it }
     }
+
+    private fun createCookieSet() = CookieSetWithDomains(
+        cookieSet = CookieSet(
+            id = 3L,
+            name = "example",
+            source = CookieSetSource.WEBVIEW,
+            cookieFilePath = "/cookie.txt",
+        ),
+        domains = emptyList(),
+    )
 }

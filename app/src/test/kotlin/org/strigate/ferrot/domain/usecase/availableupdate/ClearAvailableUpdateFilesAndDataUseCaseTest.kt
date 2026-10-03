@@ -10,22 +10,26 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.provider.UpdatePathProvider
 import org.strigate.ferrot.domain.repository.AvailableUpdateRepository
+import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.File
-import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClearAvailableUpdateFilesAndDataUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var availableUpdateRepository: AvailableUpdateRepository
@@ -41,7 +45,7 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
     @Test
     fun invoke_returnsTrue_whenDatabaseDeleteSucceeds() = runTest(testDispatcher) {
         val updatesDir = File(
-            Files.createTempDirectory("clear-update-db-success").toFile(), "missing",
+            temporaryFolder.newFolder("clear-update-db-success"), "missing",
         )
         `when`(availableUpdateRepository.delete())
             .thenReturn(1)
@@ -55,7 +59,7 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
 
     @Test
     fun invoke_returnsTrue_whenFilesDeleteSucceeds() = runTest(testDispatcher) {
-        val updatesDir = Files.createTempDirectory("clear-update-files-success").toFile()
+        val updatesDir = temporaryFolder.newFolder("clear-update-files-success")
             .apply {
                 resolve("update.apk").writeText("apk")
             }
@@ -73,7 +77,7 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
 
     @Test
     fun invoke_returnsFalse_whenDatabaseAndFileDeleteFail() = runTest(testDispatcher) {
-        val parentDir = Files.createTempDirectory("clear-update-fail").toFile()
+        val parentDir = temporaryFolder.newFolder("clear-update-fail")
         val updatesDir = object : File(parentDir, "updates") {
             override fun exists(): Boolean = true
             override fun isDirectory(): Boolean = true
@@ -87,7 +91,6 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
             .thenReturn(updatesDir)
 
         val result = createUseCase().invoke()
-
         assertFalse(result)
     }
 

@@ -17,13 +17,12 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.repository.DownloadRepository
@@ -32,14 +31,17 @@ import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.SaveDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadsPendingDeleteUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -182,7 +184,8 @@ class MainViewModelTest {
         doAnswer { invocation ->
             savedDownloads += invocation.getArgument<Download>(0)
             12L
-        }.`when`(downloadRepository).save(anyObject())
+        }.`when`(downloadRepository)
+            .save(anyObject())
 
         viewModel.startDownload("https://example.com/video")
         advanceUntilIdle()
@@ -205,7 +208,8 @@ class MainViewModelTest {
         doAnswer { invocation ->
             savedDownloads += invocation.getArgument<Download>(0)
             -1L
-        }.`when`(downloadRepository).save(anyObject())
+        }.`when`(downloadRepository)
+            .save(anyObject())
 
         viewModel.startDownload("https://example.com/video")
         advanceUntilIdle()

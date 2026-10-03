@@ -11,25 +11,30 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mockStatic
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.File
-import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteDownloadFilesUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -57,7 +62,7 @@ class DeleteDownloadFilesUseCaseTest {
     @Test
     fun invoke_returnsTrue_whenUidDirMissing() = runTest(testDispatcher) {
         val download = sampleDownload(22L)
-        val missingDir = File(Files.createTempDirectory("delete-files-missing").toFile(), "nope")
+        val missingDir = File(temporaryFolder.newFolder("delete-files-missing"), "nope")
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
@@ -72,7 +77,7 @@ class DeleteDownloadFilesUseCaseTest {
     @Test
     fun invoke_returnsTrue_whenUidDirDeleted() = runTest(testDispatcher) {
         val download = sampleDownload(23L)
-        val uidDir = Files.createTempDirectory("delete-files-success").toFile().apply {
+        val uidDir = temporaryFolder.newFolder("delete-files-success").apply {
             resolve("file.txt").writeText("content")
         }
         `when`(getDownloadByIdUseCase.invoke(download.id))
@@ -89,7 +94,7 @@ class DeleteDownloadFilesUseCaseTest {
     @Test
     fun invoke_returnsFalse_whenDeletionFails() = runTest(testDispatcher) {
         val download = sampleDownload(24L)
-        val parentDir = Files.createTempDirectory("delete-files-failure").toFile()
+        val parentDir = temporaryFolder.newFolder("delete-files-failure")
         val uidDir = object : File(parentDir, "uid-${download.id}") {
             override fun exists(): Boolean = true
             override fun isDirectory(): Boolean = true
@@ -102,7 +107,6 @@ class DeleteDownloadFilesUseCaseTest {
             .thenReturn(uidDir)
 
         val result = createUseCase().invoke(download.id)
-
         assertFalse(result)
     }
 

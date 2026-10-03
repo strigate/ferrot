@@ -10,7 +10,6 @@ class DownloadNotificationActionsTest {
     @Test
     fun downloadNotificationTag_formatsTag() {
         assertEquals("download:42", downloadNotificationTag(42L))
-        assertEquals("active-download:42", activeDownloadNotificationTag(42L))
     }
 
     @Test

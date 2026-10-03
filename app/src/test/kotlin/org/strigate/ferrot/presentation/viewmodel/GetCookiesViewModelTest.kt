@@ -1,11 +1,14 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -15,14 +18,15 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.domain.model.CookieSet
+import org.strigate.ferrot.domain.model.CookieSetSource
 import org.strigate.ferrot.domain.model.CookieSetWithDomains
 import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.cookieset.CreateCookieSetFromWebViewUseCase
@@ -36,6 +40,8 @@ class GetCookiesViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+    private val viewModels = mutableListOf<GetCookiesViewModel>()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -62,7 +68,8 @@ class GetCookiesViewModelTest {
     fun logShown_logsScreen() {
         createViewModel().logShown()
 
-        verify(analyticsLogger).logScreen(AnalyticsEvents.Screens.GET_COOKIES)
+        verify(analyticsLogger)
+            .logScreen(AnalyticsEvents.Screens.GET_COOKIES)
     }
 
     @Test
@@ -80,13 +87,14 @@ class GetCookiesViewModelTest {
             GetCookiesEvent.ShowOverwriteConfirmation("https://example.com", "example.com"),
             event.await(),
         )
-        verify(createCookieSetFromWebViewUseCase, never()).invoke("https://example.com", "a=b")
+        verify(createCookieSetFromWebViewUseCase, never())
+            .invoke("https://example.com", "a=b")
     }
 
     @Test
     fun saveCookies_emitsSavedEvents() = runTest(mainDispatcherRule.testDispatcher) {
         `when`(createCookieSetFromWebViewUseCase("https://example.com", "a=b"))
-            .thenReturn(mock(CookieSetWithDomains::class.java))
+            .thenReturn(createCookieSet())
 
         val viewModel = createViewModel()
         val events = async(start = CoroutineStart.UNDISPATCHED) {
@@ -120,9 +128,21 @@ class GetCookiesViewModelTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(mainDispatcherRule.testDispatcher) {
+        viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
         autoCloseable.close()
     }
 
     private fun createViewModel() = GetCookiesViewModel(analyticsLogger, cookieSetUseCase)
+        .also { viewModels += it }
+
+    private fun createCookieSet() = CookieSetWithDomains(
+        cookieSet = CookieSet(
+            id = 3L,
+            name = "example",
+            source = CookieSetSource.WEBVIEW,
+            cookieFilePath = "/cookie.txt",
+        ),
+        domains = emptyList(),
+    )
 }

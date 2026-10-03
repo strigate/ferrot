@@ -14,7 +14,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -23,9 +22,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -60,15 +59,16 @@ import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import org.strigate.ferrot.test.MainDispatcherRule
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadsViewModelTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private val viewModels = mutableListOf<DownloadsViewModel>()
 
     @Mock
@@ -856,11 +856,7 @@ class DownloadsViewModelTest {
         viewModel: DownloadsViewModel,
         predicate: (DownloadsUiState) -> Boolean,
     ) {
-        withTimeout(2.seconds) {
-            while (!predicate(viewModel.uiState.value)) {
-                kotlinx.coroutines.yield()
-            }
-        }
+        viewModel.uiState.first(predicate)
     }
 
     private fun createDownload(

@@ -26,11 +26,12 @@ import org.strigate.ferrot.domain.model.DownloadProgress
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadProgressRepositoryImplTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
 
     @Mock
     private lateinit var downloadProgressDao: DownloadProgressDao

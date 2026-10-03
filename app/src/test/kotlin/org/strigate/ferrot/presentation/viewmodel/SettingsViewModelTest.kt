@@ -1,24 +1,27 @@
 package org.strigate.ferrot.presentation.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -40,15 +43,17 @@ import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.SettingsUiState
 import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.IOException
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
+    private val viewModels = mutableListOf<SettingsViewModel>()
 
     @Mock
     private lateinit var analyticsLogger: AnalyticsLogger
@@ -242,7 +247,8 @@ class SettingsViewModelTest {
     }
 
     @After
-    fun tearDown() {
+    fun tearDown() = runTest(testDispatcher) {
+        viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
         autoCloseable.close()
     }
 
@@ -289,17 +295,13 @@ class SettingsViewModelTest {
             settingsUseCase = settingsUseCase,
             applyWifiOnlyPolicyUseCase = applyWifiOnlyPolicyUseCase,
             configureAutomaticDuplicateDownloadDeletionWorkUseCase = configureAutomaticDuplicateDownloadDeletionWorkUseCase,
-        )
+        ).also { viewModels += it }
     }
 
     private suspend fun waitForUiState(
         viewModel: SettingsViewModel,
         predicate: (SettingsUiState) -> Boolean,
     ) {
-        withTimeout(2.seconds) {
-            while (!predicate(viewModel.uiState.value)) {
-                kotlinx.coroutines.yield()
-            }
-        }
+        viewModel.uiState.first(predicate)
     }
 }

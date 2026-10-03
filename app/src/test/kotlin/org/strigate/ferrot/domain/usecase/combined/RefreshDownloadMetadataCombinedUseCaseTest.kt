@@ -14,40 +14,45 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
-import org.strigate.ferrot.domain.usecase.CookieSetUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
-import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.cookieset.ResolveCookieSetForUrlUseCase
+import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.GetDownloadMetadataByIdAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.downloadmetadata.SaveDownloadMetadataUseCase
 import org.strigate.ferrot.domain.usecase.youtubedl_android.DownloadThumbnailUseCase
 import org.strigate.ferrot.domain.usecase.youtubedl_android.GetVideoInfoUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.File
-import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RefreshDownloadMetadataCombinedUseCaseTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private var logMock: MockedStatic<Log>? = null
 
     @Mock
@@ -121,7 +126,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     @Test
     fun invoke_savesMergedMetadata_whenRefreshSucceeds() = runTest(testDispatcher) {
         val download = sampleDownload()
-        val outputDir = Files.createTempDirectory("refresh-meta-success").toFile()
+        val outputDir = temporaryFolder.newFolder("refresh-meta-success")
         val videoInfo = videoInfo(
             id = "video-1",
             title = "Fresh title",
@@ -151,7 +156,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         doAnswer { invocation ->
             savedMetadata = invocation.getArgument(0)
             Unit
-        }.`when`(saveDownloadMetadataUseCase).invoke(anyObject())
+        }.`when`(saveDownloadMetadataUseCase)
+            .invoke(anyObject())
 
         val result = createUseCase()(download.id)
 
@@ -172,7 +178,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     @Test
     fun invoke_usesExistingThumbnail_whenRefreshFails() = runTest(testDispatcher) {
         val download = sampleDownload(id = 8L)
-        val outputDir = Files.createTempDirectory("refresh-meta-thumb-fallback").toFile()
+        val outputDir = temporaryFolder.newFolder("refresh-meta-thumb-fallback")
         val existingThumbnail = File(outputDir, "existing-thumb.jpg").apply {
             writeText("thumb")
         }
@@ -207,7 +213,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         doAnswer { invocation ->
             savedMetadata = invocation.getArgument(0)
             Unit
-        }.`when`(saveDownloadMetadataUseCase).invoke(anyObject())
+        }.`when`(saveDownloadMetadataUseCase)
+            .invoke(anyObject())
 
         val result = createUseCase()(download.id)
         assertTrue(result)
@@ -217,7 +224,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     @Test
     fun invoke_returnsFalse_whenNothingRecovered() = runTest(testDispatcher) {
         val download = sampleDownload(id = 12L)
-        val outputDir = Files.createTempDirectory("refresh-meta-empty").toFile()
+        val outputDir = temporaryFolder.newFolder("refresh-meta-empty")
 
         `when`(getDownloadByIdUseCase.invoke(download.id))
             .thenReturn(download)
@@ -235,7 +242,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
                 outputDir = outputDir,
                 videoId = null,
             ),
-        ).thenThrow(RuntimeException("thumbnail unavailable"))
+        )
+            .thenThrow(RuntimeException("thumbnail unavailable"))
 
         val result = createUseCase()(download.id)
         assertFalse(result)
@@ -246,7 +254,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     @Test
     fun invoke_keepsExistingDuration_whenFetchedDurationInvalid() = runTest(testDispatcher) {
         val download = sampleDownload(id = 15L)
-        val outputDir = Files.createTempDirectory("refresh-meta-duration").toFile()
+        val outputDir = temporaryFolder.newFolder("refresh-meta-duration")
         val existingMetadata = sampleMetadata(
             downloadId = download.id,
             durationSeconds = 444,
@@ -281,7 +289,8 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         doAnswer { invocation ->
             savedMetadata = invocation.getArgument(0)
             Unit
-        }.`when`(saveDownloadMetadataUseCase).invoke(anyObject())
+        }.`when`(saveDownloadMetadataUseCase)
+            .invoke(anyObject())
 
         val result = createUseCase()(download.id)
         assertTrue(result)

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.3.0 - 2026-10-03
+### Added
+- Select and deselect completed downloads by tapping their thumbnails in the list layout
+
+### Changed
+- Standardized unit test structure and fixtures and expanded download lifecycle and notification regression coverage
+
+### Fixed
+- Synchronized foreground notifications with download state and isolated notifications for concurrent workers
+- Preserved download state and shared files when background workers are cancelled
+- Cleared stale download progress notifications and made terminal notifications dismissible
+
 ## 2.2.0 - 2026-09-27
 ### Changed
 - Refreshed the app’s overall appearance with updated shared components, surfaces, spacing and dividers

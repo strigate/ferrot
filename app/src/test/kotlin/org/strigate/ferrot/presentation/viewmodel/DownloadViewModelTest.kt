@@ -28,11 +28,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.ArgumentMatchers.nullable
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
-import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -69,15 +69,16 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.state.DownloadUiState
 import org.strigate.ferrot.test.MainDispatcherRule
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadViewModelTest {
+    private lateinit var autoCloseable: AutoCloseable
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
 
     private val testDispatcher: TestDispatcher = mainDispatcherRule.testDispatcher
-    private lateinit var autoCloseable: AutoCloseable
+
     private val viewModels = mutableListOf<DownloadViewModel>()
 
     @Mock
@@ -183,45 +184,44 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun noArgActionsDoNothing_whenDownloadIdIsMissingAndNoDownloadsExist() =
-        runTest(testDispatcher) {
-            val viewModel = createViewModel(
-                initialId = null,
-                downloadIdsFlow = MutableStateFlow(emptyList()),
-            )
-            val mediaCollector = collectSelectedMedia(backgroundScope, viewModel)
-            val eventDeferred = backgroundScope.async {
-                runCatching {
-                    withTimeout(250L.milliseconds) {
-                        viewModel.events.first()
-                    }
+    fun noArgActions_doNothing_whenIdAndDownloadsAreMissing() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            initialId = null,
+            downloadIdsFlow = MutableStateFlow(emptyList()),
+        )
+        val mediaCollector = collectSelectedMedia(backgroundScope, viewModel)
+        val eventDeferred = backgroundScope.async {
+            runCatching {
+                withTimeout(250L.milliseconds) {
+                    viewModel.events.first()
                 }
             }
-
-            viewModel.markUnseenAndNavigateBack()
-            viewModel.setSelectedMedia(DownloadMediaType.AUDIO)
-            viewModel.deleteDownload()
-            viewModel.updateArchived(archived = true)
-            viewModel.shareDownload()
-            viewModel.saveDownload()
-            viewModel.playDownload()
-            viewModel.retryDownload()
-            advanceUntilIdle()
-
-            assertEquals(DownloadMediaType.VIDEO, viewModel.selectedMedia.value)
-            assertNull(eventDeferred.await().getOrNull())
-            verifyNoInteractions(
-                updateDownloadsSeenUseCase,
-                requestDeleteDownloadsUseCase,
-                startDownloadUseCase,
-                requestRefreshDownloadMetadataUseCase,
-                getDownloadByIdAsFlowUseCase,
-            )
-            verify(analyticsLogger, never())
-                .logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
-
-            mediaCollector.cancel()
         }
+
+        viewModel.markUnseenAndNavigateBack()
+        viewModel.setSelectedMedia(DownloadMediaType.AUDIO)
+        viewModel.deleteDownload()
+        viewModel.updateArchived(archived = true)
+        viewModel.shareDownload()
+        viewModel.saveDownload()
+        viewModel.playDownload()
+        viewModel.retryDownload()
+        advanceUntilIdle()
+
+        assertEquals(DownloadMediaType.VIDEO, viewModel.selectedMedia.value)
+        assertNull(eventDeferred.await().getOrNull())
+        verifyNoInteractions(
+            updateDownloadsSeenUseCase,
+            requestDeleteDownloadsUseCase,
+            startDownloadUseCase,
+            requestRefreshDownloadMetadataUseCase,
+            getDownloadByIdAsFlowUseCase,
+        )
+        verify(analyticsLogger, never())
+            .logEvent(AnalyticsEvents.DOWNLOAD_RETRY)
+
+        mediaCollector.cancel()
+    }
 
     @Test
     fun uiState_returnsNullId_whenDownloadIdsAreEmpty() = runTest(testDispatcher) {
@@ -341,29 +341,28 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun uiState_publishesLiveOrder_whenRetriedDownloadMovesToActivePrefix() =
-        runTest(testDispatcher) {
-            val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L))
-            val viewModel = createViewModel(
-                initialId = 20L,
-                downloadIdsFlow = downloadIdsFlow,
-            )
-            val collector = collectUiState(backgroundScope, viewModel)
+    fun uiState_updatesOrder_whenRetryMovesDownloadToFront() = runTest(testDispatcher) {
+        val downloadIdsFlow = MutableStateFlow(listOf(10L, 20L))
+        val viewModel = createViewModel(
+            initialId = 20L,
+            downloadIdsFlow = downloadIdsFlow,
+        )
+        val collector = collectUiState(backgroundScope, viewModel)
 
-            waitForUiState(viewModel) { state ->
-                val data = state as? DownloadUiState.Data ?: return@waitForUiState false
-                data.data.downloadIds == listOf(10L, 20L) && data.data.id == 20L
-            }
-            downloadIdsFlow.value = listOf(20L, 10L)
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value as DownloadUiState.Data
-            assertEquals(listOf(20L, 10L), state.data.downloadIds)
-            assertEquals(20L, state.data.id)
-            assertEquals(20L, viewModel.selectedId.value)
-
-            collector.cancel()
+        waitForUiState(viewModel) { state ->
+            val data = state as? DownloadUiState.Data ?: return@waitForUiState false
+            data.data.downloadIds == listOf(10L, 20L) && data.data.id == 20L
         }
+        downloadIdsFlow.value = listOf(20L, 10L)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as DownloadUiState.Data
+        assertEquals(listOf(20L, 10L), state.data.downloadIds)
+        assertEquals(20L, state.data.id)
+        assertEquals(20L, viewModel.selectedId.value)
+
+        collector.cancel()
+    }
 
     @Test
     fun uiState_publishesUpdatedOrder_whenDownloadsAreAddedAndRemoved() = runTest(testDispatcher) {
@@ -487,8 +486,8 @@ class DownloadViewModelTest {
             .thenReturn(createDownload(id = 8L, status = DownloadStatus.COMPLETED, seen = true))
         `when`(getDownloadByIdUseCase.invoke(9L))
             .thenReturn(createDownload(id = 9L, status = DownloadStatus.FAILED, seen = false))
-        val viewModel = createViewModel()
 
+        val viewModel = createViewModel()
         viewModel.markSeenIfCompleted(7L)
         viewModel.markSeenIfCompleted(8L)
         viewModel.markSeenIfCompleted(9L)
@@ -838,11 +837,77 @@ class DownloadViewModelTest {
     }
 
     @Test
-    fun getDownloadPageUiData_doesNotRecheckThumbnailForUnrelatedChanges() =
-        runTest(testDispatcher) {
-            val downloadId = 20L
-            val thumbnailPath = "/tmp/thumb.jpg"
-            val metadata = DownloadMetadata(
+    fun pageData_skipsThumbnailCheckForUnrelatedChanges() = runTest(testDispatcher) {
+        val downloadId = 20L
+        val thumbnailPath = "/tmp/thumb.jpg"
+        val metadata = DownloadMetadata(
+            downloadId = downloadId,
+            videoId = "video-id",
+            source = "yt",
+            title = "Example title",
+            thumbnailFilePath = thumbnailPath,
+            durationSeconds = 42,
+        )
+        val downloadFlow = MutableStateFlow(createDownload(downloadId))
+        val videoFlow = MutableStateFlow<DownloadVideo?>(null)
+        val audioFlow = MutableStateFlow<DownloadAudio?>(null)
+        val progressFlow = MutableStateFlow<DownloadProgress?>(null)
+
+        `when`(getDownloadByIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(downloadFlow)
+        `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(videoFlow)
+        `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(audioFlow)
+        `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(MutableStateFlow(metadata))
+        `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(progressFlow)
+
+        val viewModel = createViewModel()
+        val emissions = Channel<DownloadPageUiData?>(Channel.UNLIMITED)
+        val collector = backgroundScope.launch {
+            viewModel.getDownloadPageUiData(downloadId).collect(emissions::send)
+        }
+        emissions.receive()
+
+        videoFlow.value = DownloadVideo(
+            downloadId = downloadId,
+            filePath = "/tmp/video.mp4",
+            fileExtension = "mp4",
+            sha256 = null,
+        )
+        emissions.receive()
+        audioFlow.value = DownloadAudio(
+            downloadId = downloadId,
+            filePath = "/tmp/audio.mp3",
+            fileExtension = "mp3",
+        )
+        emissions.receive()
+        downloadFlow.value = downloadFlow.value.copy(seen = true)
+        emissions.receive()
+        progressFlow.value = DownloadProgress(
+            downloadId = downloadId,
+            updatedAtMillis = 10L,
+            progressPercent = 1f,
+            bytesDownloaded = 10L,
+            etaSeconds = 12L,
+            expectedBytes = 1000L,
+        )
+        emissions.receive()
+
+        verify(isDownloadThumbnailAvailableUseCase, times(1))
+            .invoke(thumbnailPath)
+        collector.cancel()
+    }
+
+    @Test
+    fun pageData_rechecksThumbnailForMetadataAndCompletion() = runTest(testDispatcher) {
+        val downloadId = 20L
+        val thumbnailPath = "/tmp/thumb.jpg"
+        val downloadFlow = MutableStateFlow<Download?>(createDownload(downloadId))
+        val metadataFlow = MutableStateFlow(
+            DownloadMetadata(
                 downloadId = downloadId,
                 videoId = "video-id",
                 source = "yt",
@@ -850,111 +915,46 @@ class DownloadViewModelTest {
                 thumbnailFilePath = thumbnailPath,
                 durationSeconds = 42,
             )
-            val downloadFlow = MutableStateFlow(createDownload(downloadId))
-            val videoFlow = MutableStateFlow<DownloadVideo?>(null)
-            val audioFlow = MutableStateFlow<DownloadAudio?>(null)
-            val progressFlow = MutableStateFlow<DownloadProgress?>(null)
-            `when`(getDownloadByIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(downloadFlow)
-            `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(videoFlow)
-            `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(audioFlow)
-            `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(MutableStateFlow(metadata))
-            `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(progressFlow)
-            val viewModel = createViewModel()
-            val emissions = Channel<DownloadPageUiData?>(Channel.UNLIMITED)
-            val collector = backgroundScope.launch {
-                viewModel.getDownloadPageUiData(downloadId).collect(emissions::send)
-            }
-            emissions.receive()
+        )
+        `when`(getDownloadByIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(downloadFlow)
+        `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(flowOf(null))
+        `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(flowOf(null))
+        `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(metadataFlow)
+        `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(downloadId))
+            .thenReturn(flowOf(null))
 
-            videoFlow.value = DownloadVideo(
-                downloadId = downloadId,
-                filePath = "/tmp/video.mp4",
-                fileExtension = "mp4",
-                sha256 = null,
-            )
-            emissions.receive()
-            audioFlow.value = DownloadAudio(
-                downloadId = downloadId,
-                filePath = "/tmp/audio.mp3",
-                fileExtension = "mp3",
-            )
-            emissions.receive()
-            downloadFlow.value = downloadFlow.value.copy(seen = true)
-            emissions.receive()
-            progressFlow.value = DownloadProgress(
-                downloadId = downloadId,
-                updatedAtMillis = 10L,
-                progressPercent = 1f,
-                bytesDownloaded = 10L,
-                etaSeconds = 12L,
-                expectedBytes = 1000L,
-            )
-            emissions.receive()
-
-            verify(isDownloadThumbnailAvailableUseCase, times(1))
-                .invoke(thumbnailPath)
-            collector.cancel()
+        val viewModel = createViewModel()
+        val emissions = Channel<DownloadPageUiData?>(Channel.UNLIMITED)
+        val collector = backgroundScope.launch {
+            viewModel.getDownloadPageUiData(downloadId).collect(emissions::send)
         }
+        emissions.receive()
 
-    @Test
-    fun getDownloadPageUiData_rechecksThumbnailForMetadataAndCompletionChanges() =
-        runTest(testDispatcher) {
-            val downloadId = 20L
-            val thumbnailPath = "/tmp/thumb.jpg"
-            val downloadFlow = MutableStateFlow<Download?>(createDownload(downloadId))
-            val metadataFlow = MutableStateFlow(
-                DownloadMetadata(
-                    downloadId = downloadId,
-                    videoId = "video-id",
-                    source = "yt",
-                    title = "Example title",
-                    thumbnailFilePath = thumbnailPath,
-                    durationSeconds = 42,
-                )
-            )
-            `when`(getDownloadByIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(downloadFlow)
-            `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(flowOf(null))
-            `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(flowOf(null))
-            `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(metadataFlow)
-            `when`(getDownloadProgressByDownloadIdAsFlowUseCase.invoke(downloadId))
-                .thenReturn(flowOf(null))
-            val viewModel = createViewModel()
-            val emissions = Channel<DownloadPageUiData?>(Channel.UNLIMITED)
-            val collector = backgroundScope.launch {
-                viewModel.getDownloadPageUiData(downloadId).collect(emissions::send)
-            }
-            emissions.receive()
+        metadataFlow.value = metadataFlow.value.copy(title = "Updated title")
+        emissions.receive()
+        verify(isDownloadThumbnailAvailableUseCase, times(2))
+            .invoke(thumbnailPath)
 
-            metadataFlow.value = metadataFlow.value.copy(title = "Updated title")
-            emissions.receive()
-            verify(isDownloadThumbnailAvailableUseCase, times(2))
-                .invoke(thumbnailPath)
+        downloadFlow.value = requireNotNull(downloadFlow.value).copy(
+            status = DownloadStatus.COMPLETED,
+        )
+        emissions.receive()
+        verify(isDownloadThumbnailAvailableUseCase, times(3))
+            .invoke(thumbnailPath)
 
-            downloadFlow.value = requireNotNull(downloadFlow.value).copy(
-                status = DownloadStatus.COMPLETED,
-            )
-            emissions.receive()
-            verify(isDownloadThumbnailAvailableUseCase, times(3))
-                .invoke(thumbnailPath)
+        downloadFlow.value = null
+        emissions.receive()
+        downloadFlow.value = createDownload(downloadId, status = DownloadStatus.COMPLETED)
+        emissions.receive()
 
-            downloadFlow.value = null
-            emissions.receive()
-            downloadFlow.value = createDownload(downloadId, status = DownloadStatus.COMPLETED)
-            emissions.receive()
-
-            verify(isDownloadThumbnailAvailableUseCase, times(4))
-                .invoke(thumbnailPath)
-            collector.cancel()
-        }
+        verify(isDownloadThumbnailAvailableUseCase, times(4))
+            .invoke(thumbnailPath)
+        collector.cancel()
+    }
 
     @Test
     fun visibleCompletedPage_refreshesMissingThumbnail() = runTest(testDispatcher) {
@@ -1089,11 +1089,7 @@ class DownloadViewModelTest {
         viewModel: DownloadViewModel,
         predicate: (DownloadUiState) -> Boolean = { it is DownloadUiState.Data },
     ) {
-        withTimeout(2.seconds) {
-            while (!predicate(viewModel.uiState.value)) {
-                kotlinx.coroutines.yield()
-            }
-        }
+        viewModel.uiState.first(predicate)
     }
 
     private fun createDownload(
