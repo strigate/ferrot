@@ -1,11 +1,12 @@
 package org.strigate.ferrot.data.local.migration
 
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room3.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.async.executeSQL
 
 val MIGRATION_10_11 = object : Migration(10, 11) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.executeSQL(
             """
             CREATE TABLE IF NOT EXISTS cookie_set (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -19,13 +20,13 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
             )
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE INDEX IF NOT EXISTS index_cookie_set_updatedAtMillis
             ON cookie_set(updatedAtMillis)
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE TABLE IF NOT EXISTS cookie_set_domain (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -37,19 +38,19 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
             )
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE INDEX IF NOT EXISTS index_cookie_set_domain_cookieSetId
             ON cookie_set_domain(cookieSetId)
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE INDEX IF NOT EXISTS index_cookie_set_domain_domain
             ON cookie_set_domain(domain)
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS index_cookie_set_domain_cookieSetId_domain
             ON cookie_set_domain(cookieSetId, domain)
