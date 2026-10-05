@@ -12,9 +12,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.InOrder
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.usecase.DownloadAudioUseCase
 import org.strigate.ferrot.domain.usecase.DownloadMetadataUseCase
@@ -118,7 +118,7 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
             progress = false,
             audio = false,
             video = false,
-            download = true
+            download = true,
         )
 
         val result = createUseCase().invoke(32L)

@@ -34,13 +34,13 @@ class DownloadsScreenScrollBehaviorTest {
             areAllItemsSelected(
                 selectedIds = setOf(1L, 2L, 3L),
                 availableIds = setOf(1L, 2L, 3L),
-            )
+            ),
         )
         assertFalse(
             areAllItemsSelected(
                 selectedIds = setOf(1L, 4L),
                 availableIds = setOf(1L, 2L),
-            )
+            ),
         )
     }
 

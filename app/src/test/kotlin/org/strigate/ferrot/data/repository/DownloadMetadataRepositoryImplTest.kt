@@ -16,10 +16,10 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.data.local.dao.DownloadMetadataDao
 import org.strigate.ferrot.data.local.entity.DownloadMetadataEntity
 import org.strigate.ferrot.domain.model.DownloadMetadata
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadMetadataRepositoryImplTest {
@@ -83,7 +83,7 @@ class DownloadMetadataRepositoryImplTest {
 
         assertEquals(
             listOf(1L, 9L),
-            repository.getDownloadIdsBySourceAndVideoId("youtube", "abc123")
+            repository.getDownloadIdsBySourceAndVideoId("youtube", "abc123"),
         )
         assertEquals(listOf("/tmp/one.jpg", "/tmp/two.jpg"), repository.getAllThumbnailFilePaths())
         assertEquals(1, repository.deleteByDownloadId(2L))

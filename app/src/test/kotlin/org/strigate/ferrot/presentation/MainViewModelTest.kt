@@ -17,11 +17,11 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
@@ -228,6 +228,9 @@ class MainViewModelTest {
         assertNull(viewModel.navigateRoute.value)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> anyObject(): T = Mockito.any<T>() ?: null as T
+
     @After
     fun tearDown() {
         logMock?.close()
@@ -253,7 +256,4 @@ class MainViewModelTest {
             startDownloadUseCase = startDownloadUseCase,
         )
     }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> anyObject(): T = Mockito.any<T>() ?: null as T
 }

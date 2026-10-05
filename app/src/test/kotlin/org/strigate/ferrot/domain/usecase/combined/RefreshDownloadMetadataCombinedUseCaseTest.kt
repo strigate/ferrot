@@ -17,11 +17,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
@@ -297,6 +297,9 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         assertEquals(444, savedMetadata?.durationSeconds)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> anyObject(): T = org.mockito.Mockito.any<T>() ?: null as T
+
     @After
     fun tearDown() {
         logMock?.close()
@@ -361,7 +364,4 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
         field.isAccessible = true
         field.set(this, value)
     }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> anyObject(): T = org.mockito.Mockito.any<T>() ?: null as T
 }

@@ -44,6 +44,7 @@ class DownloadWithProgressUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         fakeClient = FakeYoutubeDlClient()
     }
 
