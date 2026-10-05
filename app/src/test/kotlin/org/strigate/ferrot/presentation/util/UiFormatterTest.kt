@@ -12,8 +12,8 @@ import org.junit.Test
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mockStatic
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import java.text.SimpleDateFormat
@@ -34,6 +34,7 @@ class UiFormatterTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         originalLocale = Locale.getDefault()
         originalZoneId = ZoneId.systemDefault()
         Locale.setDefault(Locale.US)
@@ -83,8 +84,7 @@ class UiFormatterTest {
             mockStatic(DateFormat::class.java).use { dateFormatMock ->
                 dateUtilsMock.`when`<CharSequence> {
                     DateUtils.getRelativeTimeSpanString(anyLong(), anyLong(), anyLong(), anyInt())
-                }
-                    .thenReturn("moments ago")
+                }.thenReturn("moments ago")
                 dateFormatMock.`when`<java.text.DateFormat> { DateFormat.getMediumDateFormat(context) }
                     .thenReturn(dateFormat)
                 dateFormatMock.`when`<java.text.DateFormat> { DateFormat.getTimeFormat(context) }
@@ -93,7 +93,7 @@ class UiFormatterTest {
                 val result = UiFormatter.formatLastCheckedTime(context, millis)
                 val exact = "${dateFormat.format(java.util.Date(millis))}, ${
                     timeFormat.format(
-                        java.util.Date(millis)
+                        java.util.Date(millis),
                     )
                 }"
                 assertEquals("moments ago ($exact)", result)
@@ -117,10 +117,9 @@ class UiFormatterTest {
             dateFormatMock.`when`<String> {
                 DateFormat.getBestDateTimePattern(
                     Locale.US,
-                    "EEE, MMM d"
+                    "EEE, MMM d",
                 )
-            }
-                .thenReturn("EEE, MMM d")
+            }.thenReturn("EEE, MMM d")
 
             val result = UiFormatter.formatCompletedAtTime(context, millis)
             assertEquals("13:05", result)
@@ -144,10 +143,9 @@ class UiFormatterTest {
             dateFormatMock.`when`<String> {
                 DateFormat.getBestDateTimePattern(
                     Locale.US,
-                    "EEE, MMM d"
+                    "EEE, MMM d",
                 )
-            }
-                .thenReturn("EEE, MMM d")
+            }.thenReturn("EEE, MMM d")
 
             val result = UiFormatter.formatCompletedAtTime(context, millis)
             assertTrue(result.contains("AM"))

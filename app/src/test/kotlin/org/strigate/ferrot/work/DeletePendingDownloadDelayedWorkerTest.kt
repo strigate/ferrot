@@ -13,11 +13,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.domain.model.Download
@@ -49,6 +49,7 @@ class DeletePendingDownloadDelayedWorkerTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         `when`(downloadUseCase.getDownloadByIdUseCase)
             .thenReturn(getDownload)
     }
@@ -70,7 +71,7 @@ class DeletePendingDownloadDelayedWorkerTest {
                     url = "https://example.com",
                     status = DownloadStatus.COMPLETED,
                     seen = false,
-                )
+                ),
             )
 
         assertTrue(doWork(createWorker(8L)) is ListenableWorker.Result.Success)

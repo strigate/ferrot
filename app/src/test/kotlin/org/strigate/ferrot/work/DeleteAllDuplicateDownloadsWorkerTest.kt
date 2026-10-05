@@ -16,11 +16,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadMetadata
@@ -80,6 +80,7 @@ class DeleteAllDuplicateDownloadsWorkerTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         `when`(downloadUseCase.getAllDownloadsUseCase)
             .thenReturn(getAllDownloadsUseCase)
         `when`(downloadMetadataUseCase.getDownloadMetadataByIdAsFlowUseCase)
@@ -100,7 +101,7 @@ class DeleteAllDuplicateDownloadsWorkerTest {
                     download(1L, DownloadStatus.COMPLETED),
                     download(2L, DownloadStatus.COMPLETED),
                     download(3L, DownloadStatus.FAILED),
-                )
+                ),
             )
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(1L))
             .thenReturn(flowOf(metadata(1L)))
@@ -129,8 +130,8 @@ class DeleteAllDuplicateDownloadsWorkerTest {
             .thenReturn(
                 listOf(
                     download(4L, DownloadStatus.COMPLETED),
-                    download(7L, DownloadStatus.COMPLETED)
-                )
+                    download(7L, DownloadStatus.COMPLETED),
+                ),
             )
         `when`(getDownloadMetadataByIdAsFlowUseCase.invoke(4L))
             .thenReturn(flowOf(null))

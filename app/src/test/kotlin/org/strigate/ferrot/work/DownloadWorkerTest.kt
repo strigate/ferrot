@@ -28,7 +28,6 @@ import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito.CALLS_REAL_METHODS
 import org.mockito.Mockito.RETURNS_DEFAULTS
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
@@ -36,6 +35,7 @@ import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.withSettings
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
@@ -308,7 +308,7 @@ class DownloadWorkerTest {
         verifyNoInteractions(
             deleteDownloadFilesUseCase,
             updateDownloadProgressUseCase,
-            notificationService
+            notificationService,
         )
     }
 
@@ -332,7 +332,7 @@ class DownloadWorkerTest {
         verifyNoInteractions(
             deleteDownloadFilesUseCase,
             updateDownloadProgressUseCase,
-            notificationService
+            notificationService,
         )
     }
 
@@ -492,7 +492,7 @@ class DownloadWorkerTest {
         assertTrue(result is ListenableWorker.Result.Failure)
         assertEquals(
             listOf("foreground downloading", "foreground failed", "recorded failed", "cleared"),
-            events
+            events,
         )
         verify(updateDownloadStatusUseCase)
             .invoke(42L, DownloadStatus.FAILED)
@@ -513,7 +513,7 @@ class DownloadWorkerTest {
                 "recorded failed",
                 "cleared",
             ),
-            events
+            events,
         )
         verify(updateDownloadStatusUseCase)
             .invoke(42L, DownloadStatus.FAILED)
@@ -648,8 +648,8 @@ class DownloadWorkerTest {
                 "updateForeground" -> onForegroundUpdated(invocation.getArgument(0))
                 "updateExistingForegroundNotification" -> onExistingForegroundUpdated(
                     invocation.getArgument(
-                        0
-                    )
+                        0,
+                    ),
                 )
 
                 "clearForegroundNotification" -> onForegroundCleared()
@@ -675,8 +675,7 @@ class DownloadWorkerTest {
             mockStatic(WorkManagerImpl::class.java).use { workManagerStatic ->
                 workManagerStatic.`when`<WorkManagerImpl> {
                     WorkManagerImpl.getInstance(appContext)
-                }
-                    .thenReturn(workManager)
+                }.thenReturn(workManager)
                 mockStatic(Class.forName("org.strigate.ferrot.extensions.ContextKt")).use {
                     worker.doWork()
                 }

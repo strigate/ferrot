@@ -18,9 +18,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import org.strigate.ferrot.analytics.AnalyticsEvents
@@ -58,6 +58,7 @@ class GetCookiesViewModelTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         `when`(cookieSetUseCase.createCookieSetFromWebViewUseCase)
             .thenReturn(createCookieSetFromWebViewUseCase)
         `when`(cookieSetUseCase.getExistingCookieSetDomainForWebViewUrlUseCase)

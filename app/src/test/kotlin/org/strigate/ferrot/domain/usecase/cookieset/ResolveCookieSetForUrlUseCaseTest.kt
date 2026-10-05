@@ -22,7 +22,7 @@ class ResolveCookieSetForUrlUseCaseTest {
             cookieSets = listOf(
                 cookieSet(id = 1L, domain = "x.com", includeSubdomains = true),
                 cookieSet(id = 2L, domain = "instagram.com", includeSubdomains = true),
-            )
+            ),
         )
 
         val result = createUseCase(repository)("https://mobile.x.com/post/1")
@@ -33,7 +33,7 @@ class ResolveCookieSetForUrlUseCaseTest {
     @Test
     fun invoke_returnsNull_whenCookiesDisabled() = runTest {
         val repository = FakeCookieSetRepository(
-            cookieSets = listOf(cookieSet(id = 1L, domain = "x.com", includeSubdomains = true))
+            cookieSets = listOf(cookieSet(id = 1L, domain = "x.com", includeSubdomains = true)),
         )
 
         val result = createUseCase(repository, cookiesEnabled = false)("https://x.com/post/1")
@@ -57,7 +57,7 @@ class ResolveCookieSetForUrlUseCaseTest {
                     includeSubdomains = true,
                     updatedAtMillis = 200L,
                 ),
-            )
+            ),
         )
 
         val result = createUseCase(repository)("https://x.com/post/1")
@@ -93,7 +93,7 @@ class ResolveCookieSetForUrlUseCaseTest {
                 cookieSetId = id,
                 domain = domain,
                 includeSubdomains = includeSubdomains,
-            )
+            ),
         ),
     )
 

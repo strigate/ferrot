@@ -16,9 +16,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus

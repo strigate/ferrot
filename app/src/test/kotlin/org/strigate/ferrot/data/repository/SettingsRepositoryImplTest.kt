@@ -87,7 +87,7 @@ class SettingsRepositoryImplTest {
         assertEquals(DownloadSwipeAction.NONE, repository.getLeftSwipeActionAsFlow().first())
         assertEquals(
             DownloadSwipeAction.ARCHIVE,
-            repository.getRightSwipeActionAsFlow().first()
+            repository.getRightSwipeActionAsFlow().first(),
         )
         assertEquals(false, repository.getAutomaticAppUpdatesEnabledAsFlow().first())
         assertEquals(false, repository.getAutomaticDependencyUpdatesEnabledAsFlow().first())

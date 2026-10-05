@@ -51,7 +51,7 @@ class BuildVideoDownloadRequestUseCaseTest {
         assertFalse(request.hasOption("--get-filename"))
         assertTrue(
             command.containsAll(
-                listOf("--print-to-file", "after_move:%(filepath)s", "/tmp/out.txt"),
+                elements = listOf("--print-to-file", "after_move:%(filepath)s", "/tmp/out.txt"),
             ),
         )
     }
