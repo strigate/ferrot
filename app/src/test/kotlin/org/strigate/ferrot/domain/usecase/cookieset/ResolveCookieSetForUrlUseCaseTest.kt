@@ -143,6 +143,10 @@ class ResolveCookieSetForUrlUseCaseTest {
             error("unused")
 
         override fun getAutomaticDependencyUpdatesEnabledAsFlow(): Flow<Boolean> = error("unused")
+        override suspend fun saveIncludeAttributionEnabled(enabled: Boolean) = error("unused")
+        override suspend fun saveStripMediaMetadataEnabled(enabled: Boolean) = error("unused")
+        override fun getIncludeAttributionEnabledAsFlow(): Flow<Boolean> = error("unused")
+        override fun getStripMediaMetadataEnabledAsFlow(): Flow<Boolean> = error("unused")
         override suspend fun saveCookiesEnabled(enabled: Boolean) = error("unused")
         override fun getCookiesEnabledAsFlow(): Flow<Boolean> = flowOf(cookiesEnabled)
     }

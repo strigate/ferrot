@@ -11,15 +11,19 @@ import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_APP_UP
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_COOKIES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_RIGHT_SWIPE_ACTION
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_APP_UPDATES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_COOKIES_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.KEY_INCLUDE_ATTRIBUTION_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_LEFT_SWIPE_ACTION
 import org.strigate.ferrot.app.Constants.Settings.KEY_RIGHT_SWIPE_ACTION
+import org.strigate.ferrot.app.Constants.Settings.KEY_STRIP_MEDIA_METADATA_ENABLED
 import org.strigate.ferrot.app.Constants.Settings.KEY_WIFI_ONLY_DOWNLOADS_ENABLED
 import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.repository.SettingsRepository
@@ -44,6 +48,10 @@ class SettingsRepositoryImpl @Inject constructor(
         booleanPreferencesKey(KEY_AUTOMATIC_APP_UPDATES_ENABLED)
     private val automaticDependencyUpdatesEnabledKey =
         booleanPreferencesKey(KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED)
+    private val stripMediaMetadataEnabledKey =
+        booleanPreferencesKey(KEY_STRIP_MEDIA_METADATA_ENABLED)
+    private val includeAttributionEnabledKey =
+        booleanPreferencesKey(KEY_INCLUDE_ATTRIBUTION_ENABLED)
 
     override suspend fun saveWifiOnlyDownloadsEnabled(enabled: Boolean) {
         preferencesDataStore.edit {
@@ -134,6 +142,30 @@ class SettingsRepositoryImpl @Inject constructor(
         return preferencesDataStore.data.map {
             it[automaticDependencyUpdatesEnabledKey]
                 ?: DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED
+        }
+    }
+
+    override suspend fun saveStripMediaMetadataEnabled(enabled: Boolean) {
+        preferencesDataStore.edit {
+            it[stripMediaMetadataEnabledKey] = enabled
+        }
+    }
+
+    override fun getStripMediaMetadataEnabledAsFlow(): Flow<Boolean> {
+        return preferencesDataStore.data.map {
+            it[stripMediaMetadataEnabledKey] ?: DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED
+        }
+    }
+
+    override suspend fun saveIncludeAttributionEnabled(enabled: Boolean) {
+        preferencesDataStore.edit {
+            it[includeAttributionEnabledKey] = enabled
+        }
+    }
+
+    override fun getIncludeAttributionEnabledAsFlow(): Flow<Boolean> {
+        return preferencesDataStore.data.map {
+            it[includeAttributionEnabledKey] ?: DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED
         }
     }
 }

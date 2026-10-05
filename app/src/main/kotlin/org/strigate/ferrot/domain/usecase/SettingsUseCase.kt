@@ -4,15 +4,19 @@ import org.strigate.ferrot.domain.usecase.settings.GetAutomaticAppUpdatesEnabled
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetCookiesEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetLeftSwipeActionSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetRightSwipeActionSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetStripMediaMetadataEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetWifiOnlyDownloadsEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticAppUpdatesEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDependencyUpdatesEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveAutomaticDuplicateDownloadDeletionEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveCookiesEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveIncludeAttributionEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveLeftSwipeActionSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveRightSwipeActionSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveStripMediaMetadataEnabledSettingUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveWifiOnlyDownloadsEnabledSettingUseCase
 import javax.inject.Inject
 
@@ -31,4 +35,8 @@ class SettingsUseCase @Inject constructor(
     val getAutomaticAppUpdatesEnabledSettingAsFlowUseCase: GetAutomaticAppUpdatesEnabledSettingAsFlowUseCase,
     val saveAutomaticDependencyUpdatesEnabledSettingUseCase: SaveAutomaticDependencyUpdatesEnabledSettingUseCase,
     val getAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase: GetAutomaticDependencyUpdatesEnabledSettingAsFlowUseCase,
+    val saveStripMediaMetadataEnabledSettingUseCase: SaveStripMediaMetadataEnabledSettingUseCase,
+    val getStripMediaMetadataEnabledSettingAsFlowUseCase: GetStripMediaMetadataEnabledSettingAsFlowUseCase,
+    val saveIncludeAttributionEnabledSettingUseCase: SaveIncludeAttributionEnabledSettingUseCase,
+    val getIncludeAttributionEnabledSettingAsFlowUseCase: GetIncludeAttributionEnabledSettingAsFlowUseCase,
 )

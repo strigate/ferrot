@@ -35,6 +35,10 @@ object Constants {
             "auto_updates"
         const val KEY_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED =
             "auto_dependency_updates"
+        const val KEY_STRIP_MEDIA_METADATA_ENABLED =
+            "strip_media_metadata"
+        const val KEY_INCLUDE_ATTRIBUTION_ENABLED =
+            "include_attribution"
 
         const val DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED = true
         const val DEFAULT_VALUE_AUTOMATIC_DUPLICATE_DOWNLOAD_DELETION_ENABLED = true
@@ -43,6 +47,8 @@ object Constants {
         val DEFAULT_VALUE_RIGHT_SWIPE_ACTION = DownloadSwipeAction.ARCHIVE
         const val DEFAULT_VALUE_AUTOMATIC_APP_UPDATES_ENABLED = true
         const val DEFAULT_VALUE_AUTOMATIC_DEPENDENCY_UPDATES_ENABLED = true
+        const val DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED = false
+        const val DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED = true
     }
 
     object Notifications {

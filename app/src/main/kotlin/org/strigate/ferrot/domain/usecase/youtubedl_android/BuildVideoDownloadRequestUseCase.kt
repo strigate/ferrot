@@ -3,6 +3,8 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED
 import org.strigate.ferrot.domain.model.QualityProfile
 import javax.inject.Inject
 
@@ -15,6 +17,8 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         outputPathFilePath: String? = null,
         printFilename: Boolean = false,
         cookieFilePath: String? = null,
+        includeAttributionEnabled: Boolean = DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED,
+        stripMediaMetadataEnabled: Boolean = DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
@@ -33,20 +37,23 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
                 )
             }
 
-            val encoderString = "$NAME ${BuildConfig.VERSION}"
-            addOption("--add-metadata")
-            addOption(
-                "--postprocessor-args",
-                buildString {
-                    append("Merger+ffmpeg:")
-                    append("-metadata encoder=\"$encoderString\" ")
-                    append("-metadata encoded_by=\"$encoderString\" ")
-                    append("-metadata:s:v:0 encoder=\"$encoderString\" ")
-                    append("-metadata:s:v:0 encoded_by=\"$encoderString\" ")
-                    append("-metadata:s:a:0 encoder=\"$encoderString\" ")
-                }
-            )
-
+            if (!stripMediaMetadataEnabled) {
+                addOption("--add-metadata")
+            }
+            if (includeAttributionEnabled && !stripMediaMetadataEnabled) {
+                val encoderString = "$NAME ${BuildConfig.VERSION}"
+                addOption(
+                    "--postprocessor-args",
+                    buildString {
+                        append("Merger+ffmpeg:")
+                        append("-metadata encoder=\"$encoderString\" ")
+                        append("-metadata encoded_by=\"$encoderString\" ")
+                        append("-metadata:s:v:0 encoder=\"$encoderString\" ")
+                        append("-metadata:s:v:0 encoded_by=\"$encoderString\" ")
+                        append("-metadata:s:a:0 encoder=\"$encoderString\" ")
+                    },
+                )
+            }
             if (qualityProfile == QualityProfile.COMPAT_2160) {
                 addOption("--merge-output-format", "mp4")
             }
