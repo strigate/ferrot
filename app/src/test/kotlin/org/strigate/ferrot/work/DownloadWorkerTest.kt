@@ -61,6 +61,7 @@ import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.cookieset.ResolveCookieSetForUrlUseCase
+import org.strigate.ferrot.domain.usecase.download.MetadataStripException
 import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadCompletedAtUseCase
@@ -459,6 +460,19 @@ class DownloadWorkerTest {
             .invoke(42L, DownloadStatus.FAILED)
         verify(updateDownloadStatusUseCase, never())
             .invoke(42L, DownloadStatus.STOPPED)
+    }
+
+    @Test
+    fun doWork_failsWhenAudioMetadataCleanupFails() = runTest(testDispatcher) {
+        val media = prepareMediaDownload(audioFailure = MetadataStripException())
+        val result = runForegroundWorker(media.worker)
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+        assertTrue(media.savedAudio.isEmpty())
+        verify(updateDownloadStatusUseCase)
+            .invoke(42L, DownloadStatus.FAILED)
+        verify(updateDownloadStatusUseCase, never())
+            .invoke(42L, DownloadStatus.COMPLETED)
     }
 
     @Test

@@ -4,10 +4,40 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.domain.model.QualityProfile
 
 class BuildVideoDownloadRequestUseCaseTest {
     private val useCase = BuildVideoDownloadRequestUseCase()
+
+    @Test
+    fun invoke_strippingOverridesAttributionAndMetadataEmbedding() {
+        val request = useCase(
+            url = "https://example.com/video",
+            template = "/tmp/%(title)s.%(ext)s",
+            qualityProfile = QualityProfile.MAX,
+            noProgress = false,
+            includeAttributionEnabled = true,
+            stripMediaMetadataEnabled = true,
+        )
+
+        assertFalse(request.hasOption("--add-metadata"))
+        assertFalse(request.hasOption("--postprocessor-args"))
+    }
+
+    @Test
+    fun invoke_omitsAttributionButKeepsMetadata_whenDisabled() {
+        val request = useCase(
+            url = "https://example.com/video",
+            template = "/tmp/%(title)s.%(ext)s",
+            qualityProfile = QualityProfile.MAX,
+            noProgress = false,
+            includeAttributionEnabled = false,
+        )
+
+        assertTrue(request.hasOption("--add-metadata"))
+        assertFalse(request.hasOption("--postprocessor-args"))
+    }
 
     @Test
     fun invoke_buildsProgressRequest_forMaxQuality() {
@@ -24,6 +54,10 @@ class BuildVideoDownloadRequestUseCaseTest {
         assertEquals("/tmp/%(title)s.%(ext)s", request.getOption("-o"))
         assertTrue(request.hasOption("--windows-filenames"))
         assertTrue(request.hasOption("--add-metadata"))
+        assertTrue(
+            request.getOption("--postprocessor-args")!!
+                .contains("encoder=\"Ferrot ${BuildConfig.VERSION}\"")
+        )
         assertTrue(request.hasOption("--newline"))
         assertFalse(request.hasOption("--no-progress"))
         assertFalse(request.hasOption("--merge-output-format"))

@@ -39,6 +39,8 @@ class SettingsRepositoryImplTest {
     fun getters_returnDefaultValues_whenNothingHasBeenSaved() = runTest(testDispatcher) {
         val repository = createRepository(backgroundScope)
 
+        assertEquals(true, repository.getIncludeAttributionEnabledAsFlow().first())
+        assertEquals(false, repository.getStripMediaMetadataEnabledAsFlow().first())
         assertEquals(
             DEFAULT_VALUE_WIFI_ONLY_DOWNLOADS_ENABLED,
             repository.getWifiOnlyDownloadsEnabledAsFlow().first(),
@@ -75,12 +77,16 @@ class SettingsRepositoryImplTest {
 
         repository.saveWifiOnlyDownloadsEnabled(false)
         repository.saveAutomaticDuplicateDownloadDeletionEnabled(false)
+        repository.saveIncludeAttributionEnabled(false)
+        repository.saveStripMediaMetadataEnabled(true)
         repository.saveCookiesEnabled(true)
         repository.saveLeftSwipeAction(DownloadSwipeAction.NONE)
         repository.saveRightSwipeAction(DownloadSwipeAction.ARCHIVE)
         repository.saveAutomaticAppUpdatesEnabled(false)
         repository.saveAutomaticDependencyUpdatesEnabled(false)
 
+        assertEquals(false, repository.getIncludeAttributionEnabledAsFlow().first())
+        assertEquals(true, repository.getStripMediaMetadataEnabledAsFlow().first())
         assertEquals(false, repository.getWifiOnlyDownloadsEnabledAsFlow().first())
         assertEquals(false, repository.getAutomaticDuplicateDownloadDeletionEnabledAsFlow().first())
         assertEquals(true, repository.getCookiesEnabledAsFlow().first())
