@@ -20,7 +20,7 @@ import org.strigate.ferrot.app.integration.MediaToolsClient
 import java.io.File
 import java.io.IOException
 
-class StripMediaMetadataUseCaseTest {
+class RemoveMediaMetadataUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 
     @get:Rule
@@ -46,9 +46,9 @@ class StripMediaMetadataUseCaseTest {
             .`when`(client)
             .remux(anyList())
 
-        val failure = runCatching { StripMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
 
-        assertTrue(failure is MetadataStripException)
+        assertTrue(failure is MetadataRemovalException)
         assertEquals("original content", file.readText())
         assertEquals(listOf(file.name), temporaryFolder.root.listFiles()!!.map { it.name })
     }
@@ -72,9 +72,9 @@ class StripMediaMetadataUseCaseTest {
             null
         }.`when`(client).remux(anyList())
 
-        val failure = runCatching { StripMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
 
-        assertTrue(failure is MetadataStripException)
+        assertTrue(failure is MetadataRemovalException)
         val rootCause = generateSequence(failure) { it.cause }.last()
         assertTrue(rootCause is IllegalArgumentException)
         assertArrayEquals(originalBytes, file.readBytes())
@@ -92,7 +92,7 @@ class StripMediaMetadataUseCaseTest {
             .`when`(client)
             .remux(anyList())
 
-        val failure = runCatching { StripMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
 
         assertTrue(failure is CancellationException)
         assertEquals("original content", file.readText())

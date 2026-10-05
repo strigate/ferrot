@@ -4,7 +4,7 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import org.strigate.ferrot.BuildConfig
 import org.strigate.ferrot.app.Constants.NAME
 import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED
-import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED
+import org.strigate.ferrot.app.Constants.Settings.DEFAULT_VALUE_REMOVE_MEDIA_METADATA_ENABLED
 import org.strigate.ferrot.domain.model.QualityProfile
 import javax.inject.Inject
 
@@ -18,7 +18,7 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
         printFilename: Boolean = false,
         cookieFilePath: String? = null,
         includeAttributionEnabled: Boolean = DEFAULT_VALUE_INCLUDE_ATTRIBUTION_ENABLED,
-        stripMediaMetadataEnabled: Boolean = DEFAULT_VALUE_STRIP_MEDIA_METADATA_ENABLED,
+        removeMediaMetadataEnabled: Boolean = DEFAULT_VALUE_REMOVE_MEDIA_METADATA_ENABLED,
     ): YoutubeDLRequest {
         return YoutubeDLRequest(url).apply {
             addOption("-f", formatSelectorFor(qualityProfile))
@@ -37,10 +37,10 @@ class BuildVideoDownloadRequestUseCase @Inject constructor() {
                 )
             }
 
-            if (!stripMediaMetadataEnabled) {
+            if (!removeMediaMetadataEnabled) {
                 addOption("--add-metadata")
             }
-            if (includeAttributionEnabled && !stripMediaMetadataEnabled) {
+            if (includeAttributionEnabled && !removeMediaMetadataEnabled) {
                 val encoderString = "$NAME ${BuildConfig.VERSION}"
                 addOption(
                     "--postprocessor-args",

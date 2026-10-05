@@ -23,9 +23,9 @@ import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetStripMediaMetadataEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.domain.usecase.settings.SaveIncludeAttributionEnabledSettingUseCase
-import org.strigate.ferrot.domain.usecase.settings.SaveStripMediaMetadataEnabledSettingUseCase
+import org.strigate.ferrot.domain.usecase.settings.SaveRemoveMediaMetadataEnabledSettingUseCase
 import org.strigate.ferrot.presentation.state.AdvancedSettingsUiState
 import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.IOException
@@ -39,7 +39,7 @@ class AdvancedSettingsViewModelTest {
 
     private val includeAttributionEnabledFlow = MutableStateFlow(true)
 
-    private val stripMediaMetadataEnabledFlow = MutableStateFlow(false)
+    private val removeMediaMetadataEnabledFlow = MutableStateFlow(false)
 
     private val viewModels = mutableListOf<AdvancedSettingsViewModel>()
 
@@ -53,13 +53,13 @@ class AdvancedSettingsViewModelTest {
     private lateinit var getIncludeAttributionEnabledSettingAsFlowUseCase: GetIncludeAttributionEnabledSettingAsFlowUseCase
 
     @Mock
-    private lateinit var getStripMediaMetadataEnabledSettingAsFlowUseCase: GetStripMediaMetadataEnabledSettingAsFlowUseCase
+    private lateinit var getRemoveMediaMetadataEnabledSettingAsFlowUseCase: GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
 
     @Mock
     private lateinit var saveIncludeAttributionEnabledSettingUseCase: SaveIncludeAttributionEnabledSettingUseCase
 
     @Mock
-    private lateinit var saveStripMediaMetadataEnabledSettingUseCase: SaveStripMediaMetadataEnabledSettingUseCase
+    private lateinit var saveRemoveMediaMetadataEnabledSettingUseCase: SaveRemoveMediaMetadataEnabledSettingUseCase
 
     @Before
     fun setUp() {
@@ -67,37 +67,37 @@ class AdvancedSettingsViewModelTest {
 
         `when`(settingsUseCase.getIncludeAttributionEnabledSettingAsFlowUseCase)
             .thenReturn(getIncludeAttributionEnabledSettingAsFlowUseCase)
-        `when`(settingsUseCase.getStripMediaMetadataEnabledSettingAsFlowUseCase)
-            .thenReturn(getStripMediaMetadataEnabledSettingAsFlowUseCase)
+        `when`(settingsUseCase.getRemoveMediaMetadataEnabledSettingAsFlowUseCase)
+            .thenReturn(getRemoveMediaMetadataEnabledSettingAsFlowUseCase)
         `when`(settingsUseCase.saveIncludeAttributionEnabledSettingUseCase)
             .thenReturn(saveIncludeAttributionEnabledSettingUseCase)
-        `when`(settingsUseCase.saveStripMediaMetadataEnabledSettingUseCase)
-            .thenReturn(saveStripMediaMetadataEnabledSettingUseCase)
+        `when`(settingsUseCase.saveRemoveMediaMetadataEnabledSettingUseCase)
+            .thenReturn(saveRemoveMediaMetadataEnabledSettingUseCase)
         `when`(getIncludeAttributionEnabledSettingAsFlowUseCase.invoke())
             .thenReturn(includeAttributionEnabledFlow)
-        `when`(getStripMediaMetadataEnabledSettingAsFlowUseCase.invoke())
-            .thenReturn(stripMediaMetadataEnabledFlow)
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(removeMediaMetadataEnabledFlow)
     }
 
     @Test
-    fun statePreservesAttributionWhileStrippingIsEnabled() = runTest {
+    fun statePreservesAttributionWhileRemovalIsEnabled() = runTest {
         val viewModel = createViewModel()
         val initial = viewModel.uiState.first {
             it is AdvancedSettingsUiState.Data
         } as AdvancedSettingsUiState.Data
 
         assertEquals(true, initial.data.includeAttributionEnabled)
-        assertEquals(false, initial.data.stripMediaMetadataEnabled)
+        assertEquals(false, initial.data.removeMediaMetadataEnabled)
 
-        stripMediaMetadataEnabledFlow.value = true
+        removeMediaMetadataEnabledFlow.value = true
         val enabled = viewModel.uiState.first {
-            it is AdvancedSettingsUiState.Data && it.data.stripMediaMetadataEnabled
+            it is AdvancedSettingsUiState.Data && it.data.removeMediaMetadataEnabled
         } as AdvancedSettingsUiState.Data
         assertEquals(true, enabled.data.includeAttributionEnabled)
 
-        stripMediaMetadataEnabledFlow.value = false
+        removeMediaMetadataEnabledFlow.value = false
         val restored = viewModel.uiState.first {
-            it is AdvancedSettingsUiState.Data && !it.data.stripMediaMetadataEnabled
+            it is AdvancedSettingsUiState.Data && !it.data.removeMediaMetadataEnabled
         } as AdvancedSettingsUiState.Data
         assertEquals(true, restored.data.includeAttributionEnabled)
 
@@ -109,10 +109,10 @@ class AdvancedSettingsViewModelTest {
     }
 
     @Test
-    fun savesStrippingWithoutOverwritingAttribution() = runTest {
-        createViewModel().setStripMediaMetadataEnabled(true)
+    fun savesRemovalWithoutOverwritingAttribution() = runTest {
+        createViewModel().setRemoveMediaMetadataEnabled(true)
         advanceUntilIdle()
-        verify(saveStripMediaMetadataEnabledSettingUseCase)
+        verify(saveRemoveMediaMetadataEnabledSettingUseCase)
             .invoke(true)
         verifyNoInteractions(saveIncludeAttributionEnabledSettingUseCase)
     }
@@ -127,7 +127,7 @@ class AdvancedSettingsViewModelTest {
 
     @Test
     fun exposesReadFailure() = runTest {
-        `when`(getStripMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
             .thenReturn(flow { throw IOException("unavailable") })
         val state = createViewModel().uiState.first { it is AdvancedSettingsUiState.Error }
         assertEquals(AdvancedSettingsUiState.Error, state)

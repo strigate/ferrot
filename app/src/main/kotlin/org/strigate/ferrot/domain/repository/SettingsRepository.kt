@@ -18,8 +18,8 @@ interface SettingsRepository {
     fun getAutomaticAppUpdatesEnabledAsFlow(): Flow<Boolean>
     suspend fun saveAutomaticDependencyUpdatesEnabled(enabled: Boolean)
     fun getAutomaticDependencyUpdatesEnabledAsFlow(): Flow<Boolean>
-    suspend fun saveStripMediaMetadataEnabled(enabled: Boolean)
-    fun getStripMediaMetadataEnabledAsFlow(): Flow<Boolean>
+    suspend fun saveRemoveMediaMetadataEnabled(enabled: Boolean)
+    fun getRemoveMediaMetadataEnabledAsFlow(): Flow<Boolean>
     suspend fun saveIncludeAttributionEnabled(enabled: Boolean)
     fun getIncludeAttributionEnabledAsFlow(): Flow<Boolean>
 }

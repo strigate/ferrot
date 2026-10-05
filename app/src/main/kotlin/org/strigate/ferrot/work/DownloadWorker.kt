@@ -50,7 +50,7 @@ import org.strigate.ferrot.domain.usecase.DownloadVideoUseCase
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
-import org.strigate.ferrot.domain.usecase.download.MetadataStripException
+import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
 import org.strigate.ferrot.extensions.extractFileExtension
 import org.strigate.ferrot.extensions.parseErrorMessage
 import org.strigate.ferrot.extensions.toSafeFileName
@@ -385,7 +385,7 @@ class DownloadWorker(
                 } catch (throwable: Throwable) {
                     if (throwable is CancellationException) throw throwable
                     currentCoroutineContext().ensureActive()
-                    if (throwable is MetadataStripException) throw throwable
+                    if (throwable is MetadataRemovalException) throw throwable
 
                     val message = "$tag Audio: failed, continuing with video only"
                     Log.w(LOG_TAG, message, throwable)

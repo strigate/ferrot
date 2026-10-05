@@ -34,12 +34,12 @@ class AdvancedSettingsViewModel @Inject constructor(
 
     private fun getUiState(): Flow<AdvancedSettingsUiState> {
         return combine(
-            flow = settingsUseCase.getStripMediaMetadataEnabledSettingAsFlowUseCase(),
+            flow = settingsUseCase.getRemoveMediaMetadataEnabledSettingAsFlowUseCase(),
             flow2 = settingsUseCase.getIncludeAttributionEnabledSettingAsFlowUseCase(),
-        ) { strip, attribution ->
+        ) { removal, attribution ->
             val uiState: AdvancedSettingsUiState = AdvancedSettingsUiState.Data(
                 data = AdvancedSettingsUiData(
-                    stripMediaMetadataEnabled = strip,
+                    removeMediaMetadataEnabled = removal,
                     includeAttributionEnabled = attribution,
                 ),
             )
@@ -47,9 +47,9 @@ class AdvancedSettingsViewModel @Inject constructor(
         }
     }
 
-    fun setStripMediaMetadataEnabled(enabled: Boolean) {
+    fun setRemoveMediaMetadataEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsUseCase.saveStripMediaMetadataEnabledSettingUseCase(enabled = enabled)
+            settingsUseCase.saveRemoveMediaMetadataEnabledSettingUseCase(enabled = enabled)
         }
     }
 

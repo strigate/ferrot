@@ -49,7 +49,7 @@ fun AdvancedSettingsScreen(
     AdvancedSettingsScreenContent(
         uiState = uiState,
         onBackClick = { backDispatcher?.onBackPressed() },
-        onSetStripMediaMetadataEnabled = viewModel::setStripMediaMetadataEnabled,
+        onSetRemoveMediaMetadataEnabled = viewModel::setRemoveMediaMetadataEnabled,
         onSetIncludeAttributionEnabled = viewModel::setIncludeAttributionEnabled,
         modifier = modifier,
     )
@@ -59,7 +59,7 @@ fun AdvancedSettingsScreen(
 internal fun AdvancedSettingsScreenContent(
     uiState: AdvancedSettingsUiState,
     onBackClick: () -> Unit,
-    onSetStripMediaMetadataEnabled: (Boolean) -> Unit,
+    onSetRemoveMediaMetadataEnabled: (Boolean) -> Unit,
     onSetIncludeAttributionEnabled: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -93,7 +93,7 @@ internal fun AdvancedSettingsScreenContent(
 
                 is AdvancedSettingsUiState.Data -> AdvancedSettingsContent(
                     data = uiState.data,
-                    onSetStripMediaMetadataEnabled = onSetStripMediaMetadataEnabled,
+                    onSetRemoveMediaMetadataEnabled = onSetRemoveMediaMetadataEnabled,
                     onSetIncludeAttributionEnabled = onSetIncludeAttributionEnabled,
                 )
             }
@@ -104,7 +104,7 @@ internal fun AdvancedSettingsScreenContent(
 @Composable
 private fun AdvancedSettingsContent(
     data: AdvancedSettingsUiData,
-    onSetStripMediaMetadataEnabled: (Boolean) -> Unit,
+    onSetRemoveMediaMetadataEnabled: (Boolean) -> Unit,
     onSetIncludeAttributionEnabled: (Boolean) -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
@@ -119,17 +119,17 @@ private fun AdvancedSettingsContent(
             title = stringResource(R.string.settings_section_media_metadata),
         ) {
             SwitchSetting(
-                text = stringResource(id = R.string.settings_title_strip_media_metadata),
-                extraBottomPadding = if (data.stripMediaMetadataEnabled) {
+                text = stringResource(id = R.string.settings_title_remove_media_metadata),
+                extraBottomPadding = if (data.removeMediaMetadataEnabled) {
                     refineryDimens.spacingXSmall
                 } else {
                     0.dp
                 },
-                description = stringResource(id = R.string.settings_description_strip_media_metadata),
-                checked = data.stripMediaMetadataEnabled,
-                onCheckedChange = onSetStripMediaMetadataEnabled,
+                description = stringResource(id = R.string.settings_description_remove_media_metadata),
+                checked = data.removeMediaMetadataEnabled,
+                onCheckedChange = onSetRemoveMediaMetadataEnabled,
             )
-            if (!data.stripMediaMetadataEnabled) {
+            if (!data.removeMediaMetadataEnabled) {
                 SettingsSectionDivider()
                 SwitchSetting(
                     text = stringResource(id = R.string.settings_title_include_attribution),

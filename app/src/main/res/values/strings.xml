@@ -151,7 +151,7 @@
     <string name="settings_title_automatic_updates">Automatic updates</string>
     <string name="settings_title_check_now">Check now</string>
     <string name="settings_title_last_checked">Last checked</string>
-    <string name="settings_title_strip_media_metadata">Strip media metadata</string>
+    <string name="settings_title_remove_media_metadata">Remove metadata</string>
     <string name="settings_title_include_attribution">Include attribution</string>
     <string name="settings_title_build">Build</string>
     <string name="settings_title_privacy">Privacy</string>
@@ -168,7 +168,7 @@
     <string name="settings_description_check_for_app_updates">Check for app updates now</string>
     <string name="settings_description_automatic_dependency_updates">Automatically download and apply updates for dependencies</string>
     <string name="settings_description_check_dependencies_now">Check for dependency updates now</string>
-    <string name="settings_description_strip_media_metadata">Attempt to remove metadata from downloaded media.</string>
+    <string name="settings_description_remove_media_metadata">Remux downloaded media to remove metadata where possible.</string>
     <string name="settings_description_include_attribution">Add app and version attribution to downloaded media metadata.</string>
     <string name="settings_description_privacy">View Privacy Policy</string>
 

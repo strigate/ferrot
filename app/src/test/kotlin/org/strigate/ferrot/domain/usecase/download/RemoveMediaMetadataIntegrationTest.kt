@@ -21,11 +21,12 @@ import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.MediaToolsClient
 import org.strigate.ferrot.app.integration.runMediaProcess
 import java.io.File
+import java.io.IOException
 import java.nio.file.FileSystems
 import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import java.nio.file.WatchService
 
-class StripMediaMetadataIntegrationTest {
+class RemoveMediaMetadataIntegrationTest {
     private lateinit var autoCloseable: AutoCloseable
 
     @get:Rule
@@ -72,7 +73,7 @@ class StripMediaMetadataIntegrationTest {
     }
 
     @Test
-    fun stripsTagsWithoutChangingDecodedMedia() = runTest {
+    fun removesTagsWithoutChangingDecodedMedia() = runTest {
         val metadata = temporaryFolder.newFile("metadata.txt").apply {
             writeText(";FFMETADATA1\ntitle=Private title\nartist=Private author\ncomment=Private URL\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=0\nEND=500\ntitle=Private chapter\n")
         }
@@ -103,7 +104,7 @@ class StripMediaMetadataIntegrationTest {
             val originalHash = decodedHash(file)
             assertTrue(client.probe(file).contains("Private"))
 
-            StripMediaMetadataUseCase(client)(file)
+            RemoveMediaMetadataUseCase(client)(file)
 
             val info = client.probe(file)
             assertFalse("Private metadata survived in $extension", info.contains("Private"))
@@ -139,7 +140,7 @@ class StripMediaMetadataIntegrationTest {
                 rotated.path,
             ),
         )
-        StripMediaMetadataUseCase(client)(rotated)
+        RemoveMediaMetadataUseCase(client)(rotated)
         val rotation = JSONObject(client.probe(rotated)).getJSONArray("streams").getJSONObject(0)
             .getJSONArray("side_data_list").getJSONObject(0).getInt("rotation")
         assertEquals(90, rotation)
@@ -162,7 +163,7 @@ class StripMediaMetadataIntegrationTest {
             ),
         )
         assertEquals(2, JSONObject(client.probe(attached)).getJSONArray("streams").length())
-        StripMediaMetadataUseCase(client)(attached)
+        RemoveMediaMetadataUseCase(client)(attached)
         assertEquals(1, JSONObject(client.probe(attached)).getJSONArray("streams").length())
 
         val cover = File(temporaryFolder.root, "cover.jpg")
@@ -190,7 +191,7 @@ class StripMediaMetadataIntegrationTest {
             ),
         )
         assertEquals(2, JSONObject(client.probe(mp3)).getJSONArray("streams").length())
-        StripMediaMetadataUseCase(client)(mp3)
+        RemoveMediaMetadataUseCase(client)(mp3)
         assertEquals(1, JSONObject(client.probe(mp3)).getJSONArray("streams").length())
     }
 
@@ -223,6 +224,30 @@ class StripMediaMetadataIntegrationTest {
                 process.cancelAndJoin()
             }
         }
+    }
+
+    @Test
+    fun oversizedOutputTerminatesRunningProcessAndCleansLogs() = runTest {
+        val pidFile = temporaryFolder.newFile("noisy-process.pid")
+        val failure = runCatching {
+            runMediaProcess(
+                command = listOf(
+                    "/bin/sh",
+                    "-c",
+                    "echo $$ > \"$1\"; dd if=/dev/zero bs=1048576 count=9 2>/dev/null; exec cat",
+                    "test",
+                    pidFile.path,
+                ),
+                environment = emptyMap(),
+                temporaryDirectory = temporaryFolder.root,
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure is IOException)
+        assertEquals("Media processing output is too large", failure?.message)
+        val processId = pidFile.readText().trim().toLong()
+        assertFalse(ProcessHandle.of(processId).map { it.isAlive }.orElse(false))
+        assertFalse(temporaryFolder.root.listFiles()!!.any { it.name.startsWith("media-process-") })
     }
 
     @After
