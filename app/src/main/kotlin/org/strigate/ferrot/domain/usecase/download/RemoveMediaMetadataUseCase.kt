@@ -16,7 +16,7 @@ import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
 
-class StripMediaMetadataUseCase @Inject constructor(
+class RemoveMediaMetadataUseCase @Inject constructor(
     private val mediaToolsClient: MediaToolsClient,
 ) {
     suspend operator fun invoke(file: File): Unit = withContext(Dispatchers.IO) {
@@ -73,7 +73,7 @@ class StripMediaMetadataUseCase @Inject constructor(
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
-            throw MetadataStripException(exception)
+            throw MetadataRemovalException(exception)
         } finally {
             replacement?.delete()
         }
@@ -127,5 +127,5 @@ class StripMediaMetadataUseCase @Inject constructor(
     )
 }
 
-class MetadataStripException(cause: Throwable? = null) :
-    IOException("Could not strip media metadata", cause)
+class MetadataRemovalException(cause: Throwable? = null) :
+    IOException("Could not remove media metadata", cause)

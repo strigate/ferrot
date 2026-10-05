@@ -11,14 +11,14 @@ class BuildVideoDownloadRequestUseCaseTest {
     private val useCase = BuildVideoDownloadRequestUseCase()
 
     @Test
-    fun invoke_strippingOverridesAttributionAndMetadataEmbedding() {
+    fun invoke_removalOverridesAttributionAndMetadataEmbedding() {
         val request = useCase(
             url = "https://example.com/video",
             template = "/tmp/%(title)s.%(ext)s",
             qualityProfile = QualityProfile.MAX,
             noProgress = false,
             includeAttributionEnabled = true,
-            stripMediaMetadataEnabled = true,
+            removeMediaMetadataEnabled = true,
         )
 
         assertFalse(request.hasOption("--add-metadata"))

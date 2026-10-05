@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import org.strigate.ferrot.domain.repository.SettingsRepository
 import javax.inject.Inject
 
-class GetStripMediaMetadataEnabledSettingAsFlowUseCase @Inject constructor(
+class GetRemoveMediaMetadataEnabledSettingAsFlowUseCase @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) {
     operator fun invoke(): Flow<Boolean> {
-        return settingsRepository.getStripMediaMetadataEnabledAsFlow()
+        return settingsRepository.getRemoveMediaMetadataEnabledAsFlow()
     }
 }

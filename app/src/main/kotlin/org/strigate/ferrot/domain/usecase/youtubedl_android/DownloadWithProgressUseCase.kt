@@ -10,10 +10,10 @@ import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.download.MetadataStripException
-import org.strigate.ferrot.domain.usecase.download.StripMediaMetadataUseCase
+import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
+import org.strigate.ferrot.domain.usecase.download.RemoveMediaMetadataUseCase
 import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.settings.GetStripMediaMetadataEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
 import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
@@ -25,8 +25,8 @@ class DownloadWithProgressUseCase @Inject constructor(
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
     private val youtubeDlClient: YoutubeDlClient,
     private val getIncludeAttributionEnabledSettingAsFlowUseCase: GetIncludeAttributionEnabledSettingAsFlowUseCase,
-    private val getStripMediaMetadataEnabledSettingAsFlowUseCase: GetStripMediaMetadataEnabledSettingAsFlowUseCase,
-    private val stripMediaMetadataUseCase: StripMediaMetadataUseCase,
+    private val getRemoveMediaMetadataEnabledSettingAsFlowUseCase: GetRemoveMediaMetadataEnabledSettingAsFlowUseCase,
+    private val removeMediaMetadataUseCase: RemoveMediaMetadataUseCase,
 ) {
     operator fun invoke(
         url: String,
@@ -43,7 +43,7 @@ class DownloadWithProgressUseCase @Inject constructor(
         val job = launch {
             youtubeDlRuntimeInitializer.initializeIfNeeded()
             outputPathFile?.delete()
-            val stripMediaMetadataEnabled = getStripMediaMetadataEnabledSettingAsFlowUseCase()
+            val removeMediaMetadataEnabled = getRemoveMediaMetadataEnabledSettingAsFlowUseCase()
                 .first()
 
             val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
@@ -53,7 +53,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         template = template,
                         qualityProfile = profile,
                         includeAttributionEnabled = getIncludeAttributionEnabledSettingAsFlowUseCase().first(),
-                        stripMediaMetadataEnabled = stripMediaMetadataEnabled,
+                        removeMediaMetadataEnabled = removeMediaMetadataEnabled,
                         noProgress = false,
                         outputPathFilePath = outputPathFile?.absolutePath,
                         cookieFilePath = cookieFilePath,
@@ -79,7 +79,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                 val mapped = progressMappingPolicy.map(rawPercent) ?: return@execute
                 trySend(
                     DownloadTick(
-                        percent = if (stripMediaMetadataEnabled) mapped.coerceAtMost(99f) else mapped,
+                        percent = if (removeMediaMetadataEnabled) mapped.coerceAtMost(99f) else mapped,
                         etaSeconds = rawEta.takeIf { it >= 0 },
                         bytesDownloaded = bytesProvider(),
                     ),
@@ -89,8 +89,8 @@ class DownloadWithProgressUseCase @Inject constructor(
                 throw IllegalStateException("Exit code ${youtubeDlResponse.exitCode}")
             }
             val outputPath = outputPathFile?.let(::readAfterMoveOutputFilePath)
-            if (stripMediaMetadataEnabled) {
-                if (outputPath == null) throw MetadataStripException()
+            if (removeMediaMetadataEnabled) {
+                if (outputPath == null) throw MetadataRemovalException()
                 trySend(
                     DownloadTick(
                         percent = 99f,
@@ -98,7 +98,7 @@ class DownloadWithProgressUseCase @Inject constructor(
                         bytesDownloaded = bytesProvider()
                     )
                 )
-                stripMediaMetadataUseCase(File(outputPath))
+                removeMediaMetadataUseCase(File(outputPath))
             }
             outputPath?.let { onOutputFilePath?.invoke(it) }
             close()

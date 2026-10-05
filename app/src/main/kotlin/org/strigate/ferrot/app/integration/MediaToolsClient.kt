@@ -13,6 +13,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 
 open class MediaToolsClient @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
@@ -27,7 +28,7 @@ open class MediaToolsClient @Inject constructor(
         )
     }
 
-    open suspend fun remux(arguments: List<String>) {
+    open suspend fun remux(arguments: List<String>): Unit = withMediaRemuxTimeout {
         execute(
             tool = "ffmpeg",
             arguments = listOf("-nostdin", "-hide_banner", "-loglevel", "error") + arguments
@@ -61,6 +62,17 @@ internal suspend fun withMediaProbeTimeout(block: suspend () -> String): String 
     return result ?: throw IOException("Media inspection timed out")
 }
 
+internal suspend fun withMediaRemuxTimeout(block: suspend () -> Unit) {
+    val completed = withTimeoutOrNull(30.minutes) {
+        block()
+        true
+    }
+    currentCoroutineContext().ensureActive()
+    if (completed == null) throw IOException("Media processing timed out")
+}
+
+private const val MAX_MEDIA_PROCESS_OUTPUT_BYTES = 8L * 1024 * 1024
+
 internal suspend fun runMediaProcess(
     command: List<String>,
     environment: Map<String, String>,
@@ -77,14 +89,17 @@ internal suspend fun runMediaProcess(
             .start()
         process = runningProcess
         while (runningProcess.isAlive) {
+            if (output.length() > MAX_MEDIA_PROCESS_OUTPUT_BYTES) {
+                throw IOException("Media processing output is too large")
+            }
             delay(100L.milliseconds)
         }
         currentCoroutineContext().ensureActive()
         if (runningProcess.exitValue() != 0) {
             throw IOException("Media processing failed (exit ${runningProcess.exitValue()})")
         }
-        if (output.length() > 8L * 1024 * 1024) {
-            throw IOException("Media inspection output is too large")
+        if (output.length() > MAX_MEDIA_PROCESS_OUTPUT_BYTES) {
+            throw IOException("Media processing output is too large")
         }
         output.readText()
     } finally {
