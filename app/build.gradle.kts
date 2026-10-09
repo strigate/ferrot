@@ -220,7 +220,10 @@ tasks.configureEach {
         mustRunAfter("clean")
     }
     if (isReleaseTask) {
-        mustRunAfter("testDebugUnitTest")
+        mustRunAfter(
+            ":app:testDebugUnitTest",
+            ":refinery:testDebugUnitTest",
+        )
     }
 }
 
@@ -233,13 +236,14 @@ tasks.register("buildReleaseArtifacts", ReleaseArtifactsTask::class.java) {
 
     group = "distribution"
     description = buildString {
-        append("Cleans the build, runs debug unit tests, ")
+        append("Cleans the build, runs debug unit tests in all modules, ")
         append("builds release APK and AAB and collects ")
         append("them into one directory.")
     }
     dependsOn(
         "clean",
-        "testDebugUnitTest",
+        ":app:testDebugUnitTest",
+        ":refinery:testDebugUnitTest",
         "assembleRelease",
         "bundleRelease",
     )
