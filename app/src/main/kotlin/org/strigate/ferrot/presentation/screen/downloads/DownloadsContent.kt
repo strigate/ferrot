@@ -23,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -44,9 +44,7 @@ import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.component.state.EmptyState
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
-import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
-import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.presentation.transitions.Transitions
 import kotlin.time.Duration.Companion.milliseconds
@@ -104,22 +102,17 @@ internal fun DownloadsContent(
     )
     val visibleCount = items.size
 
-    LaunchedEffect(itemIds, pendingDeleteIds, searchQuery) {
+    SideEffect {
         if (hasNewVisibleItem(previousItemIds, itemIds, previousPendingDeleteIds, searchQuery)) {
-            lazyGridState.scrollToItem(0)
+            lazyGridState.requestScrollToItem(0)
+        } else if (haveItemsReordered(previousItemIds, itemIds)) {
+            lazyGridState.requestScrollToItem(
+                index = lazyGridState.firstVisibleItemIndex,
+                scrollOffset = lazyGridState.firstVisibleItemScrollOffset,
+            )
         }
         previousItemIds = itemIds
         previousPendingDeleteIds = pendingDeleteIds
-    }
-    LaunchedEffect(restoringItemIds, itemIds) {
-        if (shouldScrollToTopOnRestore(
-                restoredItemIds = restoringItemIds,
-                currentItemIds = itemIds,
-                firstVisibleItemIndex = lazyGridState.firstVisibleItemIndex,
-            )
-        ) {
-            lazyGridState.scrollToItem(0)
-        }
     }
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -211,13 +204,7 @@ internal fun DownloadsContent(
                             onSelectionChange(toggleSelection(selectedIds, clickedItem.id))
                             return@SwipeableDownloadItem
                         }
-                        val shouldScrollToTop = shouldScrollToTopOnPauseResume(clickedItem.status)
                         onPauseResume(clickedItem)
-                        if (shouldScrollToTop) {
-                            coroutineScope.launch {
-                                lazyGridState.animateScrollToItem(0)
-                            }
-                        }
                     },
                     onToggleSelection = { itemId ->
                         onSelectionChange(toggleSelection(selectedIds, itemId))
@@ -362,8 +349,6 @@ private fun ScrollToBottomButton(
     }
 }
 
-private fun shouldScrollToTopOnPauseResume(status: DownloadStatusUiData): Boolean = !status.isActive
-
 private fun toggleSelection(selectedIds: Set<Long>, itemId: Long): Set<Long> {
     return if (itemId in selectedIds) {
         selectedIds - itemId
@@ -401,14 +386,10 @@ internal fun getRestoredItemIds(
         .minus(currentPendingDeleteIds)
 }
 
-internal fun shouldScrollToTopOnRestore(
-    restoredItemIds: Set<Long>,
-    currentItemIds: List<Long>,
-    firstVisibleItemIndex: Int,
-): Boolean {
-    if (restoredItemIds.isEmpty() || currentItemIds.isEmpty()) {
+internal fun haveItemsReordered(previousItemIds: List<Long>, currentItemIds: List<Long>): Boolean {
+    if (previousItemIds == currentItemIds) {
         return false
     }
-    val userWasNearTop = firstVisibleItemIndex <= 1
-    return userWasNearTop && currentItemIds.first() in restoredItemIds
+    val commonIds = previousItemIds.toSet().intersect(currentItemIds.toSet())
+    return previousItemIds.filter { it in commonIds } != currentItemIds.filter { it in commonIds }
 }
