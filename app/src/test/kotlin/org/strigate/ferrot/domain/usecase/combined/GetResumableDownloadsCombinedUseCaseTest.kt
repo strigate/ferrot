@@ -12,11 +12,11 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import org.strigate.ferrot.test.MainDispatcherRule
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetResumableDownloadsCombinedUseCaseTest {
@@ -36,6 +36,7 @@ class GetResumableDownloadsCombinedUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         `when`(downloadUseCase.getAllDownloadsUseCase)
             .thenReturn(getAllDownloadsUseCase)
     }

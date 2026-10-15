@@ -9,9 +9,9 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.data.local.dao.CookieSetDao
 import org.strigate.ferrot.data.local.entity.CookieSetDomainEntity
@@ -32,6 +32,7 @@ class CookieSetRepositoryImplTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         repository = CookieSetRepositoryImpl(dao)
     }
 
@@ -61,14 +62,20 @@ class CookieSetRepositoryImplTest {
 
         assertEquals(9L, repository.saveCookieSet(cookieSet))
         repository.saveDomains(
-            listOf(CookieSetDomain(cookieSetId = 9L, domain = "example.com", createdAtMillis = 3L))
+            domains = listOf(
+                CookieSetDomain(
+                    cookieSetId = 9L,
+                    domain = "example.com",
+                    createdAtMillis = 3L
+                )
+            ),
         )
 
         verify(dao)
             .insertCookieSet(cookieSetEntity)
         verify(dao)
             .insertDomains(
-                listOf(
+                domains = listOf(
                     CookieSetDomainEntity(
                         id = 0L,
                         cookieSetId = 9L,
@@ -107,7 +114,7 @@ class CookieSetRepositoryImplTest {
 
         assertEquals(
             "example",
-            repository.getAllWithDomainsAsFlow().first().single().cookieSet.name
+            repository.getAllWithDomainsAsFlow().first().single().cookieSet.name,
         )
         assertEquals("example.com", repository.getAllWithDomains().single().domains.single().domain)
         assertEquals(8L, repository.getByIdWithDomains(8L)?.cookieSet?.id)
@@ -149,7 +156,7 @@ class CookieSetRepositoryImplTest {
                 domain = "example.com",
                 includeSubdomains = true,
                 createdAtMillis = 1L,
-            )
+            ),
         ),
     )
 }

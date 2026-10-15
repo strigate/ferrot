@@ -1,7 +1,8 @@
 package org.strigate.ferrot.app.di.module
 
 import android.content.Context
-import androidx.room.Room
+import androidx.room3.Room
+import androidx.sqlite.driver.AndroidSQLiteDriver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +28,8 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext appContext: Context): Database {
         return Room
-            .databaseBuilder(appContext, Database::class.java, DATABASE_NAME)
+            .databaseBuilder<Database>(appContext, DATABASE_NAME)
+            .setDriver(AndroidSQLiteDriver())
             .applyMigrations()
             .build()
     }

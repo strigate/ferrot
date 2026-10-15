@@ -32,7 +32,7 @@ class ShareIntentParserTest {
     @Test
     fun findFirstHttpUrl_extractsAndCleansUrlFromText() {
         val result = ShareIntentParser.findFirstHttpUrl(
-            "Watch this (https://example.com/video).",
+            text = "Watch this (https://example.com/video).",
         )
 
         assertEquals("https://example.com/video", result)

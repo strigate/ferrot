@@ -13,8 +13,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.entity.AvailableUpdateEntity
@@ -85,7 +85,7 @@ class AvailableUpdateRepositoryImplTest {
 
         verify(availableUpdateDao)
             .insertReplace(
-                AvailableUpdateEntity(
+                availableUpdateEntity = AvailableUpdateEntity(
                     id = 0,
                     tag = "v2.0.0",
                     localFilePath = "/updates/update.apk",

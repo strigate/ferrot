@@ -68,7 +68,7 @@ class DeleteCookieSetsWithMissingFilesUseCaseTest {
                     cookieSetId = id,
                     domain = domain,
                     includeSubdomains = true,
-                )
+                ),
             ),
         )
     }

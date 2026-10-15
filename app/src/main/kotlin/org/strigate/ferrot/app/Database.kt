@@ -1,7 +1,7 @@
 package org.strigate.ferrot.app
 
-import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
+import androidx.room3.ColumnTypeConverters
+import androidx.room3.RoomDatabase
 import org.strigate.ferrot.data.local.dao.AvailableUpdateDao
 import org.strigate.ferrot.data.local.dao.CookieSetDao
 import org.strigate.ferrot.data.local.dao.DownloadAudioDao
@@ -31,7 +31,7 @@ import org.strigate.ferrot.data.local.migration.MIGRATION_9_10
 import org.strigate.ferrot.data.local.typeconverter.DownloadStatusTypeConverter
 import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 
-@androidx.room.Database(
+@androidx.room3.Database(
     entities = [
         AvailableUpdateEntity::class,
         CookieSetEntity::class,
@@ -48,7 +48,7 @@ import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
     exportSchema = false,
     version = 11,
 )
-@TypeConverters(
+@ColumnTypeConverters(
     DownloadStatusTypeConverter::class,
 )
 abstract class Database : RoomDatabase() {

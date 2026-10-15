@@ -18,11 +18,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.anyLong
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.NotificationService
@@ -85,6 +85,7 @@ class DownloadAvailableUpdateWorkerTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         logMock = mockStatic(Log::class.java)
         TestUrlHandler.responseJson = "{}"
 

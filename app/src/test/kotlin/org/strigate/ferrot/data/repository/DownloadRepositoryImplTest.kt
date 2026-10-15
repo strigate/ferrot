@@ -14,9 +14,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.Mockito
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.data.local.dao.DownloadDao
 import org.strigate.ferrot.data.local.entity.DownloadEntity
@@ -79,7 +79,7 @@ class DownloadRepositoryImplTest {
                     sampleEntity(
                         id = 2L,
                         status = EntityStatus.COMPLETED,
-                        completedAtMillis = 300L
+                        completedAtMillis = 300L,
                     ),
                 ),
             )
@@ -187,6 +187,9 @@ class DownloadRepositoryImplTest {
             .deleteById(3L)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> anyObject(): T = Mockito.any() ?: null as T
+
     @After
     fun tearDown() {
         autoCloseable.close()
@@ -221,7 +224,4 @@ class DownloadRepositoryImplTest {
         startedAtMillis = 20L,
         completedAtMillis = completedAtMillis,
     )
-
-    @Suppress("UNCHECKED_CAST")
-    private fun <T> anyObject(): T = Mockito.any<T>() ?: null as T
 }

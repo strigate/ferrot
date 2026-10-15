@@ -1,6 +1,6 @@
 package org.strigate.ferrot.data.local.view
 
-import androidx.room.DatabaseView
+import androidx.room3.DatabaseView
 import org.strigate.ferrot.data.local.entity.DownloadStatus
 
 @DatabaseView(

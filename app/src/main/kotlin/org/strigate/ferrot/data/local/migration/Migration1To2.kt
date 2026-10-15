@@ -1,12 +1,13 @@
 package org.strigate.ferrot.data.local.migration
 
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room3.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.async.executeSQL
 
 val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("PRAGMA foreign_keys=OFF")
-        db.execSQL(
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.executeSQL("PRAGMA foreign_keys=OFF")
+        connection.executeSQL(
             """
             CREATE TABLE IF NOT EXISTS download_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -20,7 +21,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             )
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             INSERT INTO download_new (
                 id, uid, url, status, errorMessage, enqueuedAtMillis, startedAtMillis, completedAtMillis
@@ -30,7 +31,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             FROM download
             """.trimIndent()
         )
-        db.execSQL(
+        connection.executeSQL(
             """
             CREATE TABLE IF NOT EXISTS download_video (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -40,8 +41,8 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             )
             """.trimIndent()
         )
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_download_video_downloadId ON download_video(downloadId)")
-        db.execSQL(
+        connection.executeSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_download_video_downloadId ON download_video(downloadId)")
+        connection.executeSQL(
             """
             CREATE TABLE IF NOT EXISTS download_audio (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -51,8 +52,8 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             )
             """.trimIndent()
         )
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_download_audio_downloadId ON download_audio(downloadId)")
-        db.execSQL(
+        connection.executeSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_download_audio_downloadId ON download_audio(downloadId)")
+        connection.executeSQL(
             """
             INSERT INTO download_video (downloadId, filePath)
             SELECT id, filePath
@@ -60,12 +61,12 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             WHERE filePath IS NOT NULL AND TRIM(filePath) <> ''
             """.trimIndent()
         )
-        db.execSQL("DROP TABLE download")
-        db.execSQL("ALTER TABLE download_new RENAME TO download")
+        connection.executeSQL("DROP TABLE download")
+        connection.executeSQL("ALTER TABLE download_new RENAME TO download")
 
-        db.execSQL("CREATE INDEX IF NOT EXISTS index_download_status ON download(status)")
-        db.execSQL("CREATE INDEX IF NOT EXISTS index_download_enqueuedAtMillis ON download(enqueuedAtMillis)")
-        db.execSQL("CREATE INDEX IF NOT EXISTS index_download_uid ON download(uid)")
-        db.execSQL("PRAGMA foreign_keys=ON")
+        connection.executeSQL("CREATE INDEX IF NOT EXISTS index_download_status ON download(status)")
+        connection.executeSQL("CREATE INDEX IF NOT EXISTS index_download_enqueuedAtMillis ON download(enqueuedAtMillis)")
+        connection.executeSQL("CREATE INDEX IF NOT EXISTS index_download_uid ON download(uid)")
+        connection.executeSQL("PRAGMA foreign_keys=ON")
     }
 }

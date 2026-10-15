@@ -83,6 +83,7 @@ class DeleteAllOrphanDownloadFilesWorkerTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         `when`(downloadUseCase.getAllDownloadsUseCase)
             .thenReturn(getAllDownloadsUseCase)
         `when`(downloadAudioUseCase.getAllDownloadAudioFilePathsUseCase)
@@ -116,7 +117,7 @@ class DeleteAllOrphanDownloadFilesWorkerTest {
             .thenReturn(emptyList())
         `when`(getAllDownloadsUseCase.invoke())
             .thenReturn(
-                listOf(download(uid = "active", status = DownloadStatus.DOWNLOADING))
+                listOf(download(uid = "active", status = DownloadStatus.DOWNLOADING)),
             )
 
         val result = doWorkWithLogMock()

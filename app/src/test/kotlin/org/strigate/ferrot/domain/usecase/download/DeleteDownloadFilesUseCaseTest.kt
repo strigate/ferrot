@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mockStatic
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.Download
@@ -46,6 +46,7 @@ class DeleteDownloadFilesUseCaseTest {
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         logMock = mockStatic(Log::class.java)
     }
 

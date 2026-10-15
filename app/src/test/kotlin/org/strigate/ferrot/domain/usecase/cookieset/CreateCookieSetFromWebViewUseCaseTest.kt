@@ -41,7 +41,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             assertEquals(true, result.domains.single().includeSubdomains)
             assertTrue(
                 File(result.cookieSet.cookieFilePath).readText()
-                    .contains(".x.com\tTRUE\t/\tTRUE\t\tauth\tone")
+                    .contains(".x.com\tTRUE\t/\tTRUE\t\tauth\tone"),
             )
         } finally {
             rootDir.deleteRecursively()
@@ -73,7 +73,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
         repository.seedCookieSet(
-            CookieSetWithDomains(
+            cookieSet = CookieSetWithDomains(
                 cookieSet = CookieSet(
                     id = 99L,
                     name = "Old x.com",
@@ -85,9 +85,9 @@ class CreateCookieSetFromWebViewUseCaseTest {
                         cookieSetId = 99L,
                         domain = "x.com",
                         includeSubdomains = true,
-                    )
+                    ),
                 ),
-            )
+            ),
         )
         val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
         val useCase = createUseCase(repository, cookieFileStore)
@@ -101,7 +101,7 @@ class CreateCookieSetFromWebViewUseCaseTest {
             assertFalse(repository.containsCookieSet(99L))
             assertEquals(
                 result.cookieSet.id,
-                repository.getCookieSetIdsByDomains(listOf("x.com")).single()
+                repository.getCookieSetIdsByDomains(listOf("x.com")).single(),
             )
         } finally {
             rootDir.deleteRecursively()

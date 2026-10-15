@@ -12,11 +12,11 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockedStatic
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.domain.usecase.combined.RefreshDownloadMetadataCombinedUseCase

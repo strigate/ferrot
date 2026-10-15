@@ -1,7 +1,7 @@
 package org.strigate.ferrot.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
 import org.strigate.ferrot.data.local.view.DownloadWithMetadataView
 

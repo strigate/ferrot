@@ -43,7 +43,7 @@ class BuildAudioDownloadRequestUseCaseTest {
         assertFalse(request.hasOption("--print"))
         assertTrue(
             command.containsAll(
-                listOf("--print-to-file", "after_move:%(filepath)s", "/tmp/audio.txt"),
+                elements = listOf("--print-to-file", "after_move:%(filepath)s", "/tmp/audio.txt"),
             ),
         )
     }

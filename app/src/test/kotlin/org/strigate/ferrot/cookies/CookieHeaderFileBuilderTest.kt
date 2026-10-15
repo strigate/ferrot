@@ -36,7 +36,7 @@ class CookieHeaderFileBuilderTest {
     @Test
     fun parseCookieHeader_ignoresSetCookieAttributes() {
         val result = builder.parseCookieHeader(
-            "session=abc; Path=/; Secure; SameSite=Lax; auth=def",
+            rawCookieHeader = "session=abc; Path=/; Secure; SameSite=Lax; auth=def",
         )
 
         assertTrue(result.contains(CookiePair("session", "abc")))

@@ -4,11 +4,16 @@ import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
+import org.strigate.ferrot.domain.usecase.download.RemoveMediaMetadataUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
 import java.io.File
 import javax.inject.Inject
 import kotlin.math.abs
@@ -19,6 +24,9 @@ class DownloadWithProgressUseCase @Inject constructor(
     private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
     private val youtubeDlClient: YoutubeDlClient,
+    private val getIncludeAttributionEnabledSettingAsFlowUseCase: GetIncludeAttributionEnabledSettingAsFlowUseCase,
+    private val getRemoveMediaMetadataEnabledSettingAsFlowUseCase: GetRemoveMediaMetadataEnabledSettingAsFlowUseCase,
+    private val removeMediaMetadataUseCase: RemoveMediaMetadataUseCase,
 ) {
     operator fun invoke(
         url: String,
@@ -35,12 +43,17 @@ class DownloadWithProgressUseCase @Inject constructor(
         val job = launch {
             youtubeDlRuntimeInitializer.initializeIfNeeded()
             outputPathFile?.delete()
+            val removeMediaMetadataEnabled = getRemoveMediaMetadataEnabledSettingAsFlowUseCase()
+                .first()
+
             val youtubeDlRequest: YoutubeDLRequest = when (downloadMediaType) {
                 DownloadMediaType.VIDEO -> {
                     buildVideoDownloadRequestUseCase(
                         url = url,
                         template = template,
                         qualityProfile = profile,
+                        includeAttributionEnabled = getIncludeAttributionEnabledSettingAsFlowUseCase().first(),
+                        removeMediaMetadataEnabled = removeMediaMetadataEnabled,
                         noProgress = false,
                         outputPathFilePath = outputPathFile?.absolutePath,
                         cookieFilePath = cookieFilePath,
@@ -66,18 +79,28 @@ class DownloadWithProgressUseCase @Inject constructor(
                 val mapped = progressMappingPolicy.map(rawPercent) ?: return@execute
                 trySend(
                     DownloadTick(
-                        percent = mapped,
+                        percent = if (removeMediaMetadataEnabled) mapped.coerceAtMost(99f) else mapped,
                         etaSeconds = rawEta.takeIf { it >= 0 },
                         bytesDownloaded = bytesProvider(),
                     ),
                 )
             }
-            readAfterMoveOutputFilePath(outputPathFile ?: File(""))?.let { outputPath ->
-                onOutputFilePath?.invoke(outputPath)
-            }
             if (youtubeDlResponse.exitCode != 0) {
                 throw IllegalStateException("Exit code ${youtubeDlResponse.exitCode}")
             }
+            val outputPath = outputPathFile?.let(::readAfterMoveOutputFilePath)
+            if (removeMediaMetadataEnabled) {
+                if (outputPath == null) throw MetadataRemovalException()
+                trySend(
+                    DownloadTick(
+                        percent = 99f,
+                        etaSeconds = null,
+                        bytesDownloaded = bytesProvider()
+                    )
+                )
+                removeMediaMetadataUseCase(File(outputPath))
+            }
+            outputPath?.let { onOutputFilePath?.invoke(it) }
             close()
         }
         awaitClose {

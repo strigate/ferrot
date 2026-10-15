@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Cookie
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -66,6 +67,7 @@ fun SettingsScreen(
         onSetRightSwipeAction = viewModel::setRightSwipeAction,
         onNavigateToCookies = { navController.navigate(Screen.Cookies.route) },
         onNavigateToUpdates = { navController.navigate(Screen.Updates.route) },
+        onNavigateToAdvanced = { navController.navigate(Screen.Advanced.route) },
         onNavigateToAbout = { navController.navigate(Screen.About.route) },
         modifier = modifier,
     )
@@ -82,6 +84,7 @@ internal fun SettingsScreenContent(
     onSetRightSwipeAction: (DownloadSwipeActionUiData) -> Unit,
     onNavigateToCookies: () -> Unit,
     onNavigateToUpdates: () -> Unit,
+    onNavigateToAdvanced: () -> Unit,
     onNavigateToAbout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -117,6 +120,7 @@ internal fun SettingsScreenContent(
                             onSetRightSwipeAction = onSetRightSwipeAction,
                             onNavigateToCookies = onNavigateToCookies,
                             onNavigateToUpdates = onNavigateToUpdates,
+                            onNavigateToAdvanced = onNavigateToAdvanced,
                             onNavigateToAbout = onNavigateToAbout,
                         )
                     }
@@ -149,6 +153,7 @@ private fun SettingsContent(
     onSetRightSwipeAction: (DownloadSwipeActionUiData) -> Unit,
     onNavigateToCookies: () -> Unit,
     onNavigateToUpdates: () -> Unit,
+    onNavigateToAdvanced: () -> Unit,
     onNavigateToAbout: () -> Unit,
 ) {
     val refineryDimens = LocalRefineryDimens.current
@@ -159,8 +164,8 @@ private fun SettingsContent(
             .verticalScroll(rememberScrollState()),
     ) {
         SettingsSection(
-            icon = Icons.Outlined.Tune,
-            title = stringResource(id = R.string.settings_section_general),
+            icon = Icons.Outlined.Download,
+            title = stringResource(id = R.string.settings_section_downloads),
         ) {
             SwitchSetting(
                 text = stringResource(id = R.string.settings_title_download_wifi_only),
@@ -211,6 +216,12 @@ private fun SettingsContent(
                 extraTopPadding = refineryDimens.spacingXSmall,
                 text = stringResource(R.string.settings_navigate_title_updates),
                 onClick = onNavigateToUpdates,
+            )
+            IconAlignedSettingsSectionDivider()
+            TextNavigateSetting(
+                icon = Icons.Outlined.Tune,
+                text = stringResource(R.string.settings_navigate_title_advanced),
+                onClick = onNavigateToAdvanced,
             )
             IconAlignedSettingsSectionDivider()
             TextNavigateSetting(

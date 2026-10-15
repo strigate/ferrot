@@ -31,12 +31,12 @@ class CookieSetDomainParserTest {
     fun parseNetscapeDomains_readsNormalAndHttpOnlyCookieDomains() {
         val file = temporaryFolder.newFile("cookies.txt").apply {
             writeText(
-                """
+                text = """
                 # Netscape HTTP Cookie File
                 .x.com	TRUE	/	TRUE	0	auth	one
                 #HttpOnly_.instagram.com	TRUE	/	TRUE	0	sessionid	two
                 twitter.com	FALSE	/	TRUE	0	ct0	three
-                """.trimIndent()
+                """.trimIndent(),
             )
         }
 
@@ -56,11 +56,11 @@ class CookieSetDomainParserTest {
     fun parseNetscapeDomains_mergesDuplicateDomainsWithSubdomainsEnabled() {
         val file = temporaryFolder.newFile("cookies.txt").apply {
             writeText(
-                """
+                text = """
                 # Netscape HTTP Cookie File
                 example.com	FALSE	/	TRUE	0	auth	one
                 .example.com	TRUE	/	TRUE	0	ct0	two
-                """.trimIndent()
+                """.trimIndent(),
             )
         }
 

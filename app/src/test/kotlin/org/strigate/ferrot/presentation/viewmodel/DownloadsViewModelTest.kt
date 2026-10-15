@@ -22,9 +22,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -151,16 +151,16 @@ class DownloadsViewModelTest {
     @Test
     fun uiState_exposesMappedDownloadsAndAvailableUpdate() = runTest(testDispatcher) {
         val downloadsFlow = MutableStateFlow(
-            listOf(
+            value = listOf(
                 createDownload(id = 1L, title = "Download 1"),
                 createDownload(id = 2L, title = "Download 2"),
-            )
+            ),
         )
         val updateFlow = MutableStateFlow<AvailableUpdate?>(
-            AvailableUpdate(
+            value = AvailableUpdate(
                 tag = "v1.2.3",
                 localFilePath = "/tmp/update.apk",
-            )
+            ),
         )
         val viewModel = createViewModel(
             downloadsFlow = downloadsFlow,
@@ -255,10 +255,10 @@ class DownloadsViewModelTest {
     @Test
     fun uiState_hidesPendingDelete_andExposesFlag() = runTest(testDispatcher) {
         val downloadsFlow = MutableStateFlow(
-            listOf(
+            value = listOf(
                 createDownload(id = 1L, title = "Visible Download"),
                 createDownload(id = 2L, title = "Pending Delete", pendingDelete = true),
-            )
+            ),
         )
         val updateFlow = MutableStateFlow<AvailableUpdate?>(null)
         val viewModel = createViewModel(
@@ -285,10 +285,10 @@ class DownloadsViewModelTest {
     @Test
     fun updateSearchQuery_trimsInputAndFiltersDownloadsByTitle() = runTest(testDispatcher) {
         val downloadsFlow = MutableStateFlow(
-            listOf(
+            value = listOf(
                 createDownload(id = 1L, title = "Download 1"),
                 createDownload(id = 2L, title = "Download 2"),
-            )
+            ),
         )
         val updateFlow = MutableStateFlow<AvailableUpdate?>(null)
         val viewModel = createViewModel(
@@ -388,16 +388,16 @@ class DownloadsViewModelTest {
     fun stopAllDownloads_respectsSearchAndStopsOnlyActiveDownloads() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(id = 1L, title = "Queued", status = DownloadStatus.QUEUED),
                     createDownload(
                         id = 2L,
                         title = "Downloading",
-                        status = DownloadStatus.DOWNLOADING
+                        status = DownloadStatus.DOWNLOADING,
                     ),
                     createDownload(id = 3L, title = "Failed", status = DownloadStatus.FAILED),
                     createDownload(id = 4L, title = "Stopped", status = DownloadStatus.STOPPED),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -454,12 +454,12 @@ class DownloadsViewModelTest {
     fun retryFailedDownloads_startsOnlyFailedDownloads() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(id = 1L, title = "Failed", status = DownloadStatus.FAILED),
                     createDownload(id = 2L, title = "Stopped", status = DownloadStatus.STOPPED),
                     createDownload(id = 3L, title = "Completed", status = DownloadStatus.COMPLETED),
                     createDownload(id = 4L, title = "Failed 2", status = DownloadStatus.FAILED),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -492,7 +492,7 @@ class DownloadsViewModelTest {
     fun retryFailedDownloads_skipsPendingDelete() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(
                         id = 1L,
                         title = "Failed",
@@ -504,7 +504,7 @@ class DownloadsViewModelTest {
                         status = DownloadStatus.FAILED,
                         pendingDelete = true,
                     ),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -514,8 +514,8 @@ class DownloadsViewModelTest {
         }
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
-            data.data.pendingDeleteIds == setOf(2L) &&
-                    data.data.retryFailedDownloadIds == setOf(1L)
+            data.data.pendingDeleteIds == setOf(2L)
+                    && data.data.retryFailedDownloadIds == setOf(1L)
         }
 
         viewModel.retryFailedDownloads()
@@ -535,7 +535,7 @@ class DownloadsViewModelTest {
     fun retryFailedDownloads_respectsSearch() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(
                         id = 1L,
                         title = "Alpha Failed",
@@ -549,9 +549,9 @@ class DownloadsViewModelTest {
                     createDownload(
                         id = 3L,
                         title = "Beta Stopped",
-                        status = DownloadStatus.STOPPED
+                        status = DownloadStatus.STOPPED,
                     ),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -564,8 +564,8 @@ class DownloadsViewModelTest {
         viewModel.updateSearchQuery("Beta")
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
-            data.data.downloads.map { it.id } == listOf(2L, 3L) &&
-                    data.data.retryFailedDownloadIds == setOf(2L)
+            data.data.downloads.map { it.id } == listOf(2L, 3L)
+                    && data.data.retryFailedDownloadIds == setOf(2L)
         }
 
         viewModel.retryFailedDownloads()
@@ -586,11 +586,11 @@ class DownloadsViewModelTest {
     fun toggleDownloadsSeen_marksAllSeen_whenAnySelectedIsUnseen() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(id = 1L, title = "Seen", seen = true),
                     createDownload(id = 2L, title = "Unseen", seen = false),
                     createDownload(id = 3L, title = "Seen 2", seen = true),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -618,10 +618,10 @@ class DownloadsViewModelTest {
     fun toggleDownloadsSeen_ignoresIdsOutsideTheCurrentDownloads() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(id = 1L, title = "Seen", seen = true),
                     createDownload(id = 2L, title = "Unseen", seen = false),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -645,10 +645,10 @@ class DownloadsViewModelTest {
     fun toggleDownloadsSeen_marksAllUnseen_whenAllSelectedAreSeen() = runTest(testDispatcher) {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(
-                listOf(
+                value = listOf(
                     createDownload(id = 1L, title = "Seen", seen = true),
                     createDownload(id = 2L, title = "Seen 2", seen = true),
-                )
+                ),
             ),
             updateFlow = MutableStateFlow(null),
         )
@@ -723,10 +723,10 @@ class DownloadsViewModelTest {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(
-                AvailableUpdate(
+                value = AvailableUpdate(
                     tag = "v1.2.3",
                     localFilePath = "/tmp/update.apk",
-                )
+                ),
             ),
         )
 
@@ -755,10 +755,10 @@ class DownloadsViewModelTest {
         val viewModel = createViewModel(
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(
-                AvailableUpdate(
+                value = AvailableUpdate(
                     tag = "v1.2.3",
                     localFilePath = null,
-                )
+                ),
             ),
         )
 

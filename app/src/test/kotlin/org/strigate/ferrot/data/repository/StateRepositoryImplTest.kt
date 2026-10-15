@@ -88,7 +88,7 @@ class StateRepositoryImplTest {
 
         assertEquals(
             false,
-            repository.getDownloadsGridLayoutEnabledAsFlow().first()
+            repository.getDownloadsGridLayoutEnabledAsFlow().first(),
         )
     }
 

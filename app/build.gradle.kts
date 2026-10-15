@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "2.3.0"
-    const val VERSION_CODE = 39
+    const val BASE_VERSION = "2.4.0"
+    const val VERSION_CODE = 40
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val ARTIFACT_BASE_NAME = "ferrot"
 }
@@ -220,7 +220,10 @@ tasks.configureEach {
         mustRunAfter("clean")
     }
     if (isReleaseTask) {
-        mustRunAfter("testDebugUnitTest")
+        mustRunAfter(
+            ":app:testDebugUnitTest",
+            ":refinery:testDebugUnitTest",
+        )
     }
 }
 
@@ -233,13 +236,14 @@ tasks.register("buildReleaseArtifacts", ReleaseArtifactsTask::class.java) {
 
     group = "distribution"
     description = buildString {
-        append("Cleans the build, runs debug unit tests, ")
+        append("Cleans the build, runs debug unit tests in all modules, ")
         append("builds release APK and AAB and collects ")
         append("them into one directory.")
     }
     dependsOn(
         "clean",
-        "testDebugUnitTest",
+        ":app:testDebugUnitTest",
+        ":refinery:testDebugUnitTest",
         "assembleRelease",
         "bundleRelease",
     )
@@ -311,7 +315,8 @@ dependencies {
     // Room
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.sqlite.framework)
+    implementation(libs.androidx.sqlite.async)
     // Youtubedl-Android
     implementation(libs.youtubedl.android.library)
     implementation(libs.youtubedl.android.ffmpeg)

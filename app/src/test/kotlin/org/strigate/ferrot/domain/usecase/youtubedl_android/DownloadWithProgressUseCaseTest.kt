@@ -1,8 +1,12 @@
 package org.strigate.ferrot.domain.usecase.youtubedl_android
 
+import android.content.Context
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.YoutubeDLResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -16,13 +20,23 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
 import org.strigate.ferrot.app.integration.YoutubeDlClient
+import org.strigate.ferrot.app.integration.MediaToolsClient
+import org.strigate.ferrot.app.integration.withMediaProbeTimeout
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
+import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.test.MainDispatcherRule
+import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.download.RemoveMediaMetadataUseCase
+import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
+import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.verifyNoInteractions
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadWithProgressUseCaseTest {
@@ -41,10 +55,27 @@ class DownloadWithProgressUseCaseTest {
     @Mock
     private lateinit var youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer
 
+    @Mock
+    private lateinit var getIncludeAttributionEnabledSettingAsFlowUseCase: GetIncludeAttributionEnabledSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var getRemoveMediaMetadataEnabledSettingAsFlowUseCase: GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
+
+    @Mock
+    private lateinit var removeMediaMetadataUseCase: RemoveMediaMetadataUseCase
+
+    @Mock
+    private lateinit var context: Context
+
     @Before
     fun setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this)
+
         fakeClient = FakeYoutubeDlClient()
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(false))
+        `when`(getIncludeAttributionEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(true))
     }
 
     @Test
@@ -76,12 +107,14 @@ class DownloadWithProgressUseCaseTest {
         assertTrue(result.isEmpty())
         assertEquals("/storage/emulated/0/Movies/video.mp4", reportedOutputPath)
         assertEquals("bv*+ba/b", fakeClient.capturedRequest?.getOption("-f"))
+        assertTrue(fakeClient.capturedRequest?.hasOption("--postprocessor-args") == true)
         assertEquals("/tmp/%(title)s.%(ext)s", fakeClient.capturedRequest?.getOption("-o"))
         assertEquals("aria2c", fakeClient.capturedRequest?.getOption("--external-downloader"))
         verify(youtubeDlRuntimeInitializer)
             .initializeIfNeeded()
 
         assertEquals(listOf("process-1"), fakeClient.destroyedProcessIds)
+        verifyNoInteractions(removeMediaMetadataUseCase)
     }
 
     @Test
@@ -165,16 +198,155 @@ class DownloadWithProgressUseCaseTest {
         assertEquals(listOf("process-3"), fakeClient.destroyedProcessIds)
     }
 
+    @Test
+    fun invoke_readsAttributionPreferenceForEachDownload() = runTest(testDispatcher) {
+        val attributionEnabled = MutableStateFlow(false)
+
+        `when`(getIncludeAttributionEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(attributionEnabled)
+
+        val useCase = createUseCase()
+        for (enabled in listOf(false, true)) {
+            attributionEnabled.value = enabled
+            useCase(
+                url = "https://example.com/video",
+                template = "/tmp/%(title)s.%(ext)s",
+                profile = QualityProfile.MAX,
+                processId = "process-attribution-$enabled",
+                bytesProvider = { 0L },
+            ).toList()
+
+            assertEquals(enabled, fakeClient.capturedRequest?.hasOption("--postprocessor-args"))
+            assertTrue(fakeClient.capturedRequest?.hasOption("--add-metadata") == true)
+        }
+    }
+
+    @Test
+    fun invoke_cleansBothMediaTypesBeforeReportingOutput() = runTest(testDispatcher) {
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(true))
+
+        for (type in DownloadMediaType.entries) {
+            val pathFile = temporaryFolder.newFile("path-$type.txt")
+            val mediaFile = temporaryFolder.newFile("media-$type.mp4")
+            var cleaned = false
+            var reported = false
+            doAnswer {
+                cleaned = true
+                null
+            }.`when`(removeMediaMetadataUseCase).invoke(mediaFile)
+            fakeClient.onExecute = { _, _, _, _ ->
+                pathFile.writeText(mediaFile.absolutePath)
+                YoutubeDLResponse(emptyList(), 0, 0L, "", "")
+            }
+            createUseCase()(
+                url = "https://example.com/video",
+                template = "/tmp/%(title)s.%(ext)s",
+                profile = QualityProfile.MAX,
+                processId = "remove-$type",
+                bytesProvider = { 1L },
+                downloadMediaType = type,
+                outputPathFile = pathFile,
+                onOutputFilePath = {
+                    assertTrue(cleaned)
+                    reported = true
+                },
+            ).toList()
+
+            assertTrue(reported)
+            assertTrue(fakeClient.capturedRequest?.hasOption("--add-metadata") == false)
+            assertTrue(fakeClient.capturedRequest?.hasOption("--postprocessor-args") == false)
+            verify(removeMediaMetadataUseCase)
+                .invoke(mediaFile)
+        }
+    }
+
+    @Test
+    fun invoke_doesNotReportOutputWhenCleanupFails() = runTest(testDispatcher) {
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(true))
+
+        val pathFile = temporaryFolder.newFile("failed-path.txt")
+        val mediaFile = temporaryFolder.newFile("failed.mp4")
+        doAnswer { throw MetadataRemovalException() }
+            .`when`(removeMediaMetadataUseCase)
+            .invoke(mediaFile)
+
+        fakeClient.onExecute = { _, _, _, _ ->
+            pathFile.writeText(mediaFile.absolutePath)
+            YoutubeDLResponse(emptyList(), 0, 0L, "", "")
+        }
+        var reported = false
+        val failure = runCatching {
+            createUseCase()(
+                url = "https://example.com/video",
+                template = "/tmp/%(title)s.%(ext)s",
+                profile = QualityProfile.MAX,
+                processId = "failed-removal",
+                bytesProvider = { 0L },
+                outputPathFile = pathFile,
+                onOutputFilePath = { reported = true },
+            ).toList()
+        }.exceptionOrNull()
+
+        assertTrue(failure is MetadataRemovalException)
+        assertEquals(false, reported)
+    }
+
+    @Test
+    fun invoke_reportsProbeTimeoutWithoutHanging() = runTest(testDispatcher) {
+        `when`(getRemoveMediaMetadataEnabledSettingAsFlowUseCase.invoke())
+            .thenReturn(MutableStateFlow(true))
+        val pathFile = temporaryFolder.newFile("timeout-path.txt")
+        val mediaFile = temporaryFolder.newFile("timeout.mp4").apply { writeText("original") }
+        val mediaToolsClient = object : MediaToolsClient(context) {
+            override suspend fun probe(file: File): String = withContext(testDispatcher) {
+                withMediaProbeTimeout { awaitCancellation() }
+            }
+        }
+        fakeClient.onExecute = { _, _, _, _ ->
+            pathFile.writeText(mediaFile.absolutePath)
+            YoutubeDLResponse(emptyList(), 0, 0L, "", "")
+        }
+        var reported = false
+
+        val failure = runCatching {
+            createUseCase(metadataRemover = RemoveMediaMetadataUseCase(mediaToolsClient))(
+                url = "https://example.com/video",
+                template = "/tmp/%(title)s.%(ext)s",
+                profile = QualityProfile.MAX,
+                processId = "probe-timeout",
+                bytesProvider = { 0L },
+                outputPathFile = pathFile,
+                onOutputFilePath = { reported = true },
+            ).toList()
+        }.exceptionOrNull()
+
+        assertTrue(failure is MetadataRemovalException)
+        assertEquals(
+            "Media inspection timed out",
+            generateSequence(failure) { it.cause }.last().message
+        )
+        assertEquals(false, reported)
+        assertEquals("original", mediaFile.readText())
+        assertEquals(listOf("probe-timeout"), fakeClient.destroyedProcessIds)
+    }
+
     @After
     fun tearDown() {
         autoCloseable.close()
     }
 
-    private fun createUseCase() = DownloadWithProgressUseCase(
+    private fun createUseCase(
+        metadataRemover: RemoveMediaMetadataUseCase = removeMediaMetadataUseCase,
+    ) = DownloadWithProgressUseCase(
         buildVideoDownloadRequestUseCase = BuildVideoDownloadRequestUseCase(),
         buildAudioDownloadRequestUseCase = BuildAudioDownloadRequestUseCase(),
         youtubeDlRuntimeInitializer = youtubeDlRuntimeInitializer,
         youtubeDlClient = fakeClient,
+        getIncludeAttributionEnabledSettingAsFlowUseCase = getIncludeAttributionEnabledSettingAsFlowUseCase,
+        getRemoveMediaMetadataEnabledSettingAsFlowUseCase = getRemoveMediaMetadataEnabledSettingAsFlowUseCase,
+        removeMediaMetadataUseCase = metadataRemover,
     )
 
     private class FakeYoutubeDlClient : YoutubeDlClient() {

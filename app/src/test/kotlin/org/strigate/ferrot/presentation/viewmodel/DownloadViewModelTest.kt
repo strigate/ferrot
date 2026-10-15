@@ -28,11 +28,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.ArgumentMatchers.nullable
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -144,6 +144,7 @@ class DownloadViewModelTest {
     @Before
     fun setUp() = runTest(testDispatcher) {
         autoCloseable = MockitoAnnotations.openMocks(this@DownloadViewModelTest)
+
         `when`(isDownloadThumbnailAvailableUseCase.invoke(nullable(String::class.java)))
             .thenReturn(false)
     }
@@ -317,11 +318,11 @@ class DownloadViewModelTest {
     @Test
     fun uiState_filtersOutPendingDeleteDownloadIds() = runTest(testDispatcher) {
         val downloadsFlow = MutableStateFlow(
-            listOf(
+            value = listOf(
                 createDownloadWithMetadata(id = 10L, pendingDelete = false),
                 createDownloadWithMetadata(id = 20L, pendingDelete = true),
                 createDownloadWithMetadata(id = 30L, pendingDelete = false),
-            )
+            ),
         )
         val viewModel = createViewModel(
             initialId = 10L,
@@ -671,21 +672,21 @@ class DownloadViewModelTest {
                 flow {
                     kotlinx.coroutines.yield()
                     emit(createDownload(id = 66L, status = DownloadStatus.COMPLETED))
-                }
+                },
             )
         `when`(getDownloadVideoByDownloadIdAsFlowUseCase.invoke(66L))
             .thenReturn(
                 flow {
                     kotlinx.coroutines.yield()
                     emit(
-                        DownloadVideo(
+                        value = DownloadVideo(
                             downloadId = 66L,
                             filePath = "/tmp/suspending-video.mp4",
                             fileExtension = "mp4",
                             sha256 = null,
-                        )
+                        ),
                     )
-                }
+                },
             )
         `when`(getDownloadAudioByDownloadIdAsFlowUseCase.invoke(66L))
             .thenReturn(flowOf(null))
@@ -907,14 +908,14 @@ class DownloadViewModelTest {
         val thumbnailPath = "/tmp/thumb.jpg"
         val downloadFlow = MutableStateFlow<Download?>(createDownload(downloadId))
         val metadataFlow = MutableStateFlow(
-            DownloadMetadata(
+            value = DownloadMetadata(
                 downloadId = downloadId,
                 videoId = "video-id",
                 source = "yt",
                 title = "Example title",
                 thumbnailFilePath = thumbnailPath,
                 durationSeconds = 42,
-            )
+            ),
         )
         `when`(getDownloadByIdAsFlowUseCase.invoke(downloadId))
             .thenReturn(downloadFlow)
@@ -1004,7 +1005,7 @@ class DownloadViewModelTest {
             .thenReturn(
                 downloadsWithMetadataFlow ?: downloadIdsFlow.map { ids ->
                     ids.map { id -> createDownloadWithMetadata(id) }
-                }
+                },
             )
         `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(true))
             .thenReturn(flowOf(emptyList()))
