@@ -160,57 +160,26 @@ class DownloadsScreenScrollBehaviorTest {
     }
 
     @Test
-    fun shouldScrollToTopOnRestore_returnsTrue_whenTopItemWasRestoredAndListIsAtTop() {
-        val shouldScroll = shouldScrollToTopOnRestore(
-            restoredItemIds = setOf(1L),
-            currentItemIds = listOf(1L, 2L, 3L),
-            firstVisibleItemIndex = 0,
-        )
-
-        assertTrue(shouldScroll)
+    fun haveItemsReordered_returnsTrue_whenDownloadCompletes() {
+        assertTrue(haveItemsReordered(listOf(10L, 9L, 8L, 7L), listOf(9L, 8L, 7L, 10L)))
     }
 
     @Test
-    fun shouldScrollToTopOnRestore_returnsTrue_whenTopItemWasRestoredAndAnchorShiftedNearTop() {
-        val shouldScroll = shouldScrollToTopOnRestore(
-            restoredItemIds = setOf(1L),
-            currentItemIds = listOf(1L, 2L, 3L),
-            firstVisibleItemIndex = 1,
-        )
-
-        assertTrue(shouldScroll)
+    fun haveItemsReordered_returnsTrue_whenDownloadRetries() {
+        assertTrue(haveItemsReordered(listOf(9L, 8L, 7L, 10L), listOf(10L, 9L, 8L, 7L)))
     }
 
     @Test
-    fun shouldScrollToTopOnRestore_returnsFalse_whenTopItemWasNotRestored() {
-        val shouldScroll = shouldScrollToTopOnRestore(
-            restoredItemIds = setOf(3L),
-            currentItemIds = listOf(1L, 2L, 3L),
-            firstVisibleItemIndex = 0,
-        )
-
-        assertFalse(shouldScroll)
+    fun haveItemsReordered_returnsTrue_whenAnotherItemIsRemovedDuringCompletion() {
+        assertTrue(haveItemsReordered(listOf(10L, 9L, 8L, 7L), listOf(9L, 8L, 10L)))
     }
 
     @Test
-    fun shouldScrollToTopOnRestore_returnsFalse_whenListIsNotAtTop() {
-        val shouldScroll = shouldScrollToTopOnRestore(
-            restoredItemIds = setOf(1L),
-            currentItemIds = listOf(1L, 2L, 3L),
-            firstVisibleItemIndex = 2,
-        )
-
-        assertFalse(shouldScroll)
-    }
-
-    @Test
-    fun shouldScrollToTopOnRestore_returnsFalse_whenNoItemsWereRestored() {
-        val shouldScroll = shouldScrollToTopOnRestore(
-            restoredItemIds = emptySet(),
-            currentItemIds = listOf(1L, 2L, 3L),
-            firstVisibleItemIndex = 0,
-        )
-
-        assertFalse(shouldScroll)
+    fun haveItemsReordered_returnsFalse_whenItemsAreOnlyAddedOrRemoved() {
+        assertFalse(haveItemsReordered(listOf(3L, 2L, 1L), listOf(3L, 1L)))
+        assertFalse(haveItemsReordered(listOf(3L, 1L), listOf(3L, 2L, 1L)))
+        assertFalse(haveItemsReordered(emptyList(), listOf(3L, 2L, 1L)))
+        assertFalse(haveItemsReordered(listOf(3L, 2L, 1L), emptyList()))
+        assertFalse(haveItemsReordered(listOf(3L, 2L, 1L), listOf(3L, 2L, 1L)))
     }
 }
