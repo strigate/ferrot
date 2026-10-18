@@ -1,7 +1,8 @@
 package org.strigate.ferrot.app.integration
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.provider.CookieSetPathProvider
 import java.io.File
 import javax.inject.Inject
@@ -9,10 +10,11 @@ import javax.inject.Singleton
 
 @Singleton
 class CookieFileStore @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val cookieSetPathProvider: CookieSetPathProvider,
 ) {
     suspend fun writeCookies(cookieSetId: Long, content: String): File {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             cookieSetPathProvider.cookieFile(cookieSetId).apply {
                 parentFile?.mkdirs()
                 writeText(content)
@@ -21,7 +23,7 @@ class CookieFileStore @Inject constructor(
     }
 
     suspend fun copyCookies(cookieSetId: Long, source: File): File {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             cookieSetPathProvider.cookieFile(cookieSetId).apply {
                 parentFile?.mkdirs()
                 source.copyTo(this, overwrite = true)
@@ -30,7 +32,7 @@ class CookieFileStore @Inject constructor(
     }
 
     suspend fun copyCookiesToTemp(cookieSetId: Long, name: String): File? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val source = cookieSetPathProvider.cookieFile(cookieSetId)
             if (!source.exists() || source.length() <= 0L) {
                 return@withContext null
@@ -43,7 +45,7 @@ class CookieFileStore @Inject constructor(
     }
 
     suspend fun readCookies(cookieSetId: Long): String? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val source = cookieSetPathProvider.cookieFile(cookieSetId)
             if (!source.exists() || source.length() <= 0L) {
                 return@withContext null
@@ -53,19 +55,19 @@ class CookieFileStore @Inject constructor(
     }
 
     suspend fun deleteCookieSet(cookieSetId: Long) {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             cookieSetPathProvider.cookieSetDir(cookieSetId).deleteRecursively()
         }
     }
 
     suspend fun delete(file: File?) {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             file?.delete()
         }
     }
 
     suspend fun deleteStaleTempCookies() {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val cutoffMillis = System.currentTimeMillis() - STALE_TEMP_COOKIE_MAX_AGE_MILLIS
             listOf(
                 cookieSetPathProvider.tempDir(),

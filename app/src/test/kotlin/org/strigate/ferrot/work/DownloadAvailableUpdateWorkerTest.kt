@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -169,6 +170,7 @@ class DownloadAvailableUpdateWorkerTest {
     private fun createWorker() = DownloadAvailableUpdateWorker(
         appContext = appContext,
         workerParameters = mockWorkerParameters(),
+        ioDispatcher = UnconfinedTestDispatcher(),
         notificationService = notificationService,
         stateUseCase = stateUseCase,
         updatePathProvider = updatePathProvider,

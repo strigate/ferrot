@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.After
@@ -168,6 +169,7 @@ class DeleteAllDuplicateDownloadsWorkerTest {
     private fun createWorker() = DeleteAllDuplicateDownloadsWorker(
         appContext = appContext,
         workerParameters = mockWorkerParameters(),
+        ioDispatcher = UnconfinedTestDispatcher(),
         downloadUseCase = downloadUseCase,
         downloadVideoUseCase = downloadVideoUseCase,
         downloadMetadataUseCase = downloadMetadataUseCase,

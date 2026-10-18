@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -61,9 +62,9 @@ import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.YoutubeDlAndroidUseCase
 import org.strigate.ferrot.domain.usecase.combined.DeleteDownloadAndRelatedCombinedUseCase
 import org.strigate.ferrot.domain.usecase.cookieset.ResolveCookieSetForUrlUseCase
-import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
 import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
 import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
+import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadCompletedAtUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadErrorMessageUseCase
 import org.strigate.ferrot.domain.usecase.download.UpdateDownloadStartedAtUseCase
@@ -737,6 +738,7 @@ class DownloadWorkerTest {
             inputData = Data.Builder().putLong(KEY_ID, downloadId).build(),
             runAttemptCount = runAttemptCount,
         ),
+        ioDispatcher = UnconfinedTestDispatcher(),
         analyticsLogger = analyticsLogger,
         notificationService = notificationService,
         settingsUseCase = settingsUseCase,

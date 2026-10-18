@@ -12,6 +12,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -838,6 +839,7 @@ class DownloadsViewModelTest {
             .thenReturn(toggleArchivedDownloadsGridLayoutEnabledUseCase)
 
         return DownloadsViewModel(
+            defaultDispatcher = UnconfinedTestDispatcher(),
             savedStateHandle = SavedStateHandle(),
             analyticsLogger = analyticsLogger,
             downloadUseCase = downloadUseCase,

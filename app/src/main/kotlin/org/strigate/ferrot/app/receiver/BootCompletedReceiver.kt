@@ -6,12 +6,15 @@ import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.domain.usecase.SettingsUseCase
 import org.strigate.ferrot.domain.usecase.StateUseCase
 import org.strigate.ferrot.work.DeleteAllDuplicateDownloadsWorker
@@ -21,6 +24,12 @@ import kotlin.math.abs
 
 @AndroidEntryPoint
 class BootCompletedReceiver : BroadcastReceiver() {
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
+
+    private val ioScope by lazy { CoroutineScope(SupervisorJob() + ioDispatcher) }
+
     @Inject
     lateinit var stateUseCase: StateUseCase
 
@@ -35,20 +44,29 @@ class BootCompletedReceiver : BroadcastReceiver() {
             return
         }
         val currentBootTimeMillis = System.currentTimeMillis() - SystemClock.elapsedRealtime()
-        CoroutineScope(Dispatchers.IO).launch {
-            val bootTimeMillis = stateUseCase.getBootTimeMillisUseCase().firstOrNull()
-            if (bootTimeMillis == null || abs(bootTimeMillis - currentBootTimeMillis) > 5_000) {
-                stateUseCase.saveBootTimeMillisUseCase(currentBootTimeMillis)
-                Log.d(LOG_TAG, "Boot completed received")
+        val pendingResult = goAsync()
+        ioScope.launch {
+            try {
+                val bootTimeMillis = stateUseCase.getBootTimeMillisUseCase().firstOrNull()
+                if (bootTimeMillis == null || abs(bootTimeMillis - currentBootTimeMillis) > 5_000) {
+                    stateUseCase.saveBootTimeMillisUseCase(currentBootTimeMillis)
+                    Log.d(LOG_TAG, "Boot completed received")
 
-                RequeueResumableDownloadsWorker.enqueueOneTime(context)
-                val automaticDuplicateDownloadDeletionEnabled = settingsUseCase
-                    .getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase()
-                    .first()
+                    RequeueResumableDownloadsWorker.enqueueOneTime(context)
+                    val automaticDuplicateDownloadDeletionEnabled = settingsUseCase
+                        .getAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase()
+                        .first()
 
-                if (automaticDuplicateDownloadDeletionEnabled) {
-                    DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(context)
+                    if (automaticDuplicateDownloadDeletionEnabled) {
+                        DeleteAllDuplicateDownloadsWorker.enqueueDebouncedReplace(context)
+                    }
                 }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.w(LOG_TAG, "Failed to handle boot completion", exception)
+            } finally {
+                pendingResult.finish()
             }
         }
     }

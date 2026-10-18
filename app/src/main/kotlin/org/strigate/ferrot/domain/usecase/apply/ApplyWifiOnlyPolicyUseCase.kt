@@ -2,6 +2,7 @@ package org.strigate.ferrot.domain.usecase.apply
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import org.strigate.ferrot.app.integration.DownloadWorkScheduler
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.download.DeleteDownloadFilesUseCase
@@ -38,16 +39,16 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                     .forEach { download ->
                         runCatching {
                             updateDownloadErrorMessageUseCase(download.id, null)
-                        }
+                        }.onFailure { if (it is CancellationException) throw it }
                         runCatching {
                             updateDownloadStatusUseCase(
                                 status = DownloadStatus.WAITING_FOR_WIFI,
                                 downloadId = download.id,
                             )
-                        }
+                        }.onFailure { if (it is CancellationException) throw it }
                         runCatching {
                             deleteDownloadFilesUseCase(download.id)
-                        }
+                        }.onFailure { if (it is CancellationException) throw it }
                         downloadWorkScheduler.enqueueOneTimeReplace(download.id, true)
                     }
             }
@@ -59,13 +60,13 @@ class ApplyWifiOnlyPolicyUseCase @Inject constructor(
                 .forEach { download ->
                     runCatching {
                         updateDownloadErrorMessageUseCase(download.id, null)
-                    }
+                    }.onFailure { if (it is CancellationException) throw it }
                     runCatching {
                         updateDownloadStatusUseCase(
                             status = DownloadStatus.WAITING_FOR_NETWORK,
                             downloadId = download.id,
                         )
-                    }
+                    }.onFailure { if (it is CancellationException) throw it }
                     downloadWorkScheduler.enqueueOneTimeReplace(download.id, false)
                 }
         }

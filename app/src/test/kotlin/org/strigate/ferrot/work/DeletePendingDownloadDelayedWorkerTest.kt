@@ -5,9 +5,10 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -28,6 +29,7 @@ import org.strigate.ferrot.domain.usecase.download.GetDownloadByIdUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import java.util.UUID
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeletePendingDownloadDelayedWorkerTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -86,7 +88,7 @@ class DeletePendingDownloadDelayedWorkerTest {
         autoCloseable.close()
     }
 
-    private fun createWorker(downloadId: Long): DeletePendingDownloadDelayedWorker {
+    private fun TestScope.createWorker(downloadId: Long): DeletePendingDownloadDelayedWorker {
         val parameters = mock(WorkerParameters::class.java)
         `when`(parameters.id)
             .thenReturn(UUID.randomUUID())
@@ -96,6 +98,7 @@ class DeletePendingDownloadDelayedWorkerTest {
         return DeletePendingDownloadDelayedWorker(
             appContext = context,
             workerParameters = parameters,
+            ioDispatcher = UnconfinedTestDispatcher(testScheduler),
             downloadUseCase = downloadUseCase,
             deleteDownloadAndRelatedCombinedUseCase = deleteDownload,
             stopDownloadUseCase = stopDownload,
@@ -103,7 +106,5 @@ class DeletePendingDownloadDelayedWorkerTest {
     }
 
     private suspend fun doWork(worker: DeletePendingDownloadDelayedWorker) =
-        withContext(Dispatchers.IO) {
-            mockStatic(Log::class.java).use { worker.doWork() }
-        }
+        mockStatic(Log::class.java).use { worker.doWork() }
 }

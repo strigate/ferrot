@@ -5,25 +5,26 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.usecase.combined.GetResumableDownloadsCombinedUseCase
 import org.strigate.ferrot.domain.usecase.download.StartDownloadUseCase
 import java.util.UUID
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RequeueResumableDownloadsWorkerTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -54,6 +55,7 @@ class RequeueResumableDownloadsWorkerTest {
         val worker = RequeueResumableDownloadsWorker(
             appContext = context,
             workerParameters = parameters,
+            ioDispatcher = UnconfinedTestDispatcher(),
             getResumableDownloadsCombinedUseCase = getResumableDownloads,
             startDownloadUseCase = startDownload,
         )
@@ -69,7 +71,5 @@ class RequeueResumableDownloadsWorkerTest {
     }
 
     private suspend fun doWork(worker: RequeueResumableDownloadsWorker) =
-        withContext(Dispatchers.IO) {
-            mockStatic(Log::class.java).use { worker.doWork() }
-        }
+        mockStatic(Log::class.java).use { worker.doWork() }
 }

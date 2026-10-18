@@ -2,14 +2,17 @@ package org.strigate.ferrot.domain.usecase.combined
 
 import android.util.Log
 import com.yausername.youtubedl_android.mapper.VideoInfo
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -300,6 +303,26 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     @Suppress("UNCHECKED_CAST")
     private fun <T> anyObject(): T = org.mockito.Mockito.any<T>() ?: null as T
 
+    @Test
+    fun `cancelled metadata fetch does not save fallback metadata`() = runTest(testDispatcher) {
+        val download = sampleDownload()
+        val cancellation = CancellationException("Cancelled")
+
+        `when`(getDownloadByIdUseCase(download.id))
+            .thenReturn(download)
+        stubNoCookieSet(download.url)
+        `when`(getDownloadMetadataByIdAsFlowUseCase(download.id))
+            .thenReturn(flowOf(sampleMetadata()))
+        `when`(getVideoInfoUseCase(download.url))
+            .thenThrow(cancellation)
+
+        val failure = runCatching { createUseCase()(download.id) }.exceptionOrNull()
+
+        assertSame(cancellation, failure)
+        verify(saveDownloadMetadataUseCase, never()).invoke(anyObject())
+        verify(cookieFileStore).delete(null)
+    }
+
     @After
     fun tearDown() {
         logMock?.close()
@@ -308,6 +331,7 @@ class RefreshDownloadMetadataCombinedUseCaseTest {
     }
 
     private fun createUseCase() = RefreshDownloadMetadataCombinedUseCase(
+        ioDispatcher = UnconfinedTestDispatcher(),
         downloadUseCase = downloadUseCase,
         downloadMetadataUseCase = downloadMetadataUseCase,
         youtubeDlAndroidUseCase = youtubeDlAndroidUseCase,

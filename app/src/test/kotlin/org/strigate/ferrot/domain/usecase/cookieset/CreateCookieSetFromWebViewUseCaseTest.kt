@@ -1,7 +1,9 @@
 package org.strigate.ferrot.domain.usecase.cookieset
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,12 +23,16 @@ import org.strigate.ferrot.domain.repository.CookieSetRepository
 import java.io.File
 import java.nio.file.Files
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CreateCookieSetFromWebViewUseCaseTest {
     @Test
     fun invoke_savesWebViewCookiesForCurrentDomain() = runTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
-        val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
+        val cookieFileStore = CookieFileStore(
+            ioDispatcher = UnconfinedTestDispatcher(),
+            cookieSetPathProvider = TempCookieSetPathProvider(rootDir),
+        )
         val useCase = createUseCase(repository, cookieFileStore)
 
         try {
@@ -52,7 +58,10 @@ class CreateCookieSetFromWebViewUseCaseTest {
     fun invoke_returnsNull_whenCookieHeaderIsEmpty() = runTest {
         val rootDir = Files.createTempDirectory("cookie-webview").toFile()
         val repository = SavingCookieSetRepository()
-        val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
+        val cookieFileStore = CookieFileStore(
+            ioDispatcher = UnconfinedTestDispatcher(),
+            cookieSetPathProvider = TempCookieSetPathProvider(rootDir),
+        )
         val useCase = createUseCase(repository, cookieFileStore)
 
         try {
@@ -89,7 +98,10 @@ class CreateCookieSetFromWebViewUseCaseTest {
                 ),
             ),
         )
-        val cookieFileStore = CookieFileStore(TempCookieSetPathProvider(rootDir))
+        val cookieFileStore = CookieFileStore(
+            ioDispatcher = UnconfinedTestDispatcher(),
+            cookieSetPathProvider = TempCookieSetPathProvider(rootDir),
+        )
         val useCase = createUseCase(repository, cookieFileStore)
 
         try {

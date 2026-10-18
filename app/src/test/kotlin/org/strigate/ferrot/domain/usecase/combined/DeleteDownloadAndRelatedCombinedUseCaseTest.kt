@@ -3,6 +3,7 @@ package org.strigate.ferrot.domain.usecase.combined
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -222,6 +223,7 @@ class DeleteDownloadAndRelatedCombinedUseCaseTest {
     }
 
     private fun createUseCase() = DeleteDownloadAndRelatedCombinedUseCase(
+        ioDispatcher = UnconfinedTestDispatcher(),
         downloadUseCase = downloadUseCase,
         downloadAudioUseCase = downloadAudioUseCase,
         downloadVideoUseCase = downloadVideoUseCase,
