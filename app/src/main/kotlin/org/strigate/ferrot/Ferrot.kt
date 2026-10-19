@@ -6,8 +6,9 @@ import android.content.IntentFilter
 import android.util.Log
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsLogger
@@ -15,6 +16,7 @@ import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.FirstRunState
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.di.WorkerFactory
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.receiver.AirplaneModeReceiver
 import org.strigate.ferrot.domain.usecase.combined.ConfigureBackgroundWorkUseCase
 import org.strigate.ferrot.domain.usecase.dependencyupdate.RequestInitialDependencyUpdateCheckUseCase
@@ -22,7 +24,11 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class Ferrot : Application(), Configuration.Provider {
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
+
+    private val applicationScope by lazy { CoroutineScope(SupervisorJob() + ioDispatcher) }
 
     @Inject
     lateinit var workerFactory: WorkerFactory
@@ -63,12 +69,14 @@ class Ferrot : Application(), Configuration.Provider {
                     firstRunState.markInitialized()
                 }
             }.onFailure {
+                if (it is CancellationException) throw it
                 Log.w(LOG_TAG, "Failed to run first-run updates", it)
             }
             runCatching {
                 configureWork()
                 Log.i(LOG_TAG, "Configured background work")
             }.onFailure {
+                if (it is CancellationException) throw it
                 Log.w(LOG_TAG, "Failed to configure background work", it)
             }
         }

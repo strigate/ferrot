@@ -13,6 +13,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.yausername.youtubedl_android.YoutubeDL
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
@@ -29,6 +32,7 @@ import java.util.concurrent.TimeUnit
 class UpdateDependenciesWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val stateUseCase: StateUseCase,
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
@@ -40,10 +44,12 @@ class UpdateDependenciesWorker(
             )
             youtubeDlRuntimeInitializer.initializeIfNeeded()
             Log.d(LOG_TAG, "$tag Starting YoutubeDL update")
-            val updateStatus = YoutubeDL.getInstance().updateYoutubeDL(
-                updateChannel = YoutubeDL.UpdateChannel.STABLE,
-                appContext = appContext,
-            )
+            val updateStatus = withContext(ioDispatcher) {
+                YoutubeDL.getInstance().updateYoutubeDL(
+                    updateChannel = YoutubeDL.UpdateChannel.STABLE,
+                    appContext = appContext,
+                )
+            }
             Log.d(LOG_TAG, "$tag Finished YoutubeDL update: status=$updateStatus")
 
             if (isAppInForeground()) {
@@ -62,6 +68,8 @@ class UpdateDependenciesWorker(
                 }
             }
             markCheckSuccess()
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (throwable: Throwable) {
             Log.wtf(LOG_TAG, "$tag Update failed", throwable)
             markCheckFailure()
@@ -80,6 +88,7 @@ class UpdateDependenciesWorker(
         runCatching {
             stateUseCase.saveLastDependencyUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
+            if (it is CancellationException) throw it
             Log.w(LOG_TAG, "UpdateDependencies: Failed to save last check timestamp", it)
         }
         return result

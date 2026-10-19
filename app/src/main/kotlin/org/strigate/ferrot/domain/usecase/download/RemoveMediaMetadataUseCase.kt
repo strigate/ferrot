@@ -1,11 +1,12 @@
 package org.strigate.ferrot.domain.usecase.download
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.integration.MediaToolsClient
 import java.io.File
 import java.io.IOException
@@ -17,9 +18,10 @@ import kotlin.math.abs
 import kotlin.math.max
 
 class RemoveMediaMetadataUseCase @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val mediaToolsClient: MediaToolsClient,
 ) {
-    suspend operator fun invoke(file: File): Unit = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(file: File): Unit = withContext(ioDispatcher) {
         var replacement: File? = null
         try {
             require(file.isFile && file.length() > 0L) { "Media file is missing or empty" }

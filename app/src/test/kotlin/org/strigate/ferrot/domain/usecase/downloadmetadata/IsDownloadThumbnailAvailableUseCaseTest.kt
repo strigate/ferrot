@@ -1,5 +1,7 @@
 package org.strigate.ferrot.domain.usecase.downloadmetadata
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -7,11 +9,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class IsDownloadThumbnailAvailableUseCaseTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
-    private val useCase = IsDownloadThumbnailAvailableUseCase()
+    private val useCase = IsDownloadThumbnailAvailableUseCase(UnconfinedTestDispatcher())
 
     @Test
     fun rejectsMissingEmptyAndDirectoryPaths() = runTest {

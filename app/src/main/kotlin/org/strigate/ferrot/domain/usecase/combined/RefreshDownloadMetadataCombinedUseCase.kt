@@ -1,10 +1,13 @@
 package org.strigate.ferrot.domain.usecase.combined
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.domain.model.DownloadMetadata
@@ -16,6 +19,7 @@ import java.io.File
 import javax.inject.Inject
 
 class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val downloadUseCase: DownloadUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val youtubeDlAndroidUseCase: YoutubeDlAndroidUseCase,
@@ -45,13 +49,16 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
                     cookieFilePath = cookieFilePath,
                 )
             }.onFailure {
+                if (it is CancellationException) throw it
                 Log.w(LOG_TAG, "$tag Metadata fetch failed", it)
             }.getOrNull()
 
-            val outputDir = downloadPathProvider.uidDir(download.uid)
+            val outputDir = withContext(ioDispatcher) {
+                downloadPathProvider.uidDir(download.uid)
+            }
             val existingThumbnailPath = existingMetadata
                 ?.thumbnailFilePath
-                ?.takeIf(::thumbnailExists)
+                ?.takeIf { thumbnailExists(it) }
 
             val thumbnailFilePath = runCatching {
                 youtubeDlAndroidUseCase.downloadThumbnailUseCase(
@@ -61,6 +68,7 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
                     cookieFilePath = cookieFilePath,
                 )
             }.onFailure {
+                if (it is CancellationException) throw it
                 Log.w(LOG_TAG, "$tag Thumbnail fetch failed", it)
             }.getOrNull() ?: existingThumbnailPath
 
@@ -110,7 +118,7 @@ class RefreshDownloadMetadataCombinedUseCase @Inject constructor(
         return tempFile
     }
 
-    private fun thumbnailExists(path: String): Boolean {
-        return File(path).exists()
+    private suspend fun thumbnailExists(path: String): Boolean = withContext(ioDispatcher) {
+        File(path).exists()
     }
 }

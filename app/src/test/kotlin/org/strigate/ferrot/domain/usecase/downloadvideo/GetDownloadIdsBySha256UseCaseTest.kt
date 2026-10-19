@@ -1,9 +1,10 @@
 package org.strigate.ferrot.domain.usecase.downloadvideo
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
@@ -13,7 +14,6 @@ import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.repository.DownloadVideoRepository
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetDownloadIdsBySha256UseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -59,6 +59,17 @@ class GetDownloadIdsBySha256UseCaseTest {
         assertEquals(emptyList<Long>(), result)
         verify(downloadVideoRepository)
             .getDownloadIdsBySha256(sha256)
+    }
+
+    @Test
+    fun `propagates cancellation`() = runTest {
+        val cancellation = CancellationException("Cancelled")
+        `when`(downloadVideoRepository.getDownloadIdsBySha256("abc"))
+            .thenThrow(cancellation)
+
+        val failure = runCatching { createUseCase()("abc") }.exceptionOrNull()
+
+        assertSame(cancellation, failure)
     }
 
     @After

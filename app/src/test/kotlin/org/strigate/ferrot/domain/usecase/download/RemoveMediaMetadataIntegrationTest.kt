@@ -49,8 +49,9 @@ class RemoveMediaMetadataIntegrationTest {
             "Desktop FFmpeg and ffprobe are required",
             ffmpeg.canExecute() && ffprobe.canExecute(),
         )
-        client = object : MediaToolsClient(context) {
+        client = object : MediaToolsClient(context, Dispatchers.IO) {
             override suspend fun probe(file: File): String = runMediaProcess(
+                ioDispatcher = Dispatchers.IO,
                 command = listOf(
                     ffprobe.path,
                     "-v",
@@ -104,7 +105,7 @@ class RemoveMediaMetadataIntegrationTest {
             val originalHash = decodedHash(file)
             assertTrue(client.probe(file).contains("Private"))
 
-            RemoveMediaMetadataUseCase(client)(file)
+            RemoveMediaMetadataUseCase(Dispatchers.IO, client)(file)
 
             val info = client.probe(file)
             assertFalse("Private metadata survived in $extension", info.contains("Private"))
@@ -140,9 +141,13 @@ class RemoveMediaMetadataIntegrationTest {
                 rotated.path,
             ),
         )
-        RemoveMediaMetadataUseCase(client)(rotated)
-        val rotation = JSONObject(client.probe(rotated)).getJSONArray("streams").getJSONObject(0)
-            .getJSONArray("side_data_list").getJSONObject(0).getInt("rotation")
+        RemoveMediaMetadataUseCase(Dispatchers.IO, client)(rotated)
+        val rotation = JSONObject(client.probe(rotated))
+            .getJSONArray("streams")
+            .getJSONObject(0)
+            .getJSONArray("side_data_list")
+            .getJSONObject(0).getInt("rotation")
+
         assertEquals(90, rotation)
 
         val attachment = temporaryFolder.newFile("private.json").apply {
@@ -163,7 +168,7 @@ class RemoveMediaMetadataIntegrationTest {
             ),
         )
         assertEquals(2, JSONObject(client.probe(attached)).getJSONArray("streams").length())
-        RemoveMediaMetadataUseCase(client)(attached)
+        RemoveMediaMetadataUseCase(Dispatchers.IO, client)(attached)
         assertEquals(1, JSONObject(client.probe(attached)).getJSONArray("streams").length())
 
         val cover = File(temporaryFolder.root, "cover.jpg")
@@ -191,7 +196,7 @@ class RemoveMediaMetadataIntegrationTest {
             ),
         )
         assertEquals(2, JSONObject(client.probe(mp3)).getJSONArray("streams").length())
-        RemoveMediaMetadataUseCase(client)(mp3)
+        RemoveMediaMetadataUseCase(Dispatchers.IO, client)(mp3)
         assertEquals(1, JSONObject(client.probe(mp3)).getJSONArray("streams").length())
     }
 
@@ -209,6 +214,7 @@ class RemoveMediaMetadataIntegrationTest {
             )
             val process = async(Dispatchers.IO) {
                 runMediaProcess(
+                    ioDispatcher = Dispatchers.IO,
                     command = command,
                     environment = emptyMap(),
                     temporaryDirectory = temporaryFolder.root,
@@ -219,7 +225,8 @@ class RemoveMediaMetadataIntegrationTest {
                 process.cancelAndJoin()
                 assertFalse(ProcessHandle.of(processId).map { it.isAlive }.orElse(false))
                 assertFalse(
-                    temporaryFolder.root.listFiles()!!.any { it.name.startsWith("media-process-") })
+                    temporaryFolder.root.listFiles()!!.any { it.name.startsWith("media-process-") }
+                )
             } finally {
                 process.cancelAndJoin()
             }
@@ -231,6 +238,7 @@ class RemoveMediaMetadataIntegrationTest {
         val pidFile = temporaryFolder.newFile("noisy-process.pid")
         val failure = runCatching {
             runMediaProcess(
+                ioDispatcher = Dispatchers.IO,
                 command = listOf(
                     "/bin/sh",
                     "-c",
@@ -266,6 +274,7 @@ class RemoveMediaMetadataIntegrationTest {
         }
 
     private suspend fun runFfmpeg(arguments: List<String>): String = runMediaProcess(
+        ioDispatcher = Dispatchers.IO,
         command = listOf(ffmpeg.path, "-nostdin", "-v", "error", "-y") + arguments,
         environment = emptyMap(),
         temporaryDirectory = temporaryFolder.root,

@@ -3,8 +3,10 @@ package org.strigate.ferrot.domain.usecase.cookieset
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -26,6 +28,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CreateCookieSetFromFileUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -49,7 +52,7 @@ class CreateCookieSetFromFileUseCaseTest {
         val cacheDir = File(rootDir, "cache").apply { mkdirs() }
         val repository = SavingCookieSetRepository()
         val pathProvider = TempCookieSetPathProvider(rootDir)
-        val cookieFileStore = CookieFileStore(pathProvider)
+        val cookieFileStore = CookieFileStore(UnconfinedTestDispatcher(), pathProvider)
 
         `when`(appContext.cacheDir)
             .thenReturn(cacheDir)
@@ -87,7 +90,7 @@ class CreateCookieSetFromFileUseCaseTest {
         val cacheDir = File(rootDir, "cache").apply { mkdirs() }
         val repository = SavingCookieSetRepository()
         val pathProvider = TempCookieSetPathProvider(rootDir)
-        val cookieFileStore = CookieFileStore(pathProvider)
+        val cookieFileStore = CookieFileStore(UnconfinedTestDispatcher(), pathProvider)
 
         `when`(appContext.cacheDir)
             .thenReturn(cacheDir)
@@ -131,6 +134,7 @@ class CreateCookieSetFromFileUseCaseTest {
     ): CreateCookieSetFromFileUseCase {
         return CreateCookieSetFromFileUseCase(
             appContext = appContext,
+            ioDispatcher = UnconfinedTestDispatcher(),
             cookieSetRepository = repository,
             cookieSetDomainParser = CookieSetDomainParser(),
             cookieFileStore = cookieFileStore,

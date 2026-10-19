@@ -12,7 +12,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.yausername.youtubedl_android.YoutubeDL
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -64,6 +64,7 @@ import kotlin.math.max
 class DownloadWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val analyticsLogger: AnalyticsLogger,
     private val notificationService: NotificationService,
     private val settingsUseCase: SettingsUseCase,
@@ -84,7 +85,7 @@ class DownloadWorker(
     private var lastForegroundProgress: Int = -1
     private val qualityProfile: QualityProfile = QualityProfile.MAX
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         _downloadId = inputData.getLong(KEY_ID, -1L)
 
         val downloadId = _downloadId
@@ -93,11 +94,11 @@ class DownloadWorker(
 
         if (runAttemptCount > 20 || downloadId <= 0L) {
             Log.w(LOG_TAG, "$tag Invalid download ID or attempts exhausted")
-            return Result.failure()
+            return@withContext Result.failure()
         }
 
         val download = downloadUseCase.getDownloadByIdUseCase(downloadId)
-            ?: return handleDownloadFailedResult()
+            ?: return@withContext handleDownloadFailedResult()
 
         val canStart = when (download.status) {
             DownloadStatus.QUEUED,
@@ -111,12 +112,12 @@ class DownloadWorker(
         }
         if (!canStart) {
             Log.w(LOG_TAG, "$tag Cannot start from status=${download.status}")
-            return Result.failure()
+            return@withContext Result.failure()
         }
 
         val notificationExtras = downloadNotificationExtras(download.id)
         var wasDownloadDeleted = false
-        return coroutineScope mainScope@{
+        coroutineScope mainScope@{
             var workerCookieFile: File? = null
             try {
                 downloadUseCase.updateDownloadStatusUseCase(downloadId, DownloadStatus.METADATA)
@@ -156,7 +157,7 @@ class DownloadWorker(
                 }
 
                 Log.d(LOG_TAG, "$tag Metadata: fetching")
-                val videoInfo = withContext(Dispatchers.IO) {
+                val videoInfo = withContext(ioDispatcher) {
                     runCatching {
                         youtubeDlAndroidUseCase.getVideoInfoUseCase(
                             url = download.url,
@@ -196,7 +197,7 @@ class DownloadWorker(
 
                 Log.d(LOG_TAG, "$tag Thumbnail: fetching")
                 if (videoInfo?.id != null) {
-                    withContext(Dispatchers.IO) {
+                    withContext(ioDispatcher) {
                         runCatching {
                             thumbnailFilePath = youtubeDlAndroidUseCase
                                 .downloadThumbnailUseCase(
@@ -275,7 +276,7 @@ class DownloadWorker(
                 val videoOutputPathFile = File(uidDir, ".video-output-path.txt")
 
                 Log.d(LOG_TAG, "$tag Video: downloading")
-                val videoOutputFilePath = withContext(Dispatchers.IO) {
+                val videoOutputFilePath = withContext(ioDispatcher) {
                     collectPhase(
                         processId = videoProcessId,
                         url = download.url,
@@ -312,7 +313,7 @@ class DownloadWorker(
                     .extractFileExtension()
                     .orEmpty()
 
-                val sha256 = withContext(Dispatchers.IO) {
+                val sha256 = withContext(ioDispatcher) {
                     sha256(videoOutputFilePath)
                 }
                 downloadVideoUseCase.saveDownloadVideoUseCase(
@@ -324,7 +325,7 @@ class DownloadWorker(
                     )
                 )
 
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     val bytesDownloaded = directoryBytesSum(uidDir)
                     downloadProgressUseCase.updateDownloadProgressUseCase(
                         id = downloadId,
@@ -342,7 +343,7 @@ class DownloadWorker(
                 Log.d(LOG_TAG, "$tag Audio: downloading")
                 try {
                     val audioOutputPathFile = File(uidDir, ".audio-output-path.txt")
-                    val audioOutputFilePath = withContext(Dispatchers.IO) {
+                    val audioOutputFilePath = withContext(ioDispatcher) {
                         collectPhase(
                             processId = audioProcessId,
                             url = download.url,

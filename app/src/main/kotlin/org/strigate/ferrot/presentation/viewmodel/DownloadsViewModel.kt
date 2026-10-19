@@ -4,7 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.app.di.module.DefaultDispatcher
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
@@ -41,6 +43,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     savedStateHandle: SavedStateHandle,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
@@ -147,7 +150,7 @@ class DownloadsViewModel @Inject constructor(
                     rightSwipeAction = rightSwipeAction,
                 ),
             )
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(defaultDispatcher)
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
@@ -276,7 +279,7 @@ class DownloadsViewModel @Inject constructor(
                 bytesDownloaded = 0L,
                 etaSeconds = null,
             )
-        }
+        }.onFailure { if (it is CancellationException) throw it }
         stopDownloadsUseCase(downloadId)
     }
 

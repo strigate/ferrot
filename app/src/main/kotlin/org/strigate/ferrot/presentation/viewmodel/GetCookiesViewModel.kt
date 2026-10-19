@@ -3,6 +3,7 @@ package org.strigate.ferrot.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -47,7 +48,7 @@ class GetCookiesViewModel @Inject constructor(
                     url = url,
                     rawCookieHeader = cookieHeader,
                 ) != null
-            }.getOrDefault(false)
+            }.onFailure { if (it is CancellationException) throw it }.getOrDefault(false)
             if (saved) {
                 _event.emit(GetCookiesEvent.ShowToast(R.string.toast_cookie_set_saved))
                 _event.emit(GetCookiesEvent.Saved)

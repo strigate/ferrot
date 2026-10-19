@@ -1,5 +1,7 @@
 package org.strigate.ferrot.domain.usecase.cookieset
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.cookies.CookieHeaderFileBuilder
 import org.strigate.ferrot.cookies.ParsedCookieDomain
@@ -55,7 +57,9 @@ class CreateCookieSetFromWebViewUseCase @Inject constructor(
             deleteCookieSetsWithMatchingDomains(cookieSetId, domains)
             cookieSetRepository.getByIdWithDomains(cookieSetId)
         }.getOrElse { throwable ->
-            deleteCookieSetUseCase(cookieSetId)
+            withContext(NonCancellable) {
+                deleteCookieSetUseCase(cookieSetId)
+            }
             throw throwable
         }.also { cookieSetWithDomains ->
             if (cookieSetWithDomains == null) {

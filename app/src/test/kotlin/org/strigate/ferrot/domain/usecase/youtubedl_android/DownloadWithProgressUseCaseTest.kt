@@ -5,12 +5,13 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.YoutubeDLResponse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -20,22 +21,22 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
-import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.app.integration.MediaToolsClient
+import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.app.integration.withMediaProbeTimeout
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
-import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
-import org.strigate.ferrot.test.MainDispatcherRule
-import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
-import org.strigate.ferrot.domain.usecase.download.RemoveMediaMetadataUseCase
 import org.strigate.ferrot.domain.usecase.download.MetadataRemovalException
-import org.mockito.Mockito.doAnswer
-import org.mockito.Mockito.verifyNoInteractions
+import org.strigate.ferrot.domain.usecase.download.RemoveMediaMetadataUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetIncludeAttributionEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.domain.usecase.settings.GetRemoveMediaMetadataEnabledSettingAsFlowUseCase
+import org.strigate.ferrot.test.MainDispatcherRule
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -299,7 +300,7 @@ class DownloadWithProgressUseCaseTest {
             .thenReturn(MutableStateFlow(true))
         val pathFile = temporaryFolder.newFile("timeout-path.txt")
         val mediaFile = temporaryFolder.newFile("timeout.mp4").apply { writeText("original") }
-        val mediaToolsClient = object : MediaToolsClient(context) {
+        val mediaToolsClient = object : MediaToolsClient(context, UnconfinedTestDispatcher()) {
             override suspend fun probe(file: File): String = withContext(testDispatcher) {
                 withMediaProbeTimeout { awaitCancellation() }
             }
@@ -311,7 +312,12 @@ class DownloadWithProgressUseCaseTest {
         var reported = false
 
         val failure = runCatching {
-            createUseCase(metadataRemover = RemoveMediaMetadataUseCase(mediaToolsClient))(
+            createUseCase(
+                metadataRemover = RemoveMediaMetadataUseCase(
+                    UnconfinedTestDispatcher(),
+                    mediaToolsClient
+                )
+            )(
                 url = "https://example.com/video",
                 template = "/tmp/%(title)s.%(ext)s",
                 profile = QualityProfile.MAX,
@@ -340,6 +346,7 @@ class DownloadWithProgressUseCaseTest {
     private fun createUseCase(
         metadataRemover: RemoveMediaMetadataUseCase = removeMediaMetadataUseCase,
     ) = DownloadWithProgressUseCase(
+        ioDispatcher = UnconfinedTestDispatcher(),
         buildVideoDownloadRequestUseCase = BuildVideoDownloadRequestUseCase(),
         buildAudioDownloadRequestUseCase = BuildAudioDownloadRequestUseCase(),
         youtubeDlRuntimeInitializer = youtubeDlRuntimeInitializer,

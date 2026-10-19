@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.cookies.CookieSetDomainParser
 import org.strigate.ferrot.cookies.ParsedCookieDomain
@@ -19,6 +21,7 @@ import javax.inject.Inject
 
 class CreateCookieSetFromFileUseCase @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val cookieSetRepository: CookieSetRepository,
     private val cookieSetDomainParser: CookieSetDomainParser,
     private val cookieFileStore: CookieFileStore,
@@ -47,7 +50,11 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
                 val cookieFile = cookieFileStore.copyCookies(cookieSetId, tempFile)
                 val parsedDomains = cookieSetDomainParser
                     .parseDomainList(rawDomains, includeSubdomains)
-                    .ifEmpty { cookieSetDomainParser.parseNetscapeDomains(cookieFile) }
+                    .ifEmpty {
+                        withContext(ioDispatcher) {
+                            cookieSetDomainParser.parseNetscapeDomains(cookieFile)
+                        }
+                    }
 
                 if (parsedDomains.isEmpty()) {
                     return@runCatching null
@@ -66,10 +73,14 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
                 deleteCookieSetsWithMatchingDomains(cookieSetId, parsedDomains)
                 cookieSetRepository.getByIdWithDomains(cookieSetId)
             } finally {
-                tempFile.delete()
+                withContext(NonCancellable + ioDispatcher) {
+                    tempFile.delete()
+                }
             }
         }.getOrElse { throwable ->
-            deleteCookieSetUseCase(cookieSetId)
+            withContext(NonCancellable) {
+                deleteCookieSetUseCase(cookieSetId)
+            }
             throw throwable
         }.also { cookieSetWithDomains ->
             if (cookieSetWithDomains == null) {
@@ -91,7 +102,7 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
     }
 
     private suspend fun copyUriToTempFile(uri: Uri): File? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val tempFile = File.createTempFile("cookie-import", ".txt", appContext.cacheDir)
             try {
                 val inputStream = appContext.contentResolver.openInputStream(uri)
@@ -113,7 +124,7 @@ class CreateCookieSetFromFileUseCase @Inject constructor(
     }
 
     private suspend fun displayNameFromUri(uri: Uri): String? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 appContext.contentResolver.query(
                     uri,

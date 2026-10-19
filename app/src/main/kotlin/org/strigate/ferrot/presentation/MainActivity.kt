@@ -20,6 +20,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.Action.ACTION_INSTALL_AVAILABLE_UPDATE
@@ -33,15 +35,22 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_SHARED_URL_UID
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.ShareIntentParser
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.extensions.toast
 import org.strigate.ferrot.helper.InstallHelper
+import org.strigate.ferrot.presentation.local.LocalIoDispatcher
 import org.strigate.ferrot.presentation.theme.Dimens
 import org.strigate.ferrot.presentation.theme.LocalDimens
 import org.strigate.ferrot.util.isAtLeastTiramisu
 import org.strigate.refinery.theme.RefineryTheme
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
+
     private val viewModel: MainViewModel by viewModels()
 
     private val notificationsPermissionLauncher = registerForActivityResult(
@@ -125,6 +134,7 @@ class MainActivity : ComponentActivity() {
             RefineryTheme {
                 CompositionLocalProvider(
                     LocalDimens provides Dimens(),
+                    LocalIoDispatcher provides ioDispatcher,
                 ) {
                     val navController = rememberNavController()
                     var permissionsRequested by rememberSaveable { mutableStateOf(false) }
@@ -165,6 +175,8 @@ class MainActivity : ComponentActivity() {
                                 launchSingleTop = true
                                 restoreState = false
                             }
+                        } catch (exception: CancellationException) {
+                            throw exception
                         } catch (throwable: Throwable) {
                             Log.w(LOG_TAG, "Navigation failed: ${throwable.message}", throwable)
                         } finally {

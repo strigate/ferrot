@@ -9,7 +9,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
@@ -27,11 +28,12 @@ import kotlin.time.Duration.Companion.milliseconds
 class DeletePendingDownloadDelayedWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val downloadUseCase: DownloadUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
     private val stopDownloadUseCase: StopDownloadUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         val tag = "DeletePendingDownloadDelayed:"
         val downloadId = inputData.getLong(KEY_ID, -1L)
         if (downloadId <= 0L) {
@@ -70,6 +72,7 @@ class DeletePendingDownloadDelayedWorker(
             deleteDownloadAndRelatedCombinedUseCase(downloadId)
             Log.d(LOG_TAG, "$tag Deleted downloadId=$downloadId")
         }.onFailure {
+            if (it is CancellationException) throw it
             Log.w(LOG_TAG, "$tag Failed to delete downloadId=$downloadId", it)
         }
         Result.success()

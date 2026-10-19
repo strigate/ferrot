@@ -3,16 +3,20 @@ package org.strigate.ferrot.app.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.R
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Extras.EXTRA_NOTIFICATION_ACTION
+import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType
 import org.strigate.ferrot.app.actions.DownloadNotificationActionType.DELETE
@@ -25,6 +29,7 @@ import org.strigate.ferrot.app.actions.buildDownloadNotificationAction
 import org.strigate.ferrot.app.actions.buildShareDownloadNotificationAction
 import org.strigate.ferrot.app.actions.downloadNotificationExtras
 import org.strigate.ferrot.app.actions.downloadNotificationTag
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.domain.model.Download
 import org.strigate.ferrot.domain.model.DownloadStatus
 import org.strigate.ferrot.domain.model.DownloadVideo
@@ -43,6 +48,12 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
     @Inject
     @ApplicationContext
     lateinit var appContext: Context
+
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
+
+    private val ioScope by lazy { CoroutineScope(SupervisorJob() + ioDispatcher) }
 
     @Inject
     lateinit var notificationService: NotificationService
@@ -70,7 +81,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
+        ioScope.launch {
             try {
                 val action = intent.getStringExtra(EXTRA_NOTIFICATION_ACTION)
                     ?.let { runCatching { DownloadNotificationActionType.valueOf(it) }.getOrNull() }
@@ -90,6 +101,10 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                     RETRY -> handleRetry(downloadId)
                     STOP -> handleStop(downloadId)
                 }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.w(LOG_TAG, "Failed to handle notification action", exception)
             } finally {
                 pendingResult.finish()
             }
@@ -133,7 +148,7 @@ class DownloadNotificationActionReceiver : BroadcastReceiver() {
                 bytesDownloaded = 0L,
                 etaSeconds = null,
             )
-        }
+        }.onFailure { if (it is CancellationException) throw it }
         stopDownloadUseCase(downloadId)
     }
 

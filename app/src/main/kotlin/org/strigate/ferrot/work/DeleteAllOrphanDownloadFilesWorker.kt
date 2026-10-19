@@ -12,7 +12,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_DELETE_ORPHAN_DOWNLOAD_FILES
@@ -31,13 +31,14 @@ import java.util.concurrent.TimeUnit
 class DeleteAllOrphanDownloadFilesWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val downloadPathProvider: DownloadPathProvider,
     private val downloadUseCase: DownloadUseCase,
     private val downloadAudioUseCase: DownloadAudioUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         val tag = "DeleteAllOrphanDownloadFiles:"
         Log.d(LOG_TAG, "$tag Starting orphan file cleanup")
 
