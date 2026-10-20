@@ -197,10 +197,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
     fun requestNotificationsPermissionsIfNeeded() {
         if (!isAtLeastTiramisu()) {
             return
