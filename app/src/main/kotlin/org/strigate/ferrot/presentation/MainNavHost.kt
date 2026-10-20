@@ -16,7 +16,6 @@ import org.strigate.ferrot.presentation.screen.CookiesScreen
 import org.strigate.ferrot.presentation.screen.SettingsScreen
 import org.strigate.ferrot.presentation.screen.UpdatesScreen
 import org.strigate.ferrot.presentation.screen.download.DownloadScreen
-import org.strigate.ferrot.presentation.screen.downloads.ArchivedScreen
 import org.strigate.ferrot.presentation.screen.downloads.DownloadsScreen
 import org.strigate.ferrot.presentation.screen.getcookies.GetCookiesScreen
 
@@ -40,14 +39,29 @@ fun MainNavHost(
             fadeOut(TweenSpec(easing = LinearEasing))
         },
     ) {
-        composable(Screen.Downloads.route) {
+        composable(
+            route = Screen.Downloads.route,
+            arguments = listOf(
+                navArgument(Screen.ARG_ARCHIVED) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
+        ) {
             DownloadsScreen(
                 navController = navController,
-                archived = false,
             )
         }
-        composable(Screen.Archived.route) {
-            ArchivedScreen(
+        composable(
+            route = Screen.Archived.route,
+            arguments = listOf(
+                navArgument(Screen.ARG_ARCHIVED) {
+                    type = NavType.BoolType
+                    defaultValue = true
+                },
+            ),
+        ) {
+            DownloadsScreen(
                 navController = navController,
             )
         }

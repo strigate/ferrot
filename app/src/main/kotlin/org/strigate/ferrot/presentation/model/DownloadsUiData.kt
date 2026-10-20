@@ -2,6 +2,7 @@ package org.strigate.ferrot.presentation.model
 
 data class DownloadsUiData(
     val downloads: List<DownloadItemUiData>,
+    val searchQuery: String,
     val availableUpdate: AvailableUpdateUiData?,
     val pendingDeleteIds: Set<Long>,
     val retryFailedDownloadIds: Set<Long>,
