@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -63,21 +62,17 @@ private const val RETRY_FAILED_SCROLL_DELAY_MILLIS = 357L
 @Composable
 fun DownloadsScreen(
     navController: NavController,
-    archived: Boolean,
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val isArchived by viewModel.isArchived.collectAsStateWithLifecycle()
+    val inputSearchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isArchived = viewModel.isArchived
 
     LaunchedEffect(Unit) {
         viewModel.logShown()
-    }
-    LaunchedEffect(archived) {
-        viewModel.setArchived(archived)
     }
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -96,7 +91,7 @@ fun DownloadsScreen(
 
     DownloadsScreenContent(
         uiState = uiState,
-        searchQuery = searchQuery,
+        inputSearchQuery = inputSearchQuery,
         isArchived = isArchived,
         onUpdateSearchQuery = viewModel::updateSearchQuery,
         onNavigateBack = navController::navigateUp,
@@ -125,22 +120,9 @@ fun DownloadsScreen(
 }
 
 @Composable
-fun ArchivedScreen(
-    navController: NavController,
-    modifier: Modifier = Modifier,
-) {
-    DownloadsScreen(
-        modifier = modifier,
-        navController = navController,
-        archived = true,
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 internal fun DownloadsScreenContent(
     uiState: DownloadsUiState,
-    searchQuery: String,
+    inputSearchQuery: String,
     isArchived: Boolean,
     onUpdateSearchQuery: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -283,7 +265,7 @@ internal fun DownloadsScreenContent(
                     hasFailedDownloads = hasFailedDownloads,
                     hasActiveDownloads = hasActiveDownloads,
                     searchActive = searchActive,
-                    searchQuery = searchQuery,
+                    searchQuery = inputSearchQuery,
                     isArchived = isArchived,
                     gridLayoutEnabled = downloadsData?.gridLayoutEnabled ?: false,
                     searchFocusRequester = searchFocusRequester,
@@ -318,7 +300,7 @@ internal fun DownloadsScreenContent(
                 .fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            when (val state = uiState) {
+            when (uiState) {
                 is DownloadsUiState.Loading -> {
                     LoadingState(
                         modifier = Modifier.fillMaxSize(),
@@ -327,12 +309,12 @@ internal fun DownloadsScreenContent(
                 }
 
                 is DownloadsUiState.Data -> {
-                    with(state.data) {
-                        val visibleUpdate = availableUpdate?.takeIf { !it.localFilePath.isNullOrBlank() }
+                    with(uiState.data) {
+                        val visibleUpdate = availableUpdate?.takeIf {
+                            !it.localFilePath.isNullOrBlank()
+                        }
                         var bannerHeightPx by remember { mutableIntStateOf(0) }
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
                             DownloadsContent(
                                 items = downloads,
                                 selectedIds = selection.selectedIds,
