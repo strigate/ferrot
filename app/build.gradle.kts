@@ -281,7 +281,6 @@ dependencies {
     implementation(project(":refinery"))
     // Android
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.datastore.preferences)
     // Lifecycle

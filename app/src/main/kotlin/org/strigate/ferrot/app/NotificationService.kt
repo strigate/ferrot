@@ -56,7 +56,7 @@ class NotificationService @Inject constructor(
             channelName = appContext.getString(R.string.notification_channel_name_active_tasks),
             channelDescription = appContext.getString(R.string.notification_channel_description_active_tasks),
             channelImportance = NotificationManager.IMPORTANCE_LOW,
-            color = R.color.coral,
+            color = R.color.primary,
             groupId = CHANNEL_GROUP_ID_FOREGROUND,
         )
         createNotificationChannel(
@@ -65,7 +65,7 @@ class NotificationService @Inject constructor(
             channelName = appContext.getString(R.string.notification_channel_name_updates),
             channelDescription = appContext.getString(R.string.notification_channel_description_updates),
             channelImportance = NotificationManager.IMPORTANCE_DEFAULT,
-            color = R.color.coral,
+            color = R.color.primary,
             groupId = CHANNEL_GROUP_ID_GENERAL,
         )
         createNotificationChannel(
@@ -74,7 +74,7 @@ class NotificationService @Inject constructor(
             channelName = appContext.getString(R.string.notification_channel_name_downloaded),
             channelDescription = appContext.getString(R.string.notification_channel_description_downloaded),
             channelImportance = NotificationManager.IMPORTANCE_DEFAULT,
-            color = R.color.coral,
+            color = R.color.primary,
             groupId = CHANNEL_GROUP_ID_GENERAL,
         )
     }
@@ -93,7 +93,7 @@ class NotificationService @Inject constructor(
             summaryTitleResource = R.string.notification_title_summary,
             contentTitle = contentTitle,
             contentText = contentText,
-            colorResource = R.color.coral,
+            colorResource = R.color.primary,
             iconResource = R.drawable.ic_logo,
             largeIcon = null,
             priority = NotificationCompat.PRIORITY_HIGH,
@@ -122,7 +122,7 @@ class NotificationService @Inject constructor(
             summaryTitleResource = R.string.notification_title_summary,
             contentTitle = contentTitle,
             contentText = contentText,
-            colorResource = R.color.coral,
+            colorResource = R.color.primary,
             iconResource = R.drawable.ic_logo,
             largeIcon = null,
             bigPicture = thumbnailBitmap,
