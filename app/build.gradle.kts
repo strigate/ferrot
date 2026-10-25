@@ -63,10 +63,9 @@ android {
     buildTypes {
         debug {
             isDebuggable = true
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
-            )
+            optimization {
+                enable = false
+            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("keystore")
             } else {
@@ -77,11 +76,9 @@ android {
         release {
             isDebuggable = false
             isProfileable = false
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
-            )
+            optimization {
+                enable = true
+            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("keystore")
             } else {
