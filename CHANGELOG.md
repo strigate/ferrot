@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.4.1 - 2026-10-30
+### Changed
+- Simplified launcher and splash resources
+- Migrated release optimization configuration and updated Android Gradle Plugin, Gradle, DataStore, Firebase and Byte Buddy
+- Expanded downloads state and coroutine cancellation regression coverage
+
+### Fixed
+- Kept archived downloads and search results consistent and allowed downloads to display before optional settings finish loading
+- Moved blocking file and download operations off the main thread and improved cancellation handling
+- Kept boot broadcasts active until asynchronous recovery work finishes
+- Rechecked thumbnail availability when download status changes
+
 ## 2.4.0 - 2026-10-15
 ### Added
 - Advanced settings for optional media metadata removal and app attribution
