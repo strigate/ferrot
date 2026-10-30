@@ -25,8 +25,8 @@ if (googleServicesPropertiesFile.exists()) {
 
 object BuildInfo {
     const val PACKAGE_NAME = "org.strigate.ferrot"
-    const val BASE_VERSION = "2.4.0"
-    const val VERSION_CODE = 40
+    const val BASE_VERSION = "2.4.1"
+    const val VERSION_CODE = 41
     const val VERSION_NAME = "$BASE_VERSION-$VERSION_CODE"
     const val ARTIFACT_BASE_NAME = "ferrot"
 }
@@ -63,10 +63,9 @@ android {
     buildTypes {
         debug {
             isDebuggable = true
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
-            )
+            optimization {
+                enable = false
+            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("keystore")
             } else {
@@ -77,11 +76,9 @@ android {
         release {
             isDebuggable = false
             isProfileable = false
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
-            )
+            optimization {
+                enable = true
+            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("keystore")
             } else {
@@ -281,7 +278,6 @@ dependencies {
     implementation(project(":refinery"))
     // Android
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.startup.runtime)
     implementation(libs.androidx.datastore.preferences)
     // Lifecycle

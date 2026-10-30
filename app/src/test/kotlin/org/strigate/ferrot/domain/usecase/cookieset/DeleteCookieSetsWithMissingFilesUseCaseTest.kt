@@ -1,7 +1,9 @@
 package org.strigate.ferrot.domain.usecase.cookieset
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -16,12 +18,13 @@ import org.strigate.ferrot.domain.repository.CookieSetRepository
 import java.io.File
 import java.nio.file.Files
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteCookieSetsWithMissingFilesUseCaseTest {
     @Test
     fun invoke_deletesCookieSetsWhoseCookieFileIsMissingOrEmpty() = runTest {
         val rootDir = Files.createTempDirectory("cookie-cleanup").toFile()
         val pathProvider = TempCookieSetPathProvider(rootDir)
-        val cookieFileStore = CookieFileStore(pathProvider)
+        val cookieFileStore = CookieFileStore(UnconfinedTestDispatcher(), pathProvider)
         val cookieSetRepository = SavingCookieSetRepository()
         val useCase = DeleteCookieSetsWithMissingFilesUseCase(
             cookieSetRepository = cookieSetRepository,

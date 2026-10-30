@@ -11,12 +11,14 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_UPDATE_DEPENDENCIES
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.work.RequeueResumableDownloadsWorker
 import org.strigate.ferrot.work.UpdateDependenciesWorker
@@ -26,6 +28,12 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MyPackageReplacedReceiver : BroadcastReceiver() {
     @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
+
+    private val ioScope by lazy { CoroutineScope(SupervisorJob() + ioDispatcher) }
+
+    @Inject
     lateinit var availableUpdateUseCase: AvailableUpdateUseCase
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -34,7 +42,7 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
         }
         val pendingResult = goAsync()
         val appContext = context.applicationContext
-        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+        ioScope.launch {
             try {
                 availableUpdateUseCase.clearAvailableUpdateFilesAndDataUseCase()
 
@@ -65,6 +73,8 @@ class MyPackageReplacedReceiver : BroadcastReceiver() {
                     .then(requeueResumableDownloadsOneTimeWorkRequest)
                     .enqueue()
 
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (throwable: Throwable) {
                 Log.w(LOG_TAG, throwable)
             } finally {

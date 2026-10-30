@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,8 +47,10 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Scale
+import kotlinx.coroutines.withContext
 import org.strigate.ferrot.R
 import org.strigate.ferrot.presentation.component.DownloadProgressSection
+import org.strigate.ferrot.presentation.local.LocalIoDispatcher
 import org.strigate.ferrot.presentation.model.DownloadItemUiData
 import org.strigate.ferrot.presentation.model.DownloadStatusUiData
 import org.strigate.ferrot.presentation.theme.LocalDimens
@@ -234,9 +238,17 @@ private fun DownloadPrimaryActionButton(
     }
 
     val overlayScrim = Color.Black.copy(alpha = 0.15f)
-    val thumbnailFile = thumbnailFilePath
-        ?.let { File(it) }
-        ?.takeIf { it.exists() && it.length() > 0 }
+    val ioDispatcher = LocalIoDispatcher.current
+    val thumbnailFile by produceState<File?>(
+        initialValue = null,
+        key1 = thumbnailFilePath,
+        key2 = ioDispatcher,
+        key3 = status,
+    ) {
+        value = withContext(ioDispatcher) {
+            thumbnailFilePath?.let(::File)?.takeIf { it.isFile && it.length() > 0L }
+        }
+    }
 
     Surface(
         modifier = modifier

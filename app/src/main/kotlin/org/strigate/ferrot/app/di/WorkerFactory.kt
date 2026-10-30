@@ -5,9 +5,11 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.CoroutineDispatcher
 import org.strigate.ferrot.analytics.AnalyticsLogger
 import org.strigate.ferrot.app.NotificationService
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.integration.CookieFileStore
 import org.strigate.ferrot.app.provider.DownloadPathProvider
 import org.strigate.ferrot.app.provider.UpdatePathProvider
@@ -42,6 +44,7 @@ import javax.inject.Singleton
 
 @Singleton
 class WorkerFactory @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val hiltWorkerFactory: HiltWorkerFactory,
     private val analyticsLogger: AnalyticsLogger,
     private val notificationService: NotificationService,
@@ -75,6 +78,7 @@ class WorkerFactory @Inject constructor(
                 DownloadAvailableUpdateWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     notificationService = notificationService,
                     stateUseCase = stateUseCase,
                     updatePathProvider = updatePathProvider,
@@ -86,6 +90,7 @@ class WorkerFactory @Inject constructor(
                 UpdateDependenciesWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     stateUseCase = stateUseCase,
                     youtubeDlRuntimeInitializer = youtubeDlRuntimeInitializer,
                 )
@@ -95,6 +100,7 @@ class WorkerFactory @Inject constructor(
                 DownloadWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     analyticsLogger = analyticsLogger,
                     notificationService = notificationService,
                     settingsUseCase = settingsUseCase,
@@ -115,6 +121,7 @@ class WorkerFactory @Inject constructor(
                 RequeueResumableDownloadsWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     getResumableDownloadsCombinedUseCase = getResumableDownloadsCombinedUseCase,
                     startDownloadUseCase = startDownloadUseCase,
                 )
@@ -132,6 +139,7 @@ class WorkerFactory @Inject constructor(
                 DeleteDownloadsWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                     stopDownloadUseCase = stopDownloadUseCase,
                 )
@@ -141,6 +149,7 @@ class WorkerFactory @Inject constructor(
                 DeletePendingDownloadsImmediateWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                     stopDownloadUseCase = stopDownloadUseCase,
@@ -151,6 +160,7 @@ class WorkerFactory @Inject constructor(
                 DeletePendingDownloadsDelayedWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                     stopDownloadUseCase = stopDownloadUseCase,
@@ -161,6 +171,7 @@ class WorkerFactory @Inject constructor(
                 DeletePendingDownloadDelayedWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     downloadUseCase = downloadUseCase,
                     deleteDownloadAndRelatedCombinedUseCase = deleteDownloadAndRelatedCombinedUseCase,
                     stopDownloadUseCase = stopDownloadUseCase,
@@ -171,6 +182,7 @@ class WorkerFactory @Inject constructor(
                 DeleteAllDuplicateDownloadsWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     downloadUseCase = downloadUseCase,
                     downloadVideoUseCase = downloadVideoUseCase,
                     downloadMetadataUseCase = downloadMetadataUseCase,
@@ -182,6 +194,7 @@ class WorkerFactory @Inject constructor(
                 DeleteAllOrphanDownloadFilesWorker(
                     appContext = appContext,
                     workerParameters = workerParameters,
+                    ioDispatcher = ioDispatcher,
                     downloadPathProvider = downloadPathProvider,
                     downloadUseCase = downloadUseCase,
                     downloadAudioUseCase = downloadAudioUseCase,

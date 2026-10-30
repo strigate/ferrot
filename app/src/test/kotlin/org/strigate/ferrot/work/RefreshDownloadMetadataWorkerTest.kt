@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -72,6 +74,17 @@ class RefreshDownloadMetadataWorkerTest {
     @Test
     fun uniqueWorkName_containsDownloadId() {
         assertTrue(RefreshDownloadMetadataWorker.uniqueWorkName(42L).endsWith("-42"))
+    }
+
+    @Test
+    fun `propagates cancellation`() = runTest {
+        val cancellation = CancellationException("Cancelled")
+        `when`(refreshMetadata(4L))
+            .thenThrow(cancellation)
+
+        val failure = runCatching { createWorker(4L).doWork() }.exceptionOrNull()
+
+        assertSame(cancellation, failure)
     }
 
     @After

@@ -2,9 +2,10 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.extensions.toSafeFileName
 import java.io.File
 import java.nio.file.Files
@@ -12,6 +13,7 @@ import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 
 class DownloadThumbnailUseCase @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val buildThumbnailRequestUseCase: BuildThumbnailRequestUseCase,
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
 ) {
@@ -22,7 +24,7 @@ class DownloadThumbnailUseCase @Inject constructor(
         cookieFilePath: String? = null,
     ): String? {
         youtubeDlRuntimeInitializer.initializeIfNeeded()
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val id = videoId ?: getInfo(url, cookieFilePath).id ?: return@withContext null
             val thumbnailBaseName = thumbnailOutputBaseName(id)
 

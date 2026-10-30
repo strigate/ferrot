@@ -1,5 +1,7 @@
 package org.strigate.ferrot.app.integration
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,12 +10,13 @@ import org.strigate.ferrot.app.provider.CookieSetPathProvider
 import java.io.File
 import java.nio.file.Files
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CookieFileStoreTest {
     @Test
     fun deleteStaleTempCookies_deletesOnlyOldTempFiles() = runTest {
         val rootDir = Files.createTempDirectory("cookie-file-store").toFile()
         val pathProvider = TempCookieSetPathProvider(rootDir)
-        val cookieFileStore = CookieFileStore(pathProvider)
+        val cookieFileStore = CookieFileStore(UnconfinedTestDispatcher(), pathProvider)
 
         try {
             val staleFile = pathProvider.tempCookieFile(1L, "stale.txt").apply {

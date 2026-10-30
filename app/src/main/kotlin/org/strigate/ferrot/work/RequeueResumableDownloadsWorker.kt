@@ -7,7 +7,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.domain.usecase.combined.GetResumableDownloadsCombinedUseCase
@@ -17,10 +17,11 @@ import org.strigate.ferrot.util.setExpeditedIfAllowed
 class RequeueResumableDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val getResumableDownloadsCombinedUseCase: GetResumableDownloadsCombinedUseCase,
     private val startDownloadUseCase: StartDownloadUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         val resumableDownloads = getResumableDownloadsCombinedUseCase()
         val tag = "RequeueResumableDownloads:"
         if (resumableDownloads.isEmpty()) {

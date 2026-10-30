@@ -10,6 +10,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.CancellationException
 import org.strigate.ferrot.app.Constants.LOG_TAG
 import org.strigate.ferrot.app.Constants.Work.Name.KEY_ID
 import org.strigate.ferrot.app.Constants.Work.Name.ONETIME_REFRESH_DOWNLOAD_METADATA
@@ -31,6 +32,7 @@ class RefreshDownloadMetadataWorker(
         val refreshed = runCatching {
             refreshDownloadMetadataCombinedUseCase(downloadId)
         }.onFailure {
+            if (it is CancellationException) throw it
             Log.w(LOG_TAG, "$tag Worker failed", it)
         }.getOrDefault(false)
 

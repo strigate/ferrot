@@ -11,7 +11,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -46,17 +47,18 @@ import java.util.concurrent.TimeUnit
 class DownloadAvailableUpdateWorker(
     private val appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val notificationService: NotificationService,
     private val stateUseCase: StateUseCase,
     private val updatePathProvider: UpdatePathProvider,
     private val availableUpdateUseCase: AvailableUpdateUseCase,
 ) : ForegroundCoroutineWorker(appContext, workerParameters) {
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         try {
             val tag = "DownloadAvailableUpdate:"
             val savedAvailableUpdate = runCatching {
                 availableUpdateUseCase.getAvailableUpdateAsFlowUseCase().first()
-            }.getOrNull()
+            }.onFailure { if (it is CancellationException) throw it }.getOrNull()
 
             val currentTag = BuildConfig.VERSION_TAG
             val latestRelease = fetchLatestRelease()
@@ -68,7 +70,7 @@ class DownloadAvailableUpdateWorker(
             if (latestTag.isBlank() || isDraft || isPre) {
                 Log.d(LOG_TAG, "$tag No valid release to process")
                 clearAvailableUpdate()
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             }
 
             val savedTag = savedAvailableUpdate?.tag
@@ -78,7 +80,7 @@ class DownloadAvailableUpdateWorker(
                     append("saved=$savedTag latest=$latestTag")
                 }
                 Log.d(LOG_TAG, message)
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             }
             if (!isNewerVersion(latestTag, currentTag)) {
                 if (isAppInForeground()) {
@@ -86,7 +88,7 @@ class DownloadAvailableUpdateWorker(
                 }
                 Log.d(LOG_TAG, "$tag Already up to date: latest=$latestTag current=$currentTag")
                 clearAvailableUpdate()
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             }
             if (savedTag != null && isNewerVersion(latestTag, savedTag)) {
                 val message = buildString {
@@ -100,13 +102,13 @@ class DownloadAvailableUpdateWorker(
             val apkAsset = pickApkAsset(latestRelease.optJSONArray("assets")) ?: run {
                 Log.w(LOG_TAG, "$tag No APK asset found for tag=$latestTag")
                 clearAvailableUpdate()
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             }
             val downloadUrl = apkAsset.optString("browser_download_url")
             if (downloadUrl.isBlank()) {
                 Log.w(LOG_TAG, "$tag APK asset missing browser_download_url")
                 clearAvailableUpdate()
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             }
 
             val expectedSizeBytes = apkAsset.optLong("size", -1L).takeIf { it > 0L }
@@ -124,7 +126,7 @@ class DownloadAvailableUpdateWorker(
                             Log.d(LOG_TAG, message)
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
                             notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                            return markCheckSuccess()
+                            return@withContext markCheckSuccess()
                         }
                         Log.w(LOG_TAG, "$tag Existing file sha256 mismatch, re-downloading")
                         apkFile.delete()
@@ -145,7 +147,7 @@ class DownloadAvailableUpdateWorker(
                             Log.d(LOG_TAG, "$tag Update file already present: file=${apkFile.name}")
                             saveAvailableUpdate(latestTag, apkFile.absolutePath)
                             notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                            return markCheckSuccess()
+                            return@withContext markCheckSuccess()
                         }
                     }
 
@@ -180,7 +182,7 @@ class DownloadAvailableUpdateWorker(
                     if (!validateSha256(partFile, expectedDigest)) {
                         partFile.delete()
                         clearAvailableUpdate()
-                        return markCheckRetry()
+                        return@withContext markCheckRetry()
                     }
                 }
                 if (apkFile.exists()) apkFile.delete()
@@ -188,23 +190,25 @@ class DownloadAvailableUpdateWorker(
                     Log.w(LOG_TAG, "$tag Failed to rename part file to final output")
                     partFile.delete()
                     clearAvailableUpdate()
-                    return markCheckRetry()
+                    return@withContext markCheckRetry()
                 }
 
                 Log.d(LOG_TAG, "$tag Update download completed: file=${apkFile.name}")
                 saveAvailableUpdate(latestTag, apkFile.absolutePath)
                 notifyAvailableUpdate(latestTag, apkFile.absolutePath)
-                return markCheckSuccess()
+                return@withContext markCheckSuccess()
             } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
                 Log.wtf(LOG_TAG, "$tag Download failed", throwable)
                 partFile.delete()
                 clearAvailableUpdate()
-                return markCheckRetry()
+                return@withContext markCheckRetry()
             }
         } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
             Log.wtf(LOG_TAG, "DownloadAvailableUpdate: Update check failed", throwable)
             clearAvailableUpdate()
-            return markCheckRetry()
+            return@withContext markCheckRetry()
         }
     }
 
@@ -226,7 +230,7 @@ class DownloadAvailableUpdateWorker(
         )
     }
 
-    private suspend fun fetchLatestRelease(): JSONObject = withContext(Dispatchers.IO) {
+    private suspend fun fetchLatestRelease(): JSONObject = withContext(ioDispatcher) {
         val url = URL(appContext.getString(R.string.github_latest_release))
         var httpUrlConnection: HttpURLConnection? = null
         try {
@@ -242,7 +246,7 @@ class DownloadAvailableUpdateWorker(
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 val errorMessage = runCatching {
                     httpUrlConnection.errorStream?.readBytes()?.decodeToString()?.take(300)
-                }.getOrNull()
+                }.onFailure { if (it is CancellationException) throw it }.getOrNull()
 
                 val message = "Fetch latest failed with response code"
                 Log.w(LOG_TAG, "DownloadAvailableUpdate: $message: $responseCode: $errorMessage")
@@ -260,7 +264,7 @@ class DownloadAvailableUpdateWorker(
         url: String,
         outFile: File,
         expectedBytesFromRelease: Long?,
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(ioDispatcher) {
         var httpUrlConnection: HttpURLConnection? = null
         try {
             httpUrlConnection = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -275,7 +279,7 @@ class DownloadAvailableUpdateWorker(
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 val errorMessage = runCatching {
                     httpUrlConnection.errorStream?.readBytes()?.decodeToString()?.take(300)
-                }.getOrNull()
+                }.onFailure { if (it is CancellationException) throw it }.getOrNull()
 
                 val message = "Download failed with response code"
                 Log.w(LOG_TAG, "DownloadAvailableUpdate: $message: $responseCode: $errorMessage")
@@ -419,6 +423,7 @@ class DownloadAvailableUpdateWorker(
         try {
             availableUpdateUseCase.saveAvailableUpdateUseCase(tag, path)
         } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
             val message = "DownloadAvailableUpdate: Failed to persist available update row"
             Log.w(LOG_TAG, message, throwable)
         }
@@ -428,6 +433,7 @@ class DownloadAvailableUpdateWorker(
         try {
             availableUpdateUseCase.clearAvailableUpdateFilesAndDataUseCase()
         } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
             val message = "DownloadAvailableUpdate: Failed to clear available update data"
             Log.w(LOG_TAG, message, throwable)
         }
@@ -445,6 +451,7 @@ class DownloadAvailableUpdateWorker(
         runCatching {
             stateUseCase.saveLastAvailableUpdateCheckMillisUseCase(System.currentTimeMillis())
         }.onFailure {
+            if (it is CancellationException) throw it
             Log.w(LOG_TAG, "DownloadAvailableUpdate: Failed to save last check timestamp", it)
         }
         return result

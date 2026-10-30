@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -118,6 +119,7 @@ class DeleteDownloadFilesUseCaseTest {
     }
 
     private fun createUseCase() = DeleteDownloadFilesUseCase(
+        ioDispatcher = UnconfinedTestDispatcher(),
         downloadPathProvider = downloadPathProvider,
         getDownloadByIdUseCase = getDownloadByIdUseCase,
     )

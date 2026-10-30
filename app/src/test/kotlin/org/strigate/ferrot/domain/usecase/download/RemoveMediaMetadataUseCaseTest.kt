@@ -1,6 +1,8 @@
 package org.strigate.ferrot.domain.usecase.download
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -13,13 +15,14 @@ import org.junit.rules.TemporaryFolder
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyList
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.app.integration.MediaToolsClient
 import java.io.File
 import java.io.IOException
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RemoveMediaMetadataUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -46,7 +49,12 @@ class RemoveMediaMetadataUseCaseTest {
             .`when`(client)
             .remux(anyList())
 
-        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching {
+            RemoveMediaMetadataUseCase(
+                UnconfinedTestDispatcher(),
+                client
+            )(file)
+        }.exceptionOrNull()
 
         assertTrue(failure is MetadataRemovalException)
         assertEquals("original content", file.readText())
@@ -72,7 +80,12 @@ class RemoveMediaMetadataUseCaseTest {
             null
         }.`when`(client).remux(anyList())
 
-        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching {
+            RemoveMediaMetadataUseCase(
+                UnconfinedTestDispatcher(),
+                client
+            )(file)
+        }.exceptionOrNull()
 
         assertTrue(failure is MetadataRemovalException)
         val rootCause = generateSequence(failure) { it.cause }.last()
@@ -92,7 +105,12 @@ class RemoveMediaMetadataUseCaseTest {
             .`when`(client)
             .remux(anyList())
 
-        val failure = runCatching { RemoveMediaMetadataUseCase(client)(file) }.exceptionOrNull()
+        val failure = runCatching {
+            RemoveMediaMetadataUseCase(
+                UnconfinedTestDispatcher(),
+                client
+            )(file)
+        }.exceptionOrNull()
 
         assertTrue(failure is CancellationException)
         assertEquals("original content", file.readText())

@@ -12,7 +12,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.strigate.ferrot.app.Constants.LOG_TAG
@@ -29,12 +30,13 @@ import java.util.concurrent.TimeUnit
 class DeleteAllDuplicateDownloadsWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
+    private val ioDispatcher: CoroutineDispatcher,
     private val downloadUseCase: DownloadUseCase,
     private val downloadVideoUseCase: DownloadVideoUseCase,
     private val downloadMetadataUseCase: DownloadMetadataUseCase,
     private val deleteDownloadAndRelatedCombinedUseCase: DeleteDownloadAndRelatedCombinedUseCase,
 ) : CoroutineWorker(appContext, workerParameters) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(ioDispatcher) {
         val tag = "DeleteAllDuplicateDownloads:"
         Log.d(LOG_TAG, "$tag Starting duplicate scan")
 
@@ -46,6 +48,7 @@ class DeleteAllDuplicateDownloadsWorker(
                 }
 
         }.getOrElse {
+            if (it is CancellationException) throw it
             Log.w(LOG_TAG, "$tag Failed to load downloads", it)
             return@withContext Result.failure()
         }
@@ -155,6 +158,7 @@ class DeleteAllDuplicateDownloadsWorker(
                         Log.w(LOG_TAG, message)
                     }
                 }.onFailure {
+                    if (it is CancellationException) throw it
                     failedDeleteCount++
                     val message = buildString {
                         append("DeleteAllDuplicateDownloads: Failed to delete duplicate by ")

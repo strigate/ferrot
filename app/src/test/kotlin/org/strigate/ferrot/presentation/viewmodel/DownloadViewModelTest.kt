@@ -17,6 +17,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
@@ -1037,6 +1038,7 @@ class DownloadViewModelTest {
         }
 
         return DownloadViewModel(
+            defaultDispatcher = UnconfinedTestDispatcher(),
             savedStateHandle = savedStateHandle,
             analyticsLogger = analyticsLogger,
             downloadUseCase = downloadUseCase,

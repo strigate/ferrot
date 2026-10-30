@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -26,6 +26,7 @@ import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.domain.usecase.download.StopDownloadUseCase
 import java.util.UUID
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeletePendingDownloadsImmediateWorkerTest {
     private lateinit var autoCloseable: AutoCloseable
 
@@ -66,14 +67,13 @@ class DeletePendingDownloadsImmediateWorkerTest {
         val worker = DeletePendingDownloadsImmediateWorker(
             appContext = context,
             workerParameters = parameters,
+            ioDispatcher = UnconfinedTestDispatcher(),
             downloadUseCase = downloadUseCase,
             deleteDownloadAndRelatedCombinedUseCase = deleteDownload,
             stopDownloadUseCase = stopDownload,
         )
 
-        val result = withContext(Dispatchers.IO) {
-            mockStatic(Log::class.java).use { worker.doWork() }
-        }
+        val result = mockStatic(Log::class.java).use { worker.doWork() }
 
         assertTrue(result is ListenableWorker.Result.Success)
         verify(deleteDownload, never())

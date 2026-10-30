@@ -1,5 +1,6 @@
 package org.strigate.ferrot.domain.usecase.downloadvideo
 
+import kotlinx.coroutines.CancellationException
 import org.strigate.ferrot.domain.repository.DownloadVideoRepository
 import javax.inject.Inject
 
@@ -13,6 +14,7 @@ class GetDownloadIdsBySha256UseCase @Inject constructor(
         return runCatching {
             downloadVideoRepository.getDownloadIdsBySha256(sha256)
         }.getOrElse {
+            if (it is CancellationException) throw it
             emptyList()
         }
     }

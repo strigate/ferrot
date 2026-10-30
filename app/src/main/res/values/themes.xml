@@ -1,6 +1,4 @@
 <resources>
-    <style name="Theme.Ferrot.App" parent="Theme.Material3.DayNight.NoActionBar" />
-    <style name="Theme.Ferrot" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="postSplashScreenTheme">@style/Theme.Ferrot.App</item>
-    </style>
+
+    <style name="Theme.Ferrot" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>

@@ -2,20 +2,27 @@ package org.strigate.ferrot.presentation.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -55,6 +62,7 @@ import org.strigate.ferrot.domain.usecase.state.GetArchivedDownloadsGridLayoutEn
 import org.strigate.ferrot.domain.usecase.state.GetDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.state.ToggleArchivedDownloadsGridLayoutEnabledUseCase
 import org.strigate.ferrot.domain.usecase.state.ToggleDownloadsGridLayoutEnabledUseCase
+import org.strigate.ferrot.presentation.Screen
 import org.strigate.ferrot.presentation.event.DownloadsEvent
 import org.strigate.ferrot.presentation.model.DownloadSwipeActionUiData
 import org.strigate.ferrot.presentation.state.DownloadsUiState
@@ -172,7 +180,10 @@ class DownloadsViewModelTest {
         }
         waitForUiState(viewModel) { state ->
             val data = state as? DownloadsUiState.Data ?: return@waitForUiState false
-            data.data.downloads.size == 2 && data.data.availableUpdate?.tag == "v1.2.3"
+            data.data.downloads.size == 2
+                    && data.data.availableUpdate?.tag == "v1.2.3"
+                    && data.data.leftSwipeAction == DownloadSwipeActionUiData.ARCHIVE
+                    && data.data.rightSwipeAction == DownloadSwipeActionUiData.DELETE
         }
 
         val state = viewModel.uiState.value as DownloadsUiState.Data
@@ -201,8 +212,12 @@ class DownloadsViewModelTest {
         verify(toggleDownloadsGridLayoutEnabledUseCase)
             .invoke()
 
-        viewModel.setArchived(true)
-        viewModel.toggleGridLayoutEnabled()
+        val archivedViewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(emptyList()),
+            updateFlow = MutableStateFlow(null),
+            archived = true,
+        )
+        archivedViewModel.toggleGridLayoutEnabled()
         advanceUntilIdle()
 
         verify(toggleArchivedDownloadsGridLayoutEnabledUseCase)
@@ -237,13 +252,13 @@ class DownloadsViewModelTest {
             downloadsFlow = MutableStateFlow(emptyList()),
             updateFlow = MutableStateFlow(null),
             archivedGridLayoutEnabledFlow = MutableStateFlow(true),
+            archived = true,
         )
         val collector = backgroundScope.launch {
             viewModel.uiState.collect()
         }
         waitForUiState(viewModel) { it is DownloadsUiState.Data }
 
-        viewModel.setArchived(true)
         waitForUiState(viewModel) {
             (it as? DownloadsUiState.Data)?.data?.gridLayoutEnabled == true
         }
@@ -782,6 +797,162 @@ class DownloadsViewModelTest {
         collector.cancel()
     }
 
+    @Test
+    fun uiState_startsInArchivedModeWithoutActiveDownloads() = runTest(testDispatcher) {
+        val archivedQueryReady = CompletableDeferred<Unit>()
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(listOf(createDownload(id = 1L, title = "Active"))),
+            archivedDownloadsFlow = flow {
+                archivedQueryReady.await()
+                emit(listOf(createDownload(id = 2L, title = "Archived").copy(archived = true)))
+            },
+            updateFlow = MutableStateFlow(null),
+            gridLayoutEnabledFlow = MutableStateFlow(false),
+            archivedGridLayoutEnabledFlow = MutableStateFlow(true),
+            archived = true,
+        )
+        val states = mutableListOf<DownloadsUiState>()
+        val collector = backgroundScope.launch { viewModel.uiState.collect { states += it } }
+        runCurrent()
+
+        assertTrue(viewModel.isArchived)
+        assertEquals(DownloadsUiState.Loading, viewModel.uiState.value)
+        verify(getDownloadsWithMetadataAsFlowUseCase, never()).invoke(false)
+        verify(getDownloadsGridLayoutEnabledUseCase, never()).invoke()
+        verify(getAvailableUpdateAsFlowUseCase, never()).invoke()
+
+        archivedQueryReady.complete(Unit)
+        runCurrent()
+        val dataStates = states.filterIsInstance<DownloadsUiState.Data>()
+        assertTrue(dataStates.isNotEmpty())
+        dataStates.forEach { state ->
+            assertEquals(listOf(2L), state.data.downloads.map { it.id })
+            assertTrue(state.data.gridLayoutEnabled)
+            assertNull(state.data.availableUpdate)
+        }
+        collector.cancel()
+    }
+
+    @Test
+    fun uiState_displaysDownloadsBeforeOptionalFlowsEmit() = runTest(testDispatcher) {
+        val preferencesReady = CompletableDeferred<Unit>()
+        val updateReady = CompletableDeferred<Unit>()
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(listOf(createDownload(id = 1L, title = "Download"))),
+            updateFlow = flow {
+                updateReady.await()
+                emit(AvailableUpdate(tag = "v2", localFilePath = "/tmp/update.apk"))
+            },
+            gridLayoutEnabledFlow = flow {
+                preferencesReady.await()
+                emit(true)
+            },
+            leftSwipeActionFlow = flow {
+                preferencesReady.await()
+                emit(DownloadSwipeAction.ARCHIVE)
+            },
+            rightSwipeActionFlow = flow {
+                preferencesReady.await()
+                emit(DownloadSwipeAction.DELETE)
+            },
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect() }
+        runCurrent()
+
+        val initial = (viewModel.uiState.value as DownloadsUiState.Data).data
+        assertEquals(listOf(1L), initial.downloads.map { it.id })
+        assertNull(initial.availableUpdate)
+        assertFalse(initial.gridLayoutEnabled)
+        assertEquals(DownloadSwipeActionUiData.NONE, initial.leftSwipeAction)
+        assertEquals(DownloadSwipeActionUiData.NONE, initial.rightSwipeAction)
+
+        preferencesReady.complete(Unit)
+        updateReady.complete(Unit)
+        runCurrent()
+        val loaded = (viewModel.uiState.value as DownloadsUiState.Data).data
+        assertEquals("v2", loaded.availableUpdate?.tag)
+        assertTrue(loaded.gridLayoutEnabled)
+        assertEquals(DownloadSwipeActionUiData.ARCHIVE, loaded.leftSwipeAction)
+        assertEquals(DownloadSwipeActionUiData.DELETE, loaded.rightSwipeAction)
+        collector.cancel()
+    }
+
+    @Test
+    fun uiState_retainsDataWhileRestartingStoppedQuery() = runTest(testDispatcher) {
+        val downloads = MutableStateFlow(listOf(createDownload(id = 1L, title = "Old")))
+        val restartedQueryReady = CompletableDeferred<Unit>()
+        var subscriptions = 0
+        val viewModel = createViewModel(
+            downloadsFlow = flow {
+                subscriptions++
+                if (subscriptions > 1) restartedQueryReady.await()
+                emitAll(downloads)
+            },
+            updateFlow = MutableStateFlow(null),
+        )
+        val firstCollector = backgroundScope.launch { viewModel.uiState.collect() }
+        runCurrent()
+        assertEquals(
+            "Old",
+            (viewModel.uiState.value as DownloadsUiState.Data).data.downloads.single().title
+        )
+
+        firstCollector.cancelAndJoin()
+        advanceTimeBy(5_001)
+        runCurrent()
+        val cachedState = viewModel.uiState.value
+        assertTrue(cachedState is DownloadsUiState.Data)
+        downloads.value = listOf(createDownload(id = 1L, title = "Fresh"))
+        val resumedStates = mutableListOf<DownloadsUiState>()
+        val secondCollector =
+            backgroundScope.launch { viewModel.uiState.collect { resumedStates += it } }
+        runCurrent()
+        assertEquals(2, subscriptions)
+        assertEquals(cachedState, viewModel.uiState.value)
+
+        restartedQueryReady.complete(Unit)
+        runCurrent()
+        assertEquals(
+            "Fresh",
+            (viewModel.uiState.value as DownloadsUiState.Data).data.downloads.single().title
+        )
+        assertTrue(resumedStates.all { it is DownloadsUiState.Data })
+        secondCollector.cancel()
+    }
+
+    @Test
+    fun uiState_keepsQueryAndResultsInTheSameSnapshot() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            downloadsFlow = MutableStateFlow(
+                listOf(
+                    createDownload(id = 1L, title = "Alpha"),
+                    createDownload(id = 2L, title = "Beta")
+                ),
+            ),
+            updateFlow = MutableStateFlow(null),
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect() }
+        runCurrent()
+        viewModel.updateSearchQuery("Beta")
+
+        // Input updates immediately, while the displayed results retain their original query.
+        assertEquals("Beta", viewModel.searchQuery.value)
+        val previous = (viewModel.uiState.value as DownloadsUiState.Data).data
+        assertEquals("", previous.searchQuery)
+        assertEquals(listOf(1L, 2L), previous.downloads.map { it.id })
+
+        runCurrent()
+        val filtered = (viewModel.uiState.value as DownloadsUiState.Data).data
+        assertEquals("Beta", filtered.searchQuery)
+        assertEquals(listOf(2L), filtered.downloads.map { it.id })
+        viewModel.updateSearchQuery("Missing")
+        runCurrent()
+        val empty = (viewModel.uiState.value as DownloadsUiState.Data).data
+        assertEquals("Missing", empty.searchQuery)
+        assertTrue(empty.downloads.isEmpty())
+        collector.cancel()
+    }
+
     @After
     fun tearDown() = runTest(testDispatcher) {
         viewModels.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
@@ -789,15 +960,19 @@ class DownloadsViewModelTest {
     }
 
     private fun createViewModel(
-        downloadsFlow: MutableStateFlow<List<DownloadWithMetadata>>,
-        updateFlow: MutableStateFlow<AvailableUpdate?>,
-        gridLayoutEnabledFlow: MutableStateFlow<Boolean> = MutableStateFlow(false),
-        archivedGridLayoutEnabledFlow: MutableStateFlow<Boolean> = MutableStateFlow(false),
+        downloadsFlow: Flow<List<DownloadWithMetadata>>,
+        updateFlow: Flow<AvailableUpdate?>,
+        gridLayoutEnabledFlow: Flow<Boolean> = MutableStateFlow(false),
+        archivedGridLayoutEnabledFlow: Flow<Boolean> = MutableStateFlow(false),
+        archivedDownloadsFlow: Flow<List<DownloadWithMetadata>> = downloadsFlow,
+        leftSwipeActionFlow: Flow<DownloadSwipeAction> = MutableStateFlow(DownloadSwipeAction.ARCHIVE),
+        rightSwipeActionFlow: Flow<DownloadSwipeAction> = MutableStateFlow(DownloadSwipeAction.DELETE),
+        archived: Boolean = false,
     ): DownloadsViewModel {
         `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(false))
             .thenReturn(downloadsFlow)
         `when`(getDownloadsWithMetadataAsFlowUseCase.invoke(true))
-            .thenReturn(downloadsFlow)
+            .thenReturn(archivedDownloadsFlow)
         `when`(getAvailableUpdateAsFlowUseCase.invoke())
             .thenReturn(updateFlow)
         `when`(downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase)
@@ -817,9 +992,9 @@ class DownloadsViewModelTest {
         `when`(downloadProgressUseCase.updateDownloadProgressUseCase)
             .thenReturn(updateDownloadProgressUseCase)
         `when`(getLeftSwipeActionSettingAsFlowUseCase.invoke())
-            .thenReturn(MutableStateFlow(DownloadSwipeAction.ARCHIVE))
+            .thenReturn(leftSwipeActionFlow)
         `when`(getRightSwipeActionSettingAsFlowUseCase.invoke())
-            .thenReturn(MutableStateFlow(DownloadSwipeAction.DELETE))
+            .thenReturn(rightSwipeActionFlow)
         `when`(settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase)
             .thenReturn(getLeftSwipeActionSettingAsFlowUseCase)
         `when`(settingsUseCase.getRightSwipeActionSettingAsFlowUseCase)
@@ -838,7 +1013,8 @@ class DownloadsViewModelTest {
             .thenReturn(toggleArchivedDownloadsGridLayoutEnabledUseCase)
 
         return DownloadsViewModel(
-            savedStateHandle = SavedStateHandle(),
+            defaultDispatcher = testDispatcher,
+            savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_ARCHIVED to archived)),
             analyticsLogger = analyticsLogger,
             downloadUseCase = downloadUseCase,
             stopDownloadsUseCase = stopDownloadUseCase,

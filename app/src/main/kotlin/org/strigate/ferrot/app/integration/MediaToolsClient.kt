@@ -2,12 +2,13 @@ package org.strigate.ferrot.app.integration
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -17,6 +18,7 @@ import kotlin.time.Duration.Companion.minutes
 
 open class MediaToolsClient @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
     open suspend fun probe(file: File): String = withMediaProbeTimeout {
         execute(
@@ -41,6 +43,7 @@ open class MediaToolsClient @Inject constructor(
             File(packages, "$it/usr/lib").absolutePath
         }
         return runMediaProcess(
+            ioDispatcher = ioDispatcher,
             command = listOf(
                 File(
                     appContext.applicationInfo.nativeLibraryDir,
@@ -74,10 +77,11 @@ internal suspend fun withMediaRemuxTimeout(block: suspend () -> Unit) {
 private const val MAX_MEDIA_PROCESS_OUTPUT_BYTES = 8L * 1024 * 1024
 
 internal suspend fun runMediaProcess(
+    ioDispatcher: CoroutineDispatcher,
     command: List<String>,
     environment: Map<String, String>,
     temporaryDirectory: File,
-): String = withContext(Dispatchers.IO) {
+): String = withContext(ioDispatcher) {
     val output = File.createTempFile("media-process-", ".log", temporaryDirectory)
     var process: Process? = null
     try {

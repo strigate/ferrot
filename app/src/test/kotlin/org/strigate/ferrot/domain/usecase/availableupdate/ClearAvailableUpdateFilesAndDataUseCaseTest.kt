@@ -3,6 +3,7 @@ package org.strigate.ferrot.domain.usecase.availableupdate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -100,6 +101,7 @@ class ClearAvailableUpdateFilesAndDataUseCaseTest {
     }
 
     private fun createUseCase() = ClearAvailableUpdateFilesAndDataUseCase(
+        ioDispatcher = UnconfinedTestDispatcher(),
         availableUpdateRepository = availableUpdateRepository,
         updatePathProvider = updatePathProvider,
     )

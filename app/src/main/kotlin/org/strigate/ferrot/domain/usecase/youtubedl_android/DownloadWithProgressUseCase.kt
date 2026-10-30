@@ -2,11 +2,14 @@ package org.strigate.ferrot.domain.usecase.youtubedl_android
 
 import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.app.YoutubeDlRuntimeInitializer
+import org.strigate.ferrot.app.di.module.IoDispatcher
 import org.strigate.ferrot.app.integration.YoutubeDlClient
 import org.strigate.ferrot.domain.model.DownloadMediaType
 import org.strigate.ferrot.domain.model.QualityProfile
@@ -20,6 +23,7 @@ import kotlin.math.abs
 import kotlin.math.max
 
 class DownloadWithProgressUseCase @Inject constructor(
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val buildVideoDownloadRequestUseCase: BuildVideoDownloadRequestUseCase,
     private val buildAudioDownloadRequestUseCase: BuildAudioDownloadRequestUseCase,
     private val youtubeDlRuntimeInitializer: YoutubeDlRuntimeInitializer,
@@ -110,7 +114,7 @@ class DownloadWithProgressUseCase @Inject constructor(
             }
             job.cancel()
         }
-    }
+    }.flowOn(ioDispatcher)
 
     private class ProgressMappingPolicy(
         private val stageWeights: FloatArray = floatArrayOf(0.88f, 0.10f, 0.02f),

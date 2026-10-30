@@ -4,8 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,13 +13,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.strigate.ferrot.analytics.AnalyticsEvents
 import org.strigate.ferrot.analytics.AnalyticsLogger
+import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_ARCHIVED_DOWNLOADS_GRID_LAYOUT_ENABLED
+import org.strigate.ferrot.app.Constants.State.DEFAULT_VALUE_DOWNLOADS_GRID_LAYOUT_ENABLED
+import org.strigate.ferrot.app.di.module.DefaultDispatcher
+import org.strigate.ferrot.domain.model.AvailableUpdate
 import org.strigate.ferrot.domain.model.DownloadStatus
+import org.strigate.ferrot.domain.model.DownloadSwipeAction
 import org.strigate.ferrot.domain.usecase.AvailableUpdateUseCase
 import org.strigate.ferrot.domain.usecase.DownloadProgressUseCase
 import org.strigate.ferrot.domain.usecase.DownloadUseCase
@@ -38,9 +44,9 @@ import org.strigate.ferrot.presentation.model.isActive
 import org.strigate.ferrot.presentation.state.DownloadsUiState
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     savedStateHandle: SavedStateHandle,
     private val analyticsLogger: AnalyticsLogger,
     private val downloadUseCase: DownloadUseCase,
@@ -53,8 +59,7 @@ class DownloadsViewModel @Inject constructor(
     private val settingsUseCase: SettingsUseCase,
     private val stateUseCase: StateUseCase,
 ) : ViewModel() {
-    private val _archived = MutableStateFlow(savedStateHandle[Screen.ARG_ARCHIVED] ?: false)
-    val isArchived: StateFlow<Boolean> = _archived
+    val isArchived: Boolean = savedStateHandle[Screen.ARG_ARCHIVED] ?: false
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -69,25 +74,28 @@ class DownloadsViewModel @Inject constructor(
     )
 
     private fun getUiState(): Flow<DownloadsUiState> {
-        val searchTextFlow = searchQuery
-        val archivedFlow = isArchived
-        val downloadsWithMetadataFlow = archivedFlow
-            .flatMapLatest { archived ->
-                downloadWithMetadataUseCase.getDownloadsWithMetadataAsFlowUseCase(archived = archived)
-            }
-        val availableUpdateFlow = availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()
-        val leftSwipeActionFlow = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase()
-        val rightSwipeActionFlow = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase()
+        val downloadsWithMetadataFlow = downloadWithMetadataUseCase
+            .getDownloadsWithMetadataAsFlowUseCase(archived = isArchived)
+
+        val availableUpdateFlow = if (isArchived) {
+            flowOf<AvailableUpdate?>(null)
+        } else {
+            availableUpdateUseCase.getAvailableUpdateAsFlowUseCase()
+                .onStart { emit(null) }
+        }
+        val gridLayoutEnabledFlow = if (isArchived) {
+            stateUseCase.getArchivedDownloadsGridLayoutEnabledUseCase()
+                .onStart { emit(DEFAULT_VALUE_ARCHIVED_DOWNLOADS_GRID_LAYOUT_ENABLED) }
+        } else {
+            stateUseCase.getDownloadsGridLayoutEnabledUseCase()
+                .onStart { emit(DEFAULT_VALUE_DOWNLOADS_GRID_LAYOUT_ENABLED) }
+        }
         val layoutAndSwipeActionsFlow = combine(
-            flow = archivedFlow.flatMapLatest { archived ->
-                if (archived) {
-                    stateUseCase.getArchivedDownloadsGridLayoutEnabledUseCase()
-                } else {
-                    stateUseCase.getDownloadsGridLayoutEnabledUseCase()
-                }
-            },
-            flow2 = leftSwipeActionFlow,
-            flow3 = rightSwipeActionFlow,
+            flow = gridLayoutEnabledFlow,
+            flow2 = settingsUseCase.getLeftSwipeActionSettingAsFlowUseCase()
+                .onStart { emit(DownloadSwipeAction.NONE) },
+            flow3 = settingsUseCase.getRightSwipeActionSettingAsFlowUseCase()
+                .onStart { emit(DownloadSwipeAction.NONE) },
         ) { gridLayoutEnabled, leftSwipeAction, rightSwipeAction ->
             Triple(
                 gridLayoutEnabled,
@@ -97,12 +105,11 @@ class DownloadsViewModel @Inject constructor(
         }
 
         return combine(
-            flow = archivedFlow,
-            flow2 = downloadsWithMetadataFlow,
-            flow3 = availableUpdateFlow,
-            flow4 = searchTextFlow,
-            flow5 = layoutAndSwipeActionsFlow,
-        ) { archived, downloadsWithMetadata, availableUpdate, query, layoutAndSwipeActions ->
+            flow = downloadsWithMetadataFlow,
+            flow2 = availableUpdateFlow,
+            flow3 = searchQuery,
+            flow4 = layoutAndSwipeActionsFlow,
+        ) { downloadsWithMetadata, availableUpdate, query, layoutAndSwipeActions ->
             val (gridLayoutEnabled, leftSwipeAction, rightSwipeAction) = layoutAndSwipeActions
             val pendingDeleteIds = downloadsWithMetadata
                 .asSequence()
@@ -126,19 +133,16 @@ class DownloadsViewModel @Inject constructor(
                 .map { it.toUiData() }
                 .toList()
 
-            val availableUpdateUiData = if (archived) {
-                null
-            } else {
-                availableUpdate?.let {
-                    AvailableUpdateUiData(
-                        localFilePath = it.localFilePath,
-                        tag = it.tag,
-                    )
-                }
+            val availableUpdateUiData = availableUpdate?.let {
+                AvailableUpdateUiData(
+                    localFilePath = it.localFilePath,
+                    tag = it.tag,
+                )
             }
             DownloadsUiState.Data(
                 data = DownloadsUiData(
                     downloads = filteredDownloads,
+                    searchQuery = query,
                     availableUpdate = availableUpdateUiData,
                     pendingDeleteIds = pendingDeleteIds,
                     retryFailedDownloadIds = retryFailedDownloadIds,
@@ -147,7 +151,7 @@ class DownloadsViewModel @Inject constructor(
                     rightSwipeAction = rightSwipeAction,
                 ),
             )
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(defaultDispatcher)
     }
 
     fun logShown() = analyticsLogger.logScreen(AnalyticsEvents.Screens.DOWNLOADS)
@@ -160,15 +164,8 @@ class DownloadsViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
-    fun setArchived(archived: Boolean) {
-        if (_archived.value == archived) {
-            return
-        }
-        _archived.value = archived
-    }
-
     fun toggleGridLayoutEnabled() = viewModelScope.launch {
-        if (isArchived.value) {
+        if (isArchived) {
             stateUseCase.toggleArchivedDownloadsGridLayoutEnabledUseCase()
         } else {
             stateUseCase.toggleDownloadsGridLayoutEnabledUseCase()
@@ -276,7 +273,7 @@ class DownloadsViewModel @Inject constructor(
                 bytesDownloaded = 0L,
                 etaSeconds = null,
             )
-        }
+        }.onFailure { if (it is CancellationException) throw it }
         stopDownloadsUseCase(downloadId)
     }
 
