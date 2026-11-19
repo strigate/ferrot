@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
 import android.service.notification.StatusBarNotification
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import org.junit.After
@@ -23,7 +22,6 @@ import org.strigate.ferrot.app.Constants.Extras.EXTRA_DOWNLOAD_ID
 import org.strigate.ferrot.app.Constants.Notifications.Channels.CHANNEL_ID_DOWNLOADED
 import org.strigate.ferrot.test.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ClearNotificationsByDownloadIdUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 

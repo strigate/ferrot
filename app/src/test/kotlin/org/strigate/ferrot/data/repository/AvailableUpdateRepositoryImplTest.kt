@@ -1,6 +1,5 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -21,7 +20,6 @@ import org.strigate.ferrot.data.local.entity.AvailableUpdateEntity
 import org.strigate.ferrot.domain.model.AvailableUpdate
 import org.strigate.ferrot.test.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AvailableUpdateRepositoryImplTest {
     private lateinit var autoCloseable: AutoCloseable
 

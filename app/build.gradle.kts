@@ -33,7 +33,11 @@ object BuildInfo {
 
 android {
     namespace = BuildInfo.PACKAGE_NAME
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "org.strigate.ferrot"

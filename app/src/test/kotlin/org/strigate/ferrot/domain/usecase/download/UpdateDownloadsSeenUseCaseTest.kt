@@ -1,6 +1,5 @@
 package org.strigate.ferrot.domain.usecase.download
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -11,7 +10,6 @@ import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.MockitoAnnotations
 import org.strigate.ferrot.domain.repository.DownloadRepository
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateDownloadsSeenUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 

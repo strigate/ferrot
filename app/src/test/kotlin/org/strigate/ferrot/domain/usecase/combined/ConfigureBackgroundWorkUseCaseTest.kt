@@ -1,6 +1,5 @@
 package org.strigate.ferrot.domain.usecase.combined
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -25,7 +24,6 @@ import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDependencyUpdates
 import org.strigate.ferrot.domain.usecase.settings.GetAutomaticDuplicateDownloadDeletionEnabledSettingAsFlowUseCase
 import org.strigate.ferrot.test.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConfigureBackgroundWorkUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 
