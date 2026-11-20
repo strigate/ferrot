@@ -252,10 +252,9 @@ internal fun SwipeableDownloadItem(
             } else {
                 SwipeToDismissBox(
                     state = dismissState,
-                    enableDismissFromStartToEnd = swipeEnabled
-                            && rightSwipeAction != DownloadSwipeActionUiData.NONE,
-                    enableDismissFromEndToStart = swipeEnabled
-                            && leftSwipeAction != DownloadSwipeActionUiData.NONE,
+                    gesturesEnabled = swipeEnabled,
+                    enableDismissFromStartToEnd = rightSwipeAction != DownloadSwipeActionUiData.NONE,
+                    enableDismissFromEndToStart = leftSwipeAction != DownloadSwipeActionUiData.NONE,
                     onDismiss = { dismissValue ->
                         if (hasHandledCurrentSwipe) return@SwipeToDismissBox
                         val swipeAction = getSwipeActionForDismissValue(
