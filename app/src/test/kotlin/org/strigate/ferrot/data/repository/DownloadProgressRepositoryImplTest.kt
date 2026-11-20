@@ -1,6 +1,5 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,7 +23,6 @@ import org.strigate.ferrot.data.local.dao.DownloadProgressDao
 import org.strigate.ferrot.data.local.entity.DownloadProgressEntity
 import org.strigate.ferrot.domain.model.DownloadProgress
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DownloadProgressRepositoryImplTest {
     private lateinit var autoCloseable: AutoCloseable
 
