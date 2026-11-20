@@ -196,6 +196,7 @@ private fun AboutContent(
         Spacer(modifier = Modifier.height(refineryDimens.spacingSmall))
         SettingsSection {
             val urlGitHubStrigate = stringResource(R.string.url_github_strigate)
+            val urlBluesky = stringResource(R.string.url_bluesky)
             val urlX = stringResource(R.string.url_x)
             SettingsIconRow(
                 items = listOf(
@@ -204,6 +205,13 @@ private fun AboutContent(
                         contentDescription = stringResource(R.string.content_description_github),
                         onClick = {
                             onUrlClick(urlGitHubStrigate)
+                        },
+                    ),
+                    SettingsIconRowItem(
+                        painter = painterResource(R.drawable.ic_bsky),
+                        contentDescription = stringResource(R.string.content_description_bluesky),
+                        onClick = {
+                            onUrlClick(urlBluesky)
                         },
                     ),
                     SettingsIconRowItem(
