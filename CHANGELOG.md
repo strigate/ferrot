@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.4.2 - 2026-11-26
+### Added
+- Added a Bluesky link to the About screen
+
+### Changed
+- Updated Android Gradle Plugin, Gradle, Compose, Lifecycle, Firebase and Byte Buddy and removed obsolete Compose opt-ins
+
+### Fixed
+- Truncated download filenames at UTF-8 character boundaries to respect the byte limit
+- Opened download links in a separate task and showed a message when a link could not be opened
+- Preserved the swipe dismissal position in the downloads list
+
 ## 2.4.1 - 2026-10-30
 ### Changed
 - Simplified launcher and splash resources
