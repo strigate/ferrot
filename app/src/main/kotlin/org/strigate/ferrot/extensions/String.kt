@@ -30,15 +30,11 @@ fun String.toSafeFileName(maxBytes: Int = 120): String {
     if (byteArray.size <= maxBytes) {
         return sanitized
     }
-    var count = 0
-    val stringBuilder = StringBuilder()
-    for (char in sanitized) {
-        val size = char.toString().toByteArray(Charsets.UTF_8).size
-        if (count + size > maxBytes) break
-        count += size
-        stringBuilder.append(char)
+    var end = maxBytes.coerceAtLeast(0)
+    while (end > 0 && (byteArray[end].toInt() and 0xC0) == 0x80) {
+        end--
     }
-    return stringBuilder.toString().trim()
+    return String(byteArray, 0, end, Charsets.UTF_8).trim()
 }
 
 fun String.guessMimeType(): String {
