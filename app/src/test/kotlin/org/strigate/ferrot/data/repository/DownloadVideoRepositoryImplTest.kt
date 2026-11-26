@@ -1,6 +1,5 @@
 package org.strigate.ferrot.data.repository
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -21,7 +20,6 @@ import org.strigate.ferrot.data.local.dao.DownloadVideoDao
 import org.strigate.ferrot.data.local.entity.DownloadVideoEntity
 import org.strigate.ferrot.domain.model.DownloadVideo
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DownloadVideoRepositoryImplTest {
     private lateinit var autoCloseable: AutoCloseable
 

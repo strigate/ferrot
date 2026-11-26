@@ -56,6 +56,14 @@ class StringTest {
     }
 
     @Test
+    fun toSafeFileName_countsFourByteCharactersInLongTitles() {
+        val styledTitle = "𝑎".repeat(100)
+
+        assertEquals("𝑎".repeat(30), styledTitle.toSafeFileName())
+        assertEquals("é𝑎", "é𝑎𝑎".toSafeFileName(maxBytes = 9))
+    }
+
+    @Test
     fun toSafeFileName_returnsEmptyString_whenOnlyUnsafeCharactersRemain() {
         assertEquals("", "https://#%/:*?\"<>|   ".toSafeFileName())
     }

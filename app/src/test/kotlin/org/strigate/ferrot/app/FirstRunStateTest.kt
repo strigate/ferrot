@@ -2,7 +2,6 @@ package org.strigate.ferrot.app
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -13,7 +12,6 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.strigate.ferrot.test.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FirstRunStateTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())

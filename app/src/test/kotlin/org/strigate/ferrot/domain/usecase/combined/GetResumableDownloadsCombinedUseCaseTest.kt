@@ -1,6 +1,5 @@
 package org.strigate.ferrot.domain.usecase.combined
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -18,7 +17,6 @@ import org.strigate.ferrot.domain.usecase.DownloadUseCase
 import org.strigate.ferrot.domain.usecase.download.GetAllDownloadsUseCase
 import org.strigate.ferrot.test.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetResumableDownloadsCombinedUseCaseTest {
     private lateinit var autoCloseable: AutoCloseable
 

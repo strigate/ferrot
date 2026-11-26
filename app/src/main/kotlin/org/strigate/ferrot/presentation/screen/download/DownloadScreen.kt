@@ -1,5 +1,7 @@
 package org.strigate.ferrot.presentation.screen.download
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,7 +13,6 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,9 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -58,7 +59,6 @@ fun DownloadScreen(
 ) {
     val view = LocalView.current
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedId.collectAsStateWithLifecycle()
@@ -143,13 +143,23 @@ fun DownloadScreen(
             viewModel.retryDownload(downloadId)
         },
         onPageVisible = viewModel::onPageVisible,
-        onUrlClick = uriHandler::openUri,
+        onUrlClick = { url ->
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try {
+                context.startActivity(intent)
+            } catch (_: ActivityNotFoundException) {
+                context.toast(R.string.toast_unable_to_open_link)
+            } catch (_: SecurityException) {
+                context.toast(R.string.toast_unable_to_open_link)
+            }
+        },
         onCopyText = context::copyToClipboard,
         modifier = modifier,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DownloadScreenContent(
     state: DownloadScreenContentState,

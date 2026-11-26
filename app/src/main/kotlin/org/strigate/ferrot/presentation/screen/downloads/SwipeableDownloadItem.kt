@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -70,7 +69,6 @@ private const val GRID_SWIPE_OFFSET_ANIMATION_MILLIS = 280
 
 private val GRID_SWIPE_VELOCITY_THRESHOLD = 125.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SwipeableDownloadItem(
     item: DownloadItemUiData,
@@ -254,10 +252,9 @@ internal fun SwipeableDownloadItem(
             } else {
                 SwipeToDismissBox(
                     state = dismissState,
-                    enableDismissFromStartToEnd = swipeEnabled
-                            && rightSwipeAction != DownloadSwipeActionUiData.NONE,
-                    enableDismissFromEndToStart = swipeEnabled
-                            && leftSwipeAction != DownloadSwipeActionUiData.NONE,
+                    gesturesEnabled = swipeEnabled,
+                    enableDismissFromStartToEnd = rightSwipeAction != DownloadSwipeActionUiData.NONE,
+                    enableDismissFromEndToStart = leftSwipeAction != DownloadSwipeActionUiData.NONE,
                     onDismiss = { dismissValue ->
                         if (hasHandledCurrentSwipe) return@SwipeToDismissBox
                         val swipeAction = getSwipeActionForDismissValue(
@@ -421,7 +418,8 @@ private fun GridSwipeToDismiss(
         } else {
             maximumStartToEndOffsetPx
         }
-        offsetPx = (offsetPx + deltaPx).coerceIn(minimumOffsetPx, maximumOffsetPx)
+        offsetPx = (offsetPx + deltaPx)
+            .coerceIn(minimumOffsetPx, maximumOffsetPx)
 
         val swipeAction = swipeActionForOffset()
         if (isSnapBackSwipeAction(swipeAction)

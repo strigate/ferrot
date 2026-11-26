@@ -1,6 +1,5 @@
 package org.strigate.ferrot.presentation.screen.download
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,7 +24,6 @@ import org.strigate.ferrot.presentation.model.DownloadPageUiData
 import org.strigate.ferrot.presentation.model.DownloadUiData
 import org.strigate.ferrot.presentation.theme.LocalDimens
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun DownloadPager(
     modifier: Modifier = Modifier,
